@@ -125,7 +125,6 @@ request
 - 1:N - http request : 빈 인스턴스
 - @RequestScope
 
-
 session
 - 1:N - http session : 빈 인스턴스
 - @SessionScope
@@ -151,24 +150,119 @@ IoC 컨테이너가 빈 생성, 소멸할 때 호출하는 콜백
 3. @PostConstruct, @PreDestroy 
     - 클래스 내 콜백을 수행하는 메서드에 선언
 
-## Injection
+## Dependency Injection
+
+### Injection Annotation
+
+@Autowired
+- Spring 어노테이션
+- 생성자, 메서드, 파라미터, 필드, 어노테이션 타입 적용 가능
+- 타입, 참조변수 이름, @Qualifier, @Primary 순 탐색
+- required 속성 존재(의존성 주입 필수 여부 지정)
 
 @Inject
 - Java 어노테이션
 - 생성자, 메서드, 필드 적용 가능
+- 타입, 참조변수 이름, @Qualifier, @Primary, @Named 순 탐색
 
 @Resource
 - Java 어노테이션
 - 타입, 메서드, 필드 적용 가능
 
-@Autowired
-- Spring 어노테이션
-- 생성자, 메서드, 파라미터, 필드, 어노테이션 타입 적용 가능
+### Constructor Injection
 
-### Field Injection
+객체 생성 시점에 생성자를 통해 의존성 주입을 받는 방법(권장)
+
+- 필요한 의존성들을 생성자에 깔끔하게 명시
+- 객체 생성 시 모든 의존성을 필수로 받음
+    - 순환참조, 의존성 주입 실패 시 오류 발생 -> 런타임 에러 방지
+- 생성자가 하나라면 @Autowired 생략 가능(스프링 4.3 이후)
+
+final 키워드 선언 권장
+- constant한 의존성 참조변수
+- 의존성 주입은 final과 무관하게 동작
+
+```
+private final LocalService;
+
+public LocalController(LocalService localService) {
+    this.localService = locaService;
+}
+```
+
+### Field, Property Injection
+
+객체를 생성한 뒤 필드에 의존성 주입을 받는 방법
+
+권장하지 않는 이유
+- final 키워드 사용 불가 
+- 의존성 누락 가능성
+- 순환 참조
+- 애플리케이션 로드 시점이 아닌 런타임 시점에 에러가 발생함
+
+```
+@Autowired 
+private LocalService localService;
+```
 
 ### Method injection
 
-### Constructor Injection
+객체를 생성한 뒤 메서드를 통해 의존성 주입을 받는 방법
 
-## 우선순위
+용도
+- 선택적 의존성 주입
+- 여러 의존성 주입
+
+권장하지 않는 이유
+- 코드 복잡도 증가
+- 불확실한 의존성 주입
+
+```
+private LocalService localService;
+
+@Autowired
+public void SetLocalService(LocalService localService) {
+    this.localService = localService;
+}
+```
+
+## Injection Priority
+
+IoC 컨테이너는 의존성 주입 시 타입을 기반으로 함
+
+동일한 타입의 빈이 여러 개 있을 경우 -> NoUniqueDefinitionException 발생
+- 인터페이스, 부모 클래스 타입으로 주입받는 경우 
+- 컴포넌트 스캔과 Java Config 설정 간의 타입 중복
+
+해결 방안
+
+@Primary
+- 동일한 타입의 빈 중에서 우선순위를 가짐
+
+```
+@Primary
+@Component
+public class FirstLocalService implements LocalService
+
+@Component
+public class SecondLocalServie implements LocalService
+```
+
+@Qualifier
+- 빈 이름으로 주입받을 빈 선택
+
+```
+public LocalController(@Qualifier("secondLocalService") localService) {
+    this.LocalService = localService;
+}
+```
+
+@Named
+- @Qualifier와 동일, @Inject에서 사용 가능
+
+```
+@Inject
+public LocalController(@Named("secondLocalService") localService) {
+    this.LocalService = localService;
+}
+```
