@@ -266,3 +266,38 @@ public LocalController(@Named("secondLocalService") localService) {
     this.LocalService = localService;
 }
 ```
+
+## BeanPostProcessor
+
+용도
+- 스프링 컨테이너의 빈 초기화 과정 중에 커스텀 로직 추가
+
+```
+public interface BeanPostProcessor {
+
+    @Nullable
+    default Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+        return bean;
+    }
+
+    @Nullable
+    default Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+        return bean;
+    }
+}
+```
+
+postProcessBeforeInitialization : 빈 초기화(@PostConstruct 등) 이전 호출
+
+postProcessAfterInitialization : 빈 초기화 후 호출
+
+빈 후처리기 등록
+```
+public class CustomBeanPostProcessor implements BeanPostProcessor {
+    ...
+}
+```
+
+특징
+- 모든 스프링 빈에 대해 적용, 특정 빈만 적용하려면 제어 로직 필요
+- 메서드에서 반환하는 객체가 스프링 빈으로 등록됨
