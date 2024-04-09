@@ -8,3 +8,5 @@ build
 # IntelliJ IDEA
 .idea/
 
+# mac os
+**/.DS_Store
