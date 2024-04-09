@@ -29,7 +29,9 @@ bean definition
 ## 빈 등록 방법
 - XML
 - Java Config
-- Annotation
+- Annotation Config
+
+Java Config와 Annotation Config는 컴포넌트 스캔에 의해 등록됨
 
 ### Java Config
 
@@ -74,7 +76,7 @@ bean definition
 
 애플리케이션 내의 객체를 스프링 빈으로 등록할 때 사용
 
-2. @Component Scan
+2. @ComponentScan
 
 자동으로 컴포넌트를 찾아 스프링 빈으로 등록하는 기능을 가진 어노테이션
 
@@ -137,18 +139,67 @@ websocket
 - 1:N - WebSocket : 빈 인스턴스
 - [websocket scope](https://docs.spring.io/spring-framework/reference/web/websocket/stomp/scope.html)
 
-## 빈 생명주기 콜백
+## Bean LifeCycle
+
+![test](./lifecycle.png)
+
+[출처](https://medium.com/@TheTechDude/spring-bean-lifecycle-full-guide-f865966e89ce)
+
+## Bean LifeCycle Callback
 
 IoC 컨테이너가 빈 생성, 소멸할 때 호출하는 콜백
 
-인스턴스 생성, 의존성 주입 후 초기화 콜백 호출
+인스턴스 생성, 의존성 주입 후 콜백 호출
 
-1. 인터페이스 구현
-2. 메서드 지정
+1. 콜백 인터페이스 구현
+2. 콜백 메서드 지정
     - 주로 @Bean으로 스프링 빈 등록 시 사용
     - initMethod, destroyMethod 속성
-3. @PostConstruct, @PreDestroy 
+3. @PostConstruct, @PreDestroy 콜백 어노테이션 선언
     - 클래스 내 콜백을 수행하는 메서드에 선언
+
+## BeanPostProcessor
+
+용도
+- 스프링 컨테이너의 빈 초기화 과정 중에 커스텀 로직 추가
+- 프록시 객체를 스프링 빈으로 등록
+
+```
+public interface BeanPostProcessor {
+
+    @Nullable
+    default Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+        return bean;
+    }
+
+    @Nullable
+    default Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+        return bean;
+    }
+}
+```
+
+postProcessBeforeInitialization : 빈 초기화(@PostConstruct 등) 이전 호출
+
+postProcessAfterInitialization : 빈 초기화 후 호출
+
+### Custom BeanPostProcessor
+
+BeanPostProcessor 구현 후 Bean 등록
+
+```
+public class CustomBeanPostProcessor implements BeanPostProcessor {
+    ...
+}
+```
+
+특징
+- 모든 스프링 빈에 대해 적용, 특정 빈만 적용하려면 제어 로직 필요
+- 메서드에서 반환하는 객체가 스프링 빈으로 등록됨
+
+## BeanFactoryPostProcessor
+
+Bean Definition을 조작할 수 있는 hook으로 IoC 컨테이너가 빈을 생성하기 이전 시점에 동작함
 
 ## Dependency Injection
 
@@ -267,37 +318,3 @@ public LocalController(@Named("secondLocalService") localService) {
 }
 ```
 
-## BeanPostProcessor
-
-용도
-- 스프링 컨테이너의 빈 초기화 과정 중에 커스텀 로직 추가
-
-```
-public interface BeanPostProcessor {
-
-    @Nullable
-    default Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
-        return bean;
-    }
-
-    @Nullable
-    default Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
-        return bean;
-    }
-}
-```
-
-postProcessBeforeInitialization : 빈 초기화(@PostConstruct 등) 이전 호출
-
-postProcessAfterInitialization : 빈 초기화 후 호출
-
-빈 후처리기 등록
-```
-public class CustomBeanPostProcessor implements BeanPostProcessor {
-    ...
-}
-```
-
-특징
-- 모든 스프링 빈에 대해 적용, 특정 빈만 적용하려면 제어 로직 필요
-- 메서드에서 반환하는 객체가 스프링 빈으로 등록됨
