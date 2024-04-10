@@ -35,4 +35,4 @@ include 'boot'
 include 'datajpa'
 include 'modulith'
 include 'core'
-
+include 'web'
