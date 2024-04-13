@@ -31,6 +31,12 @@ Servlet
 - Java EE 사양의 일부로 HTTP를 처리하고 응답을 생성하는 서버 컴포넌트
 - HTML 페이지 생성, 세션 관리, DB 처리 등
 - 자바로 작성되며 JVM 위에서 실행
+- DispatchType : 서블릿 요청이 처리되는 방식
+    - REQUEST : 기본 디스패치 타입
+    - FORWARD : 다른 Servlet이나 JSP로 요청을 전달할 때 사용(RequestDispatcher.forward())
+    - INCLUDE : 다른 Servlet이나 JSP를 응답에 포함시킬 때 사용(RequestDispather.include())
+    - ERROR   : 에러가 발생했을 때(/error)
+    - ASYNC   : 비동기 처리(Servlet 3.0 이상)
 
 JSP
 - JSP는 HTML 페이지에 자바 코드를 삽입하는 방식, Servlet은 자바 클래스에 HTML을 삽입하는 방식
@@ -57,7 +63,7 @@ SSR(서버 사이드 렌더링) : 서버에서 화면 처리 담당
 
 CSR(클라이언트 사이드 렌더링) : 클라이언트에서 화면 처리 담당
 
-## FrontController, 스프링 MVC
+## Spring MVC, FrontController
 
 MVC 패턴의 Controller는 path(요청 url)에 마다 개별 Controller를 만듦
 
@@ -99,7 +105,7 @@ MVC 패턴의 Controller는 path(요청 url)에 마다 개별 Controller를 만�
 
 DispatcherServlet과 WebApplicationContext 관계
 1. 각 DispatcherServlet은 자신만의 Servlet WebApplicationContext가 존재
-2. 애플리케이션 로딩 시점에 생성되는 Root WebApplicationContext를 부모로 설정
+2. 또한 애플리케이션 로딩 시점에 생성되는 Root WebApplicationContext를 부모로 설정
 
 Root WebApplicationContext 
 - 애플리케이션의 공통 컴포넌트(서비스 계층, 데이터 액세스 계층)
@@ -110,15 +116,88 @@ Root WebApplicationContext
 Servlet WebApplicationContext
 - 프레젠테이션 계층(Controller, View Resolver, Handler Mapping)
 - DispatcherServlet 초기화 시 자동 생성
-    - 스프링 - Dispatcher-servlet.xml
-    - 스프링부트 - 내부적으로 DispatcherServlet 초기화 및  Servlet WebApplicationContext 자동 처리
+    - 스프링 - dispatcher-servlet.xml
+    - 스프링부트 - @EnableAutoConfiguration을 통해 내부적으로 DispatcherServlet 초기화 및  Servlet WebApplicationContext 자동 처리
 - Servlet WebApplicationContext 빈은 특정 Servlet에서만 접근할 수 있음
-
-## Error Handling
-
-## Interceptor
 
 ## Filter
 
+Servlet과 마찬가지로 Java/Jakarata EE 스펙에 포함됨
+
+특징
+- HTTP Request 사전 처리, 사후 처리를 담당하는 요소(Servlet 실행 전/후 동작)
+- url(path)에 매핑되는 Filter 동작
+- 다음 Filter의 실행을 중단하거나 실행 결과를 무시하고 직접 응답을 반환할 수 있음
+- ServletContainer 내에서 동작
+
+FilterChain
+- FilterChain은 여러 Filter가 순서대로 연결된 체인 형태로 작동
+- Servlet은 모든 FilterChain의 Filter가 실행된 이후 마지막에 호출됨
+
+## Interceptor
+
+Spring MVC 스펙에 포함됨
+
+특징
+- DispatcherServlet에서 Controller(Handler)로 요청 위임 전/후/완료 후에 동작하는 요소
+- url(path)에 매핑되는 Interceptor 동작
+- 스프링 웹 애플리케이션 컨텍스트 내에서 동작함
+
+시점
+- 요청 전 : Controller가 요청을 처리하기 전
+- 요청 후 : Controller가 요청을 정상적으로 처리한 후(View 렌더링 전) 
+- 요청 완료 후 : 예외 발생 여부와 무관하게 Controller가 요청을 처리한 후
+
+차이점
+- Filter : 스프링 컨텍스트 도달 전/후로 필요한 공통 로직 처리 용도
+- Interceptor : 스프링 컨텍스트 내에서 필요한 공통 로직 처리 용도
+
+## Error, Exception Handling
+
+웹 서버의 에러
+- 서버 자체(네트워크 레벨 등) 문제
+- 서버가 요청을 제대로 처리할 수 없는 상황
+- web.xml
+    - HTTP Status Code 별로 지정된 에러 페이지 반환
+
+웹 애플리케이션에서 예외가 발생할 수 있는 부분
+- Filter
+    - FilterChain.doFilter() 생략 -> Servlet, Controller 등 호출 X
+    - 직접 HttpServletResponse을 통해 Status Code, Header, Message Body 반환
+    - 웹 서버는 Filter에서 처리한 응답을 그대로 클라이언트에게 반환
+- Interceptor
+    - 시점에 따른 에러 처리
+    - 요청 전 에러 처리 : Controller 호출 X, HttpServletResponse로 직접 응답 반환
+    - 요청 완료 후 에러 처리 : 클라이언트에게 응답 반환 후 호출되므로 직접 응답 반환 불가, 리소스 정리, 로깅 등 후처리 작업 수행
+- Controller, 비즈니스 로직
+    - web.xml, Filter, Interceptor, BasicController, @ControllerAdvice 중 선택하여 에러 처리 가능
+    - Controller와 그 이후에서 예외 발생 시 DispatcherServlet은 처리되지 않은 모든 예외를 Catch함
+    - 적절한 @ControllerAdvice, @ExceptionHandler를 검색하고 예외 처리 수행 -> 응답
+    - 등록된 Interceptor의 afterCompletion() 호출
+
+BasicController
+- 스프링부트 애플리케이션 내부에서 예외 발생 시 내장된 웹 서버(Tomcat)까지 예외 전달, /error 경로로 요청을 재전송(DispatcherType.ERROR)
+- 웹 서버에서 재전송한 요청은 ErrorController 인터페이스를 통해 에러 처리 가능
+- BasicController는 스프링부트에서 제공하는 ErrorController 구현체
+    - 클라이언트에게 응답할 Content-Type이 text/html이라면 View를 찾음
+    - 아니라면 ResponseEntity 반환
+
+@ControllerAdvice, @ExceptionHandler
+- 
+
+
+
+## Data Binding
+
+### DTO, VO, Command Object
+
+## Type Conversion, Formatting
+
+## Spring MVC Workflows
+
 ## RESTful Spring MVC
+
+### Error Handling
+
+### Workflows
 - 
