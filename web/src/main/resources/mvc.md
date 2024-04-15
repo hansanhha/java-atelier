@@ -154,6 +154,14 @@ Spring MVC 스펙에 포함됨
 
 ## Error, Exception Handling
 
+예외는 크게 두 가지로 구분
+1. 클라이언트 요청에 의한 예외 발생
+2. 서버의 로직 처리 과정 중 예외 발생
+
+[자세한 내용](./error point)
+
+### Server Error, Exception Handling
+
 웹 서버의 에러
 - 서버 자체(네트워크 레벨 등) 문제
 - 서버가 요청을 제대로 처리할 수 없는 상황
@@ -162,7 +170,7 @@ Spring MVC 스펙에 포함됨
 
 웹 애플리케이션에서 예외가 발생할 수 있는 부분
 - Filter
-    - FilterChain.doFilter() 생략 -> Servlet, Controller 등 호출 X
+    - FilterChain.doFilter() 생략 -> 스프링 컨텍스트 도달 전 예외 처리
     - 직접 HttpServletResponse을 통해 Status Code, Header, Message Body 반환
     - 웹 서버는 Filter에서 처리한 응답을 그대로 클라이언트에게 반환
 - Interceptor
@@ -171,21 +179,121 @@ Spring MVC 스펙에 포함됨
     - 요청 완료 후 에러 처리 : 클라이언트에게 응답 반환 후 호출되므로 직접 응답 반환 불가, 리소스 정리, 로깅 등 후처리 작업 수행
 - Controller, 비즈니스 로직
     - web.xml, Filter, Interceptor, BasicController, @ControllerAdvice 중 선택하여 에러 처리 가능
-    - Controller와 그 이후에서 예외 발생 시 DispatcherServlet은 처리되지 않은 모든 예외를 Catch함
-    - 적절한 @ControllerAdvice, @ExceptionHandler를 검색하고 예외 처리 수행 -> 응답
+    - Controller와 그 이후 예외 발생 시 DispatcherServlet에서 처리되지 않은 모든 예외를 Catch함
+    - 적절한 @ControllerAdvice, @ExceptionHandler를 검색하고 예외 처리 수행 -> 예외 응답
     - 등록된 Interceptor의 afterCompletion() 호출
+- Web Request
+    - 클라이언트의 요청이 올바르지 못한 경우
+    - Binding, Validation, HTTP Method, Authentication, Authroization 등의 부분에서 발생할 수 있음
 
 BasicController
-- 스프링부트 애플리케이션 내부에서 예외 발생 시 내장된 웹 서버(Tomcat)까지 예외 전달, /error 경로로 요청을 재전송(DispatcherType.ERROR)
-- 웹 서버에서 재전송한 요청은 ErrorController 인터페이스를 통해 에러 처리 가능
-- BasicController는 스프링부트에서 제공하는 ErrorController 구현체
-    - 클라이언트에게 응답할 Content-Type이 text/html이라면 View를 찾음
+- 스프링부트 애플리케이션 내부에서 예외 발생 시 내장된 웹 서버(Tomcat)까지 예외 전달, 임베디드 웹 서버는 /error 경로로 요청을 재전송(DispatcherType.ERROR)
+- 재전송된 에러 처리 요청은 애플리케이션에서 ErrorController 인터페이스를 통해 에러 처리 가능
+- BasicController는 스프링부트에서 제공하는 ErrorController 구현체로 두 가지 동작방식이 있음
+    - 클라이언트에게 응답할 Content-Type(produces 속성)이 text/html이라면 View를 찾음
     - 아니라면 ResponseEntity 반환
 
 @ControllerAdvice, @ExceptionHandler
+- 에러 처리 중앙화하여 관리할 수 있는 스프링 어노테이션
+- @ControllerAdvice
+    - 애플리케이션 전역에서 발생할 수 있는 예외를 잡아 처리하는 클래스에 붙이는 어노테이션
+    - 해당 클래스 내에서 @ExceptionHandler를 사용하여 특정 예외를 잡아 처리함
+- @ExceptionHandler
+    - 특정 예외를 잡아 처리할 메서드에 붙이는 어노테이션
+    - 예외를 처리하고 클라이언트에 응답함
+    - 웹 서버까지 예외를 전파하지 않고 스프링 컨텍스트 내에서 예외 처리
+- DispatcherServlet
+    - 요청 처리 중 예외가 발생한 경우 DispatcherServlet은 등록된 @ExceptionHandler를 확인함
+    - @ExceptionHandler가 @ControllerAdvice 내에 있으면 해당 예외 처리 메서드로 요청을 전달하여 예외 처리 진행
+- Interceptor
+    - Controller와 그 이후에서 발생한 예외의 경우 Interceptor.postHandle()은 호출되지 않고 @ExceptionHandler 처리 과정이 진행됨
+    - 다만 Interceptor.preHandle() 내에서 예외가 발생한 경우 @ControllerAdvice로 예외를 잡히지 않는 경우가 있음
+- Response
+    - Controller와 응답 포맷 동일
+    - HTML 응답 : ModelAndView
+    - Json 응답 : ResponseEntity
+    - 에러 페이지 매핑
+        - src/main/resources/templates/error 디렉토리 아래에 상태 코드별 에러 페이지 배치
+        - 404.html : 404 에러에 대한 HTML
+
+### Client Request Exception Handling
+
+클라이언트에서 보낸 요청 자체가 예외를 일으킬 수 있는 부분
+- Binding Error, Validation Error
+    - 요청 데이터 타입과 요청 처리 메서드 파라미터 타입 불일치
+    - 필드 유효성 검증 불만족
+    - 비즈니스 유효성 검증 불만족
+    - @Valid, @Validated, BindingResult을 통해 처리
+- format Error
+    - HTTP Method 불일치
+    - Media Type 불일치(consumes, produces - Content-Type, Accept)
+    - HttpMediaTypeNotSupportedException, HttpMediaTypeNotAcceptableException
+- Authentication, Authorization Error
+    - 스프링 시큐리티 - AuthenticiationError, AccessDeniedException
+
+타입 변환에 실패한 경우 발생할 수 있는 예외
+- 바인딩 과정 중 예외가 발생하므로 Controller 메서드는 실행되지 않음
+    - 이미 Interceptor.preHandle()이 수행된 시점이고, @ExceptionHandler로 발생된 예외를 잡아 처리 가능
+- MethodArgumentTypeMismatchException
+    - Controller 메서드의 파라미터 타입과 클라이언트 데이터 타입 불일치 시 발생
+- TypeMismatchException 
+    - MethodArgumentTypeMismatchException 상위 클래스
+    - 프로퍼티, 필드 등의 타입 변환 실패 시 발생
+- HttpMessageNotReadableException
+    - @RequestBody를 통해 HTTP Request Message Body를 객체로 바인딩할 수 없는 경우 발생
+- ConversionFailedException
+    - 스프링 ConversionService를 사용하여 데이터 타입 변환을 하다가 실패했을 때 발생
+    - MethodArgumentTypeMismatchException보다 더 일반적인 상황에 발생
+
+@Valid, @Validated
+- 검증할 객체에 적용하는 어노테이션
+- @Valid : Java Bean Validation - 객체 그래프에 대한 유효성 검사 수행 어노테이션(메서드, 파라미터, 클래스 레벨 적용 가능)
+- @Validated : Spring Bean Validation - @Valid와 동일한 기능 제공, 추가적으로 그룹화 유효성 검사 지원
+
+BindingResult
+- 클라이언트 데이터를 @ModelAttribute, @ResponseBody를 통해 바인딩하는 과정에서 발생하는 에러를 보관하는 객체
+- 요청을 처리하는 Controller 메서드의 @Validated가 적용된 파라미터 뒤에 추가하면 스프링이 바인딩 과정 중 발생한 바인딩, 필드 예외를 캡처함
+- 비즈니스 검증 예외의 경우 수동으로 BindingResult에 담아줘야 함
+- 글로벌 에러와 필드 에러로 구분해서 처리
+    - 글로벌 오류 : 특정 필드에 국한되지 않는 오류
+    - 필드 오류   : 특정 필드와 관련된 오류
+
+Validator
+- 객체 Validaion 로직을 수행하는 스프링의 인터페이스
+- supports, validate 메서드
+- @InitBinder, WebDataBinder를 통해 Validator 실행
+
+스프링부트 Validator
+- LocalValidatorFactoryBean
+- 스프링 부트는 스프링 Bean Validation API를 기반으로 필드 검증을 자동으로 수행하는 글로벌 Validator 제공
+- spring-boot-starter-validation 의존성 필요
+
+Method Validation
+- @Validated를 메서드 레벨에 적용해서 파라미터와 반환 값에 검증 로직을 추가할 수 있음
+- MethodValidationPostProcessor를 통해 메서드 실행 시점에 파라미터나 반환 값에 대한 유효성 검사를 진행
+- Bean Validation API 확장 기능
+- spring 5.2 ~ 
+
+ResponseEntityExceptionHandler
+- 다양한 예외 유형에 대한 처리 로직을 제공하는 스프링 추상 클래스 
+- 클래스명 그대로 ResponseEntity 형태로 클라이언트에게 응답
+- 기본적으로 스프링 내부 예외를 처리해줌
+- 이 클래스를 상속하고 @ControllerAdvice를 적용시켜 전역 예외 처리 클래스로 등록
+
+MessageSource
 - 
 
 
+## Web Util Object
+
+@InitBinder
+- Controller, @ControllerAdvice 클래스 내부에 선언된 메서드에 적용
+- 적용된 메서드는 WebDataBinder를 초기화하는 데 사용되며, 요청 핸들러 메서드가 호출되기 전 실행됨
+
+WebDataBinder
+- 특정 Controller의 웹 요청 파라미터 -> 객체 바인딩, 프로퍼티 convert, 프로퍼티 format 지정 등을 수행하는 객체
+- PropertyEditor, Converter, Formatter, Validator 등록 가능
+- 외부 클라이언트로부터 수정되거나 접근하면 안되는 객체 그래프(object graph)의 일부를 노출시켜 보안 문제를 일으킬 수 있음
 
 ## Data Binding
 
