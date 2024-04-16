@@ -1,0 +1,8 @@
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id: {OAUTH2_CLIENT_ID}
+            client-secret: {OAUTH2_CLIENT_SECRET}
