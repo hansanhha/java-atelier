@@ -30,9 +30,10 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = 'sssspring'
+rootProject.name = 'spring'
 include 'boot'
 include 'datajpa'
 include 'modulith'
 include 'core'
 include 'web'
+include 'security'

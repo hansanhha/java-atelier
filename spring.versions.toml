@@ -1,5 +1,5 @@
 [versions]
-spring_boot_version = "3.2.1"
+spring_boot_version = "3.2.4"
 spring_management_version = "1.1.3"
 querydsl_version = "5.0.0"
 spring_modulith_version = "1.1.2"
@@ -16,6 +16,9 @@ spring-boot-data-jpa = { module="org.springframework.boot:spring-boot-starter-da
 spring-boot-web = { module="org.springframework.boot:spring-boot-starter-web", version.ref="spring_boot_version" }
 spring-boot-actuator = { module="org.springframework.boot:spring-boot-starter-actuator", version.ref="spring_boot_version" }
 spring-boot-configuration-processor = { module="org.springframework.boot:spring-boot-configuration-processor", version.ref="spring_boot_version" }
+spring-boot-security = { module="org.springframework.boot:spring-boot-starter-security", version.ref="spring_boot_version" }
+spring-boot-security-oauth2-client = { module="org.springframework.boot:spring-boot-starter-oauth2-client", version.ref="spring_boot_version" }
+spring-boot-security-oauth2-resource-server = { module="org.springframework.boot:spring-boot-starter-oauth2-resource-server", version.ref="spring_boot_version" }
 
 # Spring Modulith
 spring-modulith-core = { module="org.springframework.modulith:spring-modulith-starter-core", version.ref="spring_modulith_version"}
