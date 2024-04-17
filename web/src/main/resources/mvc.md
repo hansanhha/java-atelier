@@ -229,6 +229,7 @@ HandlerExceptionResolver
 - 해결되지 않은 예외 Controller 밖으로 전파
 - DispatcherServlet 예외 확인, 등록된 HandlerExceptionResolver 실행
 - ExceptionHandlerExceptionResolver -> Controller 또는 @ControllverAdvice 클래스 내에서 해당 예외 처리 @ExceptoionHandler 메서드 검색 -> 예외 처리
+    - 바인딩이나 필드 검증 예외 시(BindingResult가 없는 경우) MessageSource를 통해 메시지 사용 가능(메시지 소스 파일 정의 필요 - MessageCodesResolver의 메시지 코드 변환 규칙 참고)
 - @ExceptionHandler로 예외 처리를 하지 못한 경우, HandlerExcpetionResolverComposite에 등록된 다른 Resolver 호출 -> 예외 처리
     - 대부분 WAS에 response 상태 코드를 전달하여 WAS 예외 처리 동작으로 인해 내부 요청 발생
     - 스프링부트의 BasicController 동작 -> 클라이언트 Accept 값에 따라 HTML 페이지 또는 ResponseEntity 응답
@@ -300,16 +301,18 @@ ResponseEntityExceptionHandler
 ## Message
 
 MessageSource
-- 국제화 및 지역화를 위한 메시지 관리 담당 스프링 인터페이스(spring core)
+- 국제화 및 지역화를 위한 메시지 관리 인터페이스(spring core)
+- 애플리케이션에서 사용하는 메시지를 프로퍼티 파일에 정의하면, MessageSource를 통해 메시지를 읽어올 수 있음
 - getMessage(String code, Object[] args, String defaultMessage, Locale locale)
     - 메시지 코드, 메시지 포맷에 사용될 인자, 기본 메시지, Locale 정보를 받아 적절한 메시지를 반환함
 - 구현체
     - ResourceBundleMessageSource : 메시지 소스 파일(.properties)에서 메시지를 로드
     - ReloadResourceBundleMessageSource : 애플리케이션 실행 중 메시지 소스 파일의 변경 사항 반영, 캐싱 기간 설정 가능
     - StaticMessageSource : 테스트용 MessageSource
-- 사용법 : MessageSource 타입 스프링 빈 등록 필요(메시지 소스 파일 basename, 기본 인코딩 지정)
-- 스프링부트 autoconfiguration : basename을 messages으로 하는 자동 MessageSource 빈 등록, spring.messages.basename 속성으로 메시지 소스 파일 이름 설정 가능
+- MessageSource 타입 스프링 빈 등록 필요(메시지 소스 파일 basename, 기본 인코딩 지정)
+- 스프링부트 autoconfiguration : basename을 messages으로 하는 자동 MessageSource 빈 등록
     - `messages.properties, messages_en.properties, messages_ko.properties` 
+    - spring.messages.basename 속성으로 추가 메시지 소스 파일 이름 설정 가능
 
 LocaleResolver
 - 현재 요청의 Locale을 결정하는 객체, MessageSource와 함께 동작하며 결정된 Locale에 맞는 메시지 제공
@@ -321,19 +324,15 @@ LocaleResolver
 - LocalChangeInterceptor : HTTP Request의 특정 파라미터를 기반으로 Locale을 변경할 수 있는 Interceptor
 
 MessageCodesResolver
-- 데이터 바인딩 및 검증 과정에서 발생하는 에러 코드를 기반으로 메시지 코드를 생성하는 스프링 인터페이스(spring validation)
+- 데이터 바인딩 및 검증 과정에서 발생하는 에러 코드를 메시지 코드로 변환하는 인터페이스(spring validation)
 - BindingResult 또는 Errors 인터페이스와 함께 동작
 - DefaultMessageCodesResolver : 특정 필드에 대한 오류 코드를 바탕으로 메시지 코드 생성
     - 동작 방식(다음과 같은 순서로 메시지 코드 생성)
-        - 객체 이름과 필드 이름을 포함한 코드
-        - 필드 이름만 포함한 코드
-        - 객체 이름만 포함한 코드
-        - 글로벌 코드
-    - user.email.required
-    - email.required
-    - user.required
-    - required
-- MessageSource를 통해 생성된 메시지 코드로 매핑되는 실제 메시지 사용 가능 
+        - 객체 이름과 필드 이름을 포함한 코드(user.email.required)
+        - 필드 이름만 포함한 코드(email.required)
+        - 객체 이름만 포함한 코드(user.required)
+        - 글로벌 코드(required)
+- 생성된 메시지 코드는 MessageSource를 통해 실제 메시지 사용 가능 
 
 ## Web Util Object
 
@@ -372,14 +371,105 @@ FormattingConversionService
 - 스프링부트는 DefaultFormattingConversionService를 상속받은 WebConversionService를 autoconfiguration함
 - WebConversionService는 DataBinder에 등록된 Formatter와 Converter를 통해 Request 파라미터의 타입을 변환함
 
+## Request Parameters, Annotation 
 
-### DTO, VO, Command Object
+클라이언트에서 데이터를 전송할 수 있는 방법과 스프링에서 받는 방법
+
+Query String Parameters
+- URL로 파라미터를 전송하는 방법
+- http://localhost:8080?key=value&key2=value2
+    - URL 끝에 ?를 붙이고 key=value 파라미터 추가
+    - 여러 데이터를 전송할 때는 &로 구분
+- 정렬, 필터링, 페이징, 검색 등에 사용
+- @RequestParam
+    - 메서드 파라미터가 primitive 타입일 경우 생략 가능
+
+Path Parameters
+- URL로 파라미터를 전송하는 방법
+- http://localhost:8080/users/2
+    - 각 데이터가 URL 경로에 직접 포함됨
+    - RESTful API에서 소스를 지정하기 위해 사용
+- @PathVaraible
+
+Form Data
+- 사용자가 HTML Form 태그에 입력한 파라미터를 전송하는 방법
+- 주요 데이터 형식
+    - application/x-www-form-urlencoded : key=value&key2=value2 형태의 텍스트 데이터
+    - multipart/form-data : 파일 업로드같은 바이너리 데이터 
+- @ModelAttribute : Model 데이터를 View에 전달하거나, HTTP Request Parameter를 객체에 바인딩 
+    - 메서드 파라미터가 객체 타입일 경우 생략 가능
+    - 클래스 내의 모든 View에 공통으로 사용될 속성을 Model에 추가해야 될 경우 메서드 레벨에 선언
+- @RequestParam
+
+HTTP Message Body
+- HTTP 요청 본문에 담는 데이터
+- 클라이언트에서 Content-Type: application/json 명시 필요
+- @RequestBody : HTTP 요청 본문 데이터(json, xml 등)를 Java 객체로 바인딩
+    - HttpMessageConverter를 통해 바인딩
+
+Header Parameters
+- HTTP Header에 포함되는 파라미터
+- 인증 토큰, 컨텐츠 타입, 언어 설정 등에 사용
+- `Authroziation: Bearer TOKEN_VALUE`
+- @RequestHeader
+
+Cookie Parameters
+- 웹 서버가 사용자 브라우저에 저장하는 데이터
+- 사용자 세션 관리, 개인화 등에 사용
+- HTTP 요청 시 Cookie 헤더가 자동으로 전송됨
+- @CookieValue
+
+## DTO, VO, Command Object
+
+자바 기반 애플리케이션에서 효율적인 데이터 전달 및 표현을 위해 사용되는 패턴이자 개념
+
+DTO(Data Transfer Object)
+- 계층 간 데이터 교환을 위한 객체
+- DB의 데이터 구조와 클라이언트가 요구하는 데이터 구조 사이에서 적절한 데이터 조정, 전달을 위해 사용됨
+- 로직을 갖지 않음
+- 각 필드에 대해 getter/setter 포함 가능
+
+VO(Value Object)
+- 값을 표현하는 객체
+- 값의 집합, 도메인 모델에서 비즈니스 개념을 표현하는 데 사용됨
+- 불변성과 동등성에 초점을 맞춤 
+    - 생성 후 상태 변경 불가능
+    - 속성 값이 모두 같을 때 동일하다고 판단
+
+Command Object
+- 사용자의 입력(Form)이나 API 요청(Request Message Body)을 통해 전송된 데이터를 처리하는 데 사용되는 객체
+- 요청 데이터를 담는 용도, 비즈니스 로직을 처리는 데 필요한 데이터를 Controller로 전달하는 역할
+- 검증 로직 포함
+- @RequestBody, @ModelAttribute 사용
 
 ## Spring MVC Workflow
 
-## RESTful Spring MVC
+Business Logic Process Workflow
 
-### Error Handling
-
-### RESTful Spring MVC Workflow
-- 
+- HTTP Request
+- Web Server
+- FilterChain
+- DispatcherServlet -> HandlerMapping(HandlerExecutionChain)
+- DispatcherServlet -> LocalResolver
+- Interceptor.preHandle
+    - Error
+        - Global Exception Processor(@ExceptionHandler)
+        - Interceptor.postHandle/afterCompletion call X
+- DispatcherServlet -> HandlerAdpter
+- HandlerMethodArgumentResolver(FormattingConvesionService, HttpMessageConverter)
+- Controller -> Service -> DAO/Repository
+    - Business Error or Request Error
+    - HandlerExceptionResolverComposite
+        - ExceptionHandlerExceptionResolver(@RestControllerAdvice, @ControllerAdvice, @ExceptionHandler) -> HTTP Response
+        - ResponseStatusExceptionResolver -> response.sendError -> WAS(/error) -> BasicController -> HTTP Response
+        - DefaultHandlerExceptionResolver -> response.sendError -> WAS(/error) -> BasicController -> HTTP Response
+- DispatcherServlet -> HttpMessageConveter (@RestController)
+    - MappingJackson2HttpMessageConverter
+- DispatcherServlet -> ViewResolver (only SSR)
+- DispatcherServlet -> View (only SSR)
+- Interceptor.postHandle/afterCompletion
+    - Error
+        - postHandle : Global Exception Processor(@ExceptionHandler), afterCompletion call O
+        - afterCompletion : processing X, logging
+- FilterChain
+- HTTP Response
