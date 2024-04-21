@@ -24,27 +24,27 @@ Filter -> AuthenticationManager -> AuthenticationProvider -> UserDetailsService
 
 SecurityContextHolder(SecurityContext, Repository, Authentication)
 
-1. user request(client application login thorough OAuth2 provider)
+1. member request(client application login thorough OAuth2 provider)
     - 카카오 로그인, 네이버 로그인, 구글 로그인 등
 2. client server redirect to authorization server login page 
     - OAuth2AuthorizationRequestRedirectFilter
     - OAuth2AuthorizationRequestResolver -> OAuth2AuthorizeRequest 생성
     - ClientRegistration, ClientRegistrationRepository
-3. user authentication to authorization server 
-4. user grant access to client application 
+3. member authentication to authorization server 
+4. member grant access to client application 
 5. authorization server redirect to client server with authorization code 
-    - user redirected back to client application
+    - member redirected back to client application
 6. client server request access token to authorization server with authorization code
     - OAuth2LoginAuthenticationFilter (OAuth2AuthenticationToken)
     - OAuth2LoginAuthenticationProvider - OAuth2AuthorizationCodeAuthenticationProvider - OAuth2AccessTokenResponseClient
     - OAuth2AuthorizedClientProvider, OAuth2AuthorizedClientService, OAuth2AuthorizedClient
 7. authorization server validate authorization code, response access token (optional refresh token)
-8. request user info to authorization server with access token
+8. request member info to authorization server with access token
     - OAuth2UserService, OidcUserService
     - OAuth2UserRequest
-9. authorization server validate access token, response user info
-10. verify first login user
-    - if first, create user account
+9. authorization server validate access token, response member info
+10. verify first login member
+    - if first, create member account
 11. request access to resource server with access token 
     - OAuth2AuthorizedClientManager
     - OAuth2AuthorizedClient
@@ -93,7 +93,7 @@ OAuth2LoginAuthenticationFilter
       - 구현체 : AuthorizationCodeOAuth2AuthorizedClientProvider, RefreshTokenOAuth2AuthorizedClientProvider 등
       - OAuth2AuthorizedClientProviderBuilder로 위임 기반 composite 구성 가능
   - OAuth2AuthorizedClientRepository : 웹 요청 간 OAuth2AuthorizedClient를 저장, 검색(persisting)하는 역할
-  - OAuth2AuthorizedClient : OAuth 2.0 인증 프로세스를 통과한 Client 정보(clientRegistration, access token, refresh token, end-user principal)
+  - OAuth2AuthorizedClient : OAuth 2.0 인증 프로세스를 통과한 Client 정보(clientRegistration, access token, refresh token, end-member principal)
   - OAuth2AuthorizationSuccessHandler : 인증 성공 시 후처리
   - OAuth2AuthorizationFailureHandler : 인증 실패 시 후처리
 
@@ -138,7 +138,7 @@ public class OAuth2Config {
                         .loginPage("/oauth2/authorization/custom-login-page")
                 )
                 .logout(logout -> logout
-                        .logoutUrl("/user/logout")
+                        .logoutUrl("/member/logout")
                         .logoutSuccessUrl("/")
                         .invalidateHttpSession(true)
                         .clearAuthentication(true)
@@ -189,10 +189,39 @@ OAuth2LoginConfigurer (oauth2Login())
 - 애플리케이션 전체의 OAuth 2.0 로그인 관련 설정(login page, redirect uri, authorization endpoint 등)
 - 프로퍼티 파일에 설정한 OAuth2 Provider별 설정 값은 이 설정을 기반으로 함
 - 관련 객체
-    - AuthorizationEndpointConfig : authorization grant 관련 설정 (authorization code 등)
-    - TokenEndpointConfig : access token 관련 설정
-    - RedirectionEndpointConfig : auth -> client redirect 관련 설정
-    - UserInfoEndpointConfig : user info 관련 설정
+  - AuthorizationEndpointConfig : authorization grant 관련 설정 (authorization code 등)
+  - TokenEndpointConfig : access token 관련 설정
+  - RedirectionEndpointConfig : auth -> client redirect 관련 설정
+  - UserInfoEndpointConfig : member info 관련 설정
+
+리다이렉트 기본 로그인 페이지, 기본 경로
+- 기본 페이지 : DefaultLoginPageGeneratingFilter가 base uri를 기반으로 provider(clientName)별 링크 생성
+    - 예시 : `<a href="/oauth2/authorization/google">Google</a>`
+    - 커스텀 : OAuth2LoginConfigurer.loginPage()
+- OAuth2 provider로 리다이렉트할 기본 url : `/oauth2/authorization/{registrationId}
+  - 커스텀 : OAuth2LoginConfigurer.authorizationEndpoint(AuthorizationEndpointConfig.baseUri()) 
+- 인증 후 리다이렉트될 기본 url : `login/oauth2/code/{provider}`
+  - 커스텀 : OAuth2LoginConfigurer.loginProcessingUrl()
+
+```java
+import org.springframework.security.config.Customizer;
+
+@Bean
+public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
+    http
+            .authorizeHttpRequests(Customizer.withDefaults())
+            .oauth2Login(oauth2Login -> oauth2Login
+                    .loginPage("/login/oauth2")
+                    .authorizationEndpoint(authorization -> authorization
+                            .baseUri("/login/oauth2/authorization")
+                    )
+            );
+
+    return http.build();
+}
+```
+
 
 ## OAuth2 Resource Server
 
