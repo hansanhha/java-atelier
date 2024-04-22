@@ -1,4 +1,4 @@
-package com.hansanhha.spring.oauth2.security;
+package com.hansanhha.spring.oauth2.security.vo;
 
 import lombok.Getter;
 
@@ -7,8 +7,8 @@ import java.util.Map;
 @Getter
 public class KaKaoOAuth2Attributes implements OAuth2Attributes {
 
-    private Map<String, Object> attributes;
-    private Map<String, Object> kakaoAccountAttributes;
+    private final Map<String, Object> attributes;
+    private final Map<String, Object> kakaoAccountAttributes;
 
     @SuppressWarnings("unchecked")
     private KaKaoOAuth2Attributes(Map<String, Object> attributes) {

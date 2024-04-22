@@ -1,8 +1,9 @@
-package com.hansanhha.spring.oauth2.security;
+package com.hansanhha.spring.oauth2.security.user;
 
-import com.hansanhha.spring.oauth2.user.Member;
-import com.hansanhha.spring.oauth2.user.MemberRepository;
-import com.hansanhha.spring.oauth2.user.UserService;
+import com.hansanhha.spring.oauth2.security.vo.KaKaoOAuth2Attributes;
+import com.hansanhha.spring.oauth2.security.vo.OAuth2Attributes;
+import com.hansanhha.spring.oauth2.user.entity.Member;
+import com.hansanhha.spring.oauth2.user.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
@@ -26,12 +27,6 @@ public class ClientOAuth2UserService extends DefaultOAuth2UserService {
         OAuth2User oauth2User = super.loadUser(userRequest);
 
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
-        
-        log.info("registrationId :" + registrationId);
-        log.info("===user attributes===");
-        oauth2User.getAttributes().forEach((k, v) -> {
-            log.info(k + " : " + v);
-        });
 
         if (registrationId.equals("kakao")) {
             oAuth2Attributes = KaKaoOAuth2Attributes.create(oauth2User.getAttributes());
@@ -41,13 +36,19 @@ public class ClientOAuth2UserService extends DefaultOAuth2UserService {
 
         Optional<Member> findUser = memberRepository.findByEmail(oAuth2Attributes.getEmail());
 
-        if (findUser.isEmpty()) {
-            String nickname = UUID.randomUUID().toString().substring(0, 12);
-            Member member = Member.createNormalUser(nickname, oAuth2Attributes.getEmail(), userRequest.getClientRegistration().getRegistrationId(), oAuth2Attributes.getUserNumber());
-            memberRepository.save(member);
-            return OAuth2UserDetails.create(member);
+        OAuth2User loginUser = convertAndCreateIfFirst(findUser, oAuth2Attributes, userRequest);
+
+        return loginUser;
+    }
+
+    private OAuth2User convertAndCreateIfFirst(Optional<Member> findUser, OAuth2Attributes oAuth2Attributes, OAuth2UserRequest userRequest) {
+        if (findUser.isPresent()) {
+            return ClientOAuth2User.create(findUser.get());
         }
 
-        return OAuth2UserDetails.create(findUser.get());
+        String nickname = UUID.randomUUID().toString().substring(0, 12);
+        Member member = Member.createNormalUser(nickname, oAuth2Attributes.getEmail(), userRequest.getClientRegistration().getRegistrationId(), oAuth2Attributes.getUserNumber());
+        memberRepository.save(member);
+        return ClientOAuth2User.create(member);
     }
 }

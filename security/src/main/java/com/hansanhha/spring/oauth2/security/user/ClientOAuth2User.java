@@ -1,7 +1,7 @@
-package com.hansanhha.spring.oauth2.security;
+package com.hansanhha.spring.oauth2.security.user;
 
 import com.hansanhha.spring.oauth2.user.Authority;
-import com.hansanhha.spring.oauth2.user.Member;
+import com.hansanhha.spring.oauth2.user.entity.Member;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -11,16 +11,16 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class OAuth2UserDetails implements OAuth2User, UserDetails {
+public class ClientOAuth2User implements OAuth2User, UserDetails {
 
     private Member member;
 
-    private OAuth2UserDetails(Member member) {
+    private ClientOAuth2User(Member member) {
         this.member = member;
     }
 
-    public static OAuth2UserDetails create(Member member) {
-        return new OAuth2UserDetails(member);
+    public static ClientOAuth2User create(Member member) {
+        return new ClientOAuth2User(member);
     }
 
     @Override
