@@ -1,4 +1,4 @@
-package com.hansanhha.spring.oauth2.security.controller;
+package com.hansanhha.spring.security.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;

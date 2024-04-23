@@ -1,6 +1,6 @@
-package com.hansanhha.spring.oauth2.user.entity;
+package com.hansanhha.spring.security.user.entity;
 
-import com.hansanhha.spring.oauth2.user.Role;
+import com.hansanhha.spring.security.user.Role;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;

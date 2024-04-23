@@ -1,4 +1,4 @@
-package com.hansanhha.spring.oauth2.security.vo;
+package com.hansanhha.spring.security.oauth2.client.vo;
 
 import lombok.Getter;
 

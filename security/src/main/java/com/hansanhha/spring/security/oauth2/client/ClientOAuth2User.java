@@ -1,7 +1,7 @@
-package com.hansanhha.spring.oauth2.security.user;
+package com.hansanhha.spring.security.oauth2.client;
 
-import com.hansanhha.spring.oauth2.user.Authority;
-import com.hansanhha.spring.oauth2.user.entity.Member;
+import com.hansanhha.spring.security.user.Authority;
+import com.hansanhha.spring.security.user.entity.Member;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

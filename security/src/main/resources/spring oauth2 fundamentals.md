@@ -135,12 +135,6 @@ OAuth2AuthorizationRequestRedirectFilter
     - OAuth2AuthorizeRequest에 attribute를 매핑하는 용도
     - DefaultOAuth2AuthorizedClientManager는 Function<OAuth2AuthrozaionRequest, Map<String, Object>> 타입의 ContextAttributesMapper를 사용
 
-DefaultLoginPageGeneratingFilter
-- 애플리케이션 로그인 페이지를 자동으로 생성하는 필터
-- OAuth2 로그인(oauth2Login())이 구성된 경우 OAuth2 Provider 링크가 포함된 로그인 페이지 생성 가능
-- 사용하지 않으려면 대신하는 로그인 페이지 지정
-  - `/login/oauth2/code/*` 경로로 리다이렉션 필요
-
 OAuth2LoginAuthenticationFilter
 - 사용자가 인증을 완료한 뒤 인증 서버에서 보낸 리다이렉트 수신, access token 요청 후 발급된 access, refresh token과 clientRegistration 정보 등을 SecurityContext에 저장
 - (detail) authorization grant를 받고 token endpoint로 access token 요청, OAuth2AuthenticationToken 반환, OAuth2AuthorizedClient 생성 및 OAuth2AuthorizedClientRepository에 저장
@@ -159,6 +153,12 @@ OAuth2LoginAuthenticationFilter
   - OAuth2AuthorizedClient
   - OAuth2AuthorizationSuccessHandler
   - OAuth2AuthorizationFailureHandler
+
+DefaultLoginPageGeneratingFilter
+- 애플리케이션 로그인 페이지를 자동으로 생성하는 필터
+- OAuth2 로그인(oauth2Login())이 구성된 경우 OAuth2 Provider 링크가 포함된 로그인 페이지 생성 가능
+- 사용하지 않으려면 대신하는 로그인 페이지 지정
+  - `/login/oauth2/code/*` 경로로 리다이렉션 필요
 
 ### Client Configuration
 
@@ -270,10 +270,11 @@ public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Excepti
 }
 ```
 
+## Spring Security OAuth 2.0 Resource Server
 
-## OAuth2 Resource Server
 
-Filter
+
+### Resource Server Filter
 
 OAuth2AuthenticationProcessingFilter
 - protected resource 접근 요청 처리, access token 검증

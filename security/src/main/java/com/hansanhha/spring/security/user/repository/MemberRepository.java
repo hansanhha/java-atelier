@@ -1,6 +1,6 @@
-package com.hansanhha.spring.oauth2.user.repository;
+package com.hansanhha.spring.security.user.repository;
 
-import com.hansanhha.spring.oauth2.user.entity.Member;
+import com.hansanhha.spring.security.user.entity.Member;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

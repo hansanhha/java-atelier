@@ -1,4 +1,4 @@
-package com.hansanhha.spring.oauth2.user;
+package com.hansanhha.spring.security.user;
 
 import lombok.Getter;
 

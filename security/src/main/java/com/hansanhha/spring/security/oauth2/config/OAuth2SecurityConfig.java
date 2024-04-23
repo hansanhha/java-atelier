@@ -1,6 +1,6 @@
-package com.hansanhha.spring.oauth2.security.config;
+package com.hansanhha.spring.security.oauth2.config;
 
-import com.hansanhha.spring.oauth2.security.user.ClientOAuth2UserService;
+import com.hansanhha.spring.security.oauth2.client.ClientOAuth2UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

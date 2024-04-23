@@ -1,4 +1,4 @@
-package com.hansanhha.spring.oauth2.security.user;
+package com.hansanhha.spring.security.oauth2.client;
 
 import org.springframework.stereotype.Component;
 

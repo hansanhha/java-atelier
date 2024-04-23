@@ -1,9 +1,9 @@
-package com.hansanhha.spring.oauth2.security.user;
+package com.hansanhha.spring.security.oauth2.client;
 
-import com.hansanhha.spring.oauth2.security.vo.KaKaoOAuth2Attributes;
-import com.hansanhha.spring.oauth2.security.vo.OAuth2Attributes;
-import com.hansanhha.spring.oauth2.user.entity.Member;
-import com.hansanhha.spring.oauth2.user.repository.MemberRepository;
+import com.hansanhha.spring.security.oauth2.client.vo.KaKaoOAuth2Attributes;
+import com.hansanhha.spring.security.oauth2.client.vo.OAuth2Attributes;
+import com.hansanhha.spring.security.user.entity.Member;
+import com.hansanhha.spring.security.user.repository.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
