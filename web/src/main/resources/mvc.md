@@ -473,3 +473,22 @@ Business Logic Process Workflow
         - afterCompletion : processing X, logging
 - FilterChain
 - HTTP Response
+
+## Web Application Server
+
+### Path
+
+ContextPath
+- 웹 애플리케이션의 루트 경로
+- 웹 애플리케이션이 서버에 배포될 때 여러 애플리케이션이 배포될 수 있음
+- 각 애플리케이션을 구분하기 위해 고유한 ContextPath를 지정
+- http://localhost:8080/{contextPath}/
+
+ServletPath
+- 요청이 도달한 서블릿을 식별하는 경로
+- 특정 서블릿이나 컨트롤러가 처리할 요청의 범위를 결정
+- http://localhost:8080/{contextPath}/{servletPath}
+
+스프링 부트의 기본 ContextPath, ServletPath
+- ContextPath : / (server.servlet.context-path 프로퍼티 설정)
+- ServletPath : / (DispatcherServlet)
