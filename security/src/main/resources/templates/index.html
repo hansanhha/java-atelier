@@ -5,6 +5,19 @@
     <title>index</title>
 </head>
 <body>
-<a href="login-page.html">로그인/회원가입</a>
+<div id="loginBox">
+    <a href="/login" id="kakaoLoginLink">로그인/회원가입</a>
+</div>
+
+<script>
+    window.onload = function() {
+        const accessToken = localStorage.getItem('accessToken');
+
+        if (accessToken) {
+            document.getElementById('kakaoLoginLink').remove();
+            document.getElementById('loginBox').innerHTML = '<a href="/logout">로그아웃</a>';
+        }
+    }
+</script>
 </body>
 </html>

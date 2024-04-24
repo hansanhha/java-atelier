@@ -3,6 +3,7 @@ package com.hansanhha.spring.security.controller;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 
 @Controller
 @Slf4j
@@ -10,10 +11,12 @@ public class OAuth2LoginController {
 
     @GetMapping("/login")
     public String login() {
+        log.info(this.getClass().getSimpleName());
+        log.info("- enter the login page");
         return "login-page";
     }
 
-    @GetMapping("/hello")
+    @GetMapping("/login/oauth2/success")
     public String succeedLogin() {
         return "login-success";
     }

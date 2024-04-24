@@ -1,7 +1,7 @@
 package com.hansanhha.spring.security.oauth2.client;
 
 import com.hansanhha.spring.security.user.Authority;
-import com.hansanhha.spring.security.user.entity.Member;
+import com.hansanhha.spring.security.user.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -11,16 +11,16 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class ClientOAuth2User implements OAuth2User, UserDetails {
+public class SecurityUser implements OAuth2User, UserDetails {
 
-    private Member member;
+    private User user;
 
-    private ClientOAuth2User(Member member) {
-        this.member = member;
+    private SecurityUser(User user) {
+        this.user = user;
     }
 
-    public static ClientOAuth2User create(Member member) {
-        return new ClientOAuth2User(member);
+    public static SecurityUser create(User user) {
+        return new SecurityUser(user);
     }
 
     @Override
@@ -30,7 +30,7 @@ public class ClientOAuth2User implements OAuth2User, UserDetails {
 
     @Override
     public String getUsername() {
-        return member.getNickname();
+        return user.getEmail();
     }
 
     @Override
@@ -60,7 +60,7 @@ public class ClientOAuth2User implements OAuth2User, UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return member.getRole().getAuthorities().stream()
+        return user.getRole().getAuthorities().stream()
                 .map(Authority::getAuthority)
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toSet());
@@ -68,6 +68,6 @@ public class ClientOAuth2User implements OAuth2User, UserDetails {
 
     @Override
     public String getName() {
-        return member.getEmail();
+        return user.getEmail();
     }
 }

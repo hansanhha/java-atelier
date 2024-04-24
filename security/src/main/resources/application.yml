@@ -21,3 +21,16 @@ spring:
     view:
       prefix: classpath:/templates/
       suffix: .html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: beans
+
+service:
+  security:
+    secret-key: ${SECRET_KEY}
+    jwt:
+      access-token-expiration: 3600
+      refresh-token-expiration: 86400

@@ -10,7 +10,7 @@ dependencies {
     implementation io.spring.boot.data.jpa
     implementation io.spring.boot.security
     implementation io.spring.boot.security.oauth2.client
-    implementation io.spring.boot.security.oauth2.resource.server
+    implementation io.spring.boot.actuator
     runtimeOnly db.h2
     testImplementation io.spring.boot.test
 }
