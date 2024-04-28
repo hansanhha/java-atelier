@@ -9,6 +9,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 @Slf4j
 public class OAuth2LoginController {
 
+    @GetMapping
+    public String index() {
+        log.info(this.getClass().getSimpleName());
+        log.info("- enter the index page");
+        return "index";
+    }
+
     @GetMapping("/login")
     public String login() {
         log.info(this.getClass().getSimpleName());

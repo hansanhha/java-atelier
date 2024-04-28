@@ -11,12 +11,12 @@ public enum Role {
             Set.of(Authority.READ, Authority.WRITE, Authority.DELETE)
     );
 
-    private String roleName;
+    private String value;
 
     private Set<Authority> authorities;
 
-    Role(String roleName, Set<Authority> authorities) {
-        this.roleName = roleName;
+    Role(String value, Set<Authority> authorities) {
+        this.value = value;
         this.authorities = authorities;
     }
 }

@@ -1,11 +1,11 @@
-package com.hansanhha.spring.security.token.jwt;
+package com.hansanhha.spring.security.token.jwt.access;
 
-import com.hansanhha.spring.security.token.TokenAccessor;
 import com.hansanhha.spring.security.token.TokenType;
+import com.nimbusds.jwt.JWT;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
 
-public class JwtAccessTokenAccessor implements TokenAccessor<Jwt, String> {
+public class JwtAccessTokenAccessor implements TokenAccessor<Jwt> {
 
     private final Jwt jwt;
     private final String accessId;

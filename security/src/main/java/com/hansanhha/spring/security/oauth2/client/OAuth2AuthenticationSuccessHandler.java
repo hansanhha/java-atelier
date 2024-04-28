@@ -39,8 +39,8 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         Map<String, String> tokenMap = jwtTokenProvider.generateTokens((OAuth2AuthenticationToken) authentication);
 
         URI uri = UriComponentsBuilder.fromUriString(defaultRedirectUrl)
-                .queryParam(TokenType.ACCESS_TOKEN.getType(), tokenMap.get(TokenType.ACCESS_TOKEN.getType()))
-                .queryParam(TokenType.REFRESH_TOKEN.getType(), tokenMap.get(TokenType.REFRESH_TOKEN.getType()))
+                .queryParam(TokenType.ACCESS_TOKEN.getValue(), tokenMap.get(TokenType.ACCESS_TOKEN.getValue()))
+                .queryParam(TokenType.REFRESH_TOKEN.getValue(), tokenMap.get(TokenType.REFRESH_TOKEN.getValue()))
                 .build().toUri();
 
         log.info(this.getClass().getSimpleName());

@@ -14,9 +14,45 @@
         const accessToken = localStorage.getItem('accessToken');
 
         if (accessToken) {
-            document.getElementById('kakaoLoginLink').remove();
-            document.getElementById('loginBox').innerHTML = '<a href="/logout">로그아웃</a>';
+            removeLoginLink();
+            setLogoutLink();
+            getUserInfo(accessToken);
         }
+    }
+
+    function removeLoginLink() {
+        document.getElementById('kakaoLoginLink').remove();
+    }
+
+    function setLogoutLink() {
+        const logout = document.createElement('a');
+        logout.href = '/logout';
+        logout.innerText = '로그아웃';
+        logout.addEventListener('click', function(e) {
+            e.preventDefault();
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('issuedAt');
+            localStorage.removeItem('expiresIn');
+            window.location.href = '/';
+        });
+        document.getElementById('loginBox').appendChild(logout);
+    }
+
+    function getUserInfo(accessToken) {
+        fetch('/api/user', {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+                Accept: 'application/json',
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                const userInfo = document.createElement('div');
+                userInfo.innerText = `email: ${data.email} nickname: ${data.nickname} permission: ${data.permission}`;
+                document.getElementById('loginBox').appendChild(userInfo);
+            });
     }
 </script>
 </body>

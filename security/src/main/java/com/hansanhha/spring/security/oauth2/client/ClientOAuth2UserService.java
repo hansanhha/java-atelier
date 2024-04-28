@@ -47,13 +47,13 @@ public class ClientOAuth2UserService extends DefaultOAuth2UserService {
 
     private OAuth2User convertOrCreateIfFirst(Optional<User> findUser, OAuth2Attributes oAuth2Attributes, OAuth2UserRequest userRequest) {
         if (findUser.isPresent()) {
-            return SecurityUser.create(findUser.get());
+            return OAuth2LoginUser.from(findUser.get());
         }
 
         String nickname = UUID.randomUUID().toString().substring(0, 12);
         User user = User.createNormalUser(nickname, oAuth2Attributes.getEmail(), userRequest.getClientRegistration().getRegistrationId(), oAuth2Attributes.getUserNumber());
         userRepository.save(user);
         log.info("- create a new user");
-        return SecurityUser.create(user);
+        return OAuth2LoginUser.from(user);
     }
 }

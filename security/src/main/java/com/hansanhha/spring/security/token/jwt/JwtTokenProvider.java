@@ -9,11 +9,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
-import org.springframework.security.oauth2.jwt.*;
+import org.springframework.security.oauth2.jwt.JwsHeader;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
-import java.time.temporal.*;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.UUID;
 
@@ -60,8 +60,8 @@ public class JwtTokenProvider implements TokenProvider<OAuth2AuthenticationToken
         log.info(this.getClass().getSimpleName());
         log.info("- generateTokens");
 
-        return Map.of(accessTokenAccessor.getTokenType().getType(), accessTokenAccessor.getAccessId(),
-                refreshTokenAccessor.getTokenType().getType(), refreshTokenAccessor.getAccessId());
+        return Map.of(accessTokenAccessor.getTokenType().getValue(), accessTokenAccessor.getAccessId(),
+                refreshTokenAccessor.getTokenType().getValue(), refreshTokenAccessor.getAccessId());
     }
 
     @Override

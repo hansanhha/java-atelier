@@ -1,7 +1,7 @@
 package com.hansanhha.spring.security.controller;
 
 import com.hansanhha.spring.security.token.jwt.JwtTokenService;
-import com.hansanhha.spring.security.token.TokenAccessor;
+import com.hansanhha.spring.security.token.jwt.access.TokenAccessor;
 import com.hansanhha.spring.security.token.TokenRequest;
 import com.hansanhha.spring.security.token.TokenType;
 import lombok.RequiredArgsConstructor;
@@ -27,14 +27,14 @@ public class TokenController {
         log.info("- accessTokenAccessId: {}", tokenRequest.getAccessToken());
         log.info("- refreshTokenAccessId: {}", tokenRequest.getRefreshToken());
 
-        TokenAccessor<Jwt, String> accessTokenAccessor = tokenService.loadTokenByAccessId(TokenType.ACCESS_TOKEN, tokenRequest.getAccessToken());
-        TokenAccessor<Jwt, String> refreshTokenAccessor = tokenService.loadTokenByAccessId(TokenType.REFRESH_TOKEN, tokenRequest.getRefreshToken());
+        var accessTokenAccessor = tokenService.loadTokenByAccessId(TokenType.ACCESS_TOKEN, tokenRequest.getAccessToken());
+        var refreshTokenAccessor = tokenService.loadTokenByAccessId(TokenType.REFRESH_TOKEN, tokenRequest.getRefreshToken());
 
         log.info("- return tokens");
 
         return Map.of(
-                accessTokenAccessor.getTokenType().getType(), accessTokenAccessor.get().getTokenValue(),
-                refreshTokenAccessor.getTokenType().getType(), refreshTokenAccessor.get().getTokenValue(),
+                accessTokenAccessor.getTokenType().getValue(), accessTokenAccessor.get().getTokenValue(),
+                refreshTokenAccessor.getTokenType().getValue(), refreshTokenAccessor.get().getTokenValue(),
                 "issuedAt", accessTokenAccessor.get().getIssuedAt().toString(),
                 "expiresAt", accessTokenAccessor.get().getExpiresAt().toString()
         );

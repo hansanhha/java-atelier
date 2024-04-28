@@ -1,12 +1,14 @@
 package com.hansanhha.spring.security.token;
 
-public interface TokenService<T, TokenId, R> {
+import com.hansanhha.spring.security.token.jwt.access.TokenAccessor;
 
-    R loadTokenByAccessId(TokenType type, TokenId accessId);
+public interface TokenService<Spec> {
 
-    R generateAccessToken(T t);
+    TokenAccessor<?> generateAccessToken(Spec spec);
 
-    R generateRefreshToken(T t);
+    TokenAccessor<?> generateRefreshToken(Spec spec);
 
-    void removeToken(TokenType type, TokenId tokenId);
+    TokenAccessor<?> resolveToken(String value);
+
+    void removeToken(TokenAccessor<?> accessor);
 }

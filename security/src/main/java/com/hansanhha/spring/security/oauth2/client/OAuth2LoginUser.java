@@ -11,16 +11,16 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-public class SecurityUser implements OAuth2User, UserDetails {
+public class OAuth2LoginUser implements OAuth2User, UserDetails {
 
     private User user;
 
-    private SecurityUser(User user) {
+    private OAuth2LoginUser(User user) {
         this.user = user;
     }
 
-    public static SecurityUser create(User user) {
-        return new SecurityUser(user);
+    public static OAuth2LoginUser from(User user) {
+        return new OAuth2LoginUser(user);
     }
 
     @Override
