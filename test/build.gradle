@@ -1,0 +1,16 @@
+plugins {
+    alias io.plugins.spring.boot
+    alias io.plugins.spring.management
+}
+
+dependencies {
+    implementation io.spring.boot
+    implementation io.spring.boot.web
+    implementation io.spring.boot.thymeleaf
+    implementation io.spring.boot.data.jpa
+    implementation io.spring.boot.security
+    implementation io.spring.boot.security.oauth2.client
+    implementation io.spring.boot.actuator
+    runtimeOnly db.h2
+    testImplementation io.spring.boot.test
+}
