@@ -6,13 +6,13 @@ spring modulith : 스프링 부트 애플리케이션에서 프로젝트 구조�
 - 애플리케이션 구조 검증
 - 모듈 의존성 문서화
 - 개별/통합 모듈 테스트
-- 런타임 모듈 상호작용 observe
-- 모듈 간 상호작용 느슨한 결합 구현 
+- 런타임 모듈 상호작용 observing
+- 모듈 간 느슨한 결합 구현(비동기, 이벤트 처리)
 
 Application Modules 구성 타입
-  - provided interface : 노출할 API(다른 모듈에 노출할 스프링 빈, 모듈에 의해 발행되는 이벤트)
-  - internal implementation component : 모듈 내부에서만 사용하는 컴포넌트 
-  - required interface : 참조하는 API(의존성 주입받을 다른 모듈의 스프링 빈, 수신할 이벤트, 사용할 프로퍼티)
+- provided interface : 노출할 API(다른 모듈에 노출할 스프링 빈, 모듈에 의해 발행되는 이벤트)
+- internal implementation component : 모듈 내부에서만 사용하는 컴포넌트 
+- required interface : 참조하는 API(의존성 주입받을 다른 모듈의 스프링 빈, 수신할 이벤트, 사용할 프로퍼티)
 
 Application Module Structure
 ```
@@ -34,7 +34,7 @@ module 패키지는 api(provided interface) 패키지로 취급 : 외부에서 �
 
 module 하위 패키지는 internal로 취급 : 외부에서 참조 불가능
 - 스프링 modulith 런타임에 논리적으로 모듈 간 의존성을 분석하기 때문에 컴파일러를 통해 에러를 잡을 수 없음 
-- 잘못된 접근은 애플리케이션 로드 시점에 에러 발생
+- 잘못된 접근(참조)은 애플리케이션 로드 시점에 에러 발생
 
 ## Application Module 의존성 명시
 
@@ -64,7 +64,7 @@ API로 제공할 하위 패키지의 packgae-info.java에 @NamedInterface 사용
 package com.hansanhha.spring.shop.order.events;
 ```
 
-참조할 모듈의 package-info.java에 공개한 API 명시
+api를 사용할 곳의 package-info.java에 공개한 API 명시(:: 구분자 사용)
 ```java
 @org.springframework.modulith.ApplicationModule(
         allowedDependencies = "order::events"
@@ -145,7 +145,7 @@ class InventoryManagement {
 
 -> original 트랜잭션 확장을 피할 수 있음
 
-다만 이벤트가 손실되거나, 리스너가 호출되기도 전에 시스템이 실패하는 경우 완전하게 작동하지 않을 수 있음
+다만 이벤트가 손실되거나, 리스너가 호출되기도 전에 시스템이 실패하는 경우 전체 기능이 완전하게 작동하지 않을 수 있음
 
 ### ApplicationModuleListener
 
@@ -166,19 +166,19 @@ public @interface ApplicationModuleListener {
 }
 ```
 
-스프링 모듈리스에서 제공하는 어노테이션으로, @Async, @Transactional, @TransactionalEventListener를 포함함
+스프링 모듈리스에서 제공하는 합성 어노테이션(shortcut 용)으로, @Async, @Transactional, @TransactionalEventListener를 포함함
 
 자체적인 트랜잭션 안에서 비동기적으로 트랜잭션 이벤트 처리를 수행
 
 ### 이벤트 기반 동작 정리
 
-1. 각 모듈에서 이벤트 정의 
-2. 스프링 ApplicationEventPublisher으로 정의한 이벤트 발행 
+1. 이벤트 정의 
+2. primary aggregate 상태 변경 후 스프링 ApplicationEventPublisher으로 이벤트 발행
 3. 다른 모듈에서 @ApplicationModuleListener를 통해 이벤트 수신 및 로직 실행
 
 ### EventPublicationRegistry
 
-이벤트 발행을 처리하는 역할(spring core event publication mechanism 확장)
+이벤트 발행을 처리하는 역할
 
 이벤트가 발행되면 두 가지 동작을 수행함
 1. 해당 이벤트의 리스너 검색
@@ -236,8 +236,6 @@ aggregate-driven
 spring data application event publication mechanism
 
 primary aggregate
-
-## Event 외부화 with Message Broker
 
 ## Testing
 
@@ -303,12 +301,98 @@ BootStrap 모드 종류
 
 통합 테스트에서 동시성 처리(비동기, 트랜잭션 이벤트 처리)가 미묘한 오류를 발생시킬 수 있음
 
-또한 다음 요소들이 필요함
-- 이벤트가 제대로 발행됐는지, 리스너들이 수신했는지 검증해야 하는 TransactionOperations, ApplicationEventProcessor
+또한 다음 요소들을 필요로 함
+- 이벤트가 제대로 발행됐는지, 리스너들이 수신했는지 확인해야 하는 TransactionOperations, ApplicationEventProcessor
 - 동시성 처리를 위한 Awaitility
-- 테스트 실행 결과에 대한 기대치를 위한 AssertJ assertions
+- 테스트 실행 결과에 대한 기댓값을 위한 AssertJ assertions
 
+Scenario는 모듈 통합 테스트 정의를 쉽게 하기 위한 추상화임
 
+@ApplicationModuleTest 클래스의 테스트 메서드 파라미터로 Scenario를 주입받아서 사용할 수 있음
+```java
+@ApplicationModuleTest
+class SomeApplicationModuleTest {
+
+  @Test
+  public void someModuleIntegrationTest(Scenario scenario) {
+    // ...
+  }
+}
+```
+
+테스트 정의 구조
+1. 시스템에 대한 stimulus 정의(이벤트 발행, 모듈에 노출된 스프링 컴포넌트 호출)
+  - stimulus : 시스템이나 모듈에 대한 특정한 입력이나 작용(시스템이나 모듈이 반응하도록 유도하는 호출을 가리킴)   
+2. 실행 디테일 커스텀(timeout 등) - optional
+3. 결과 기댓값 정의(조건에 일치하는 이벤트 발행, 노출된 컴포넌트를 호출하여 감지할 수 있는 모듈의 상태 변경 등)
+4. 수신된 이벤트나 변경된 상태에 대한 추가 확인 - optional
+
+### 사용법
+
+- stimulus 정의(Scenario 시작 부분)
+
+```java
+// 이벤트 발행 시작
+scenario.publish(new MyApplicationEvent(…)).…
+        
+// 빈 호출 시작
+scenario.stimulate(() -> someBean.someMethod(…)).…
+```
+
+- 발행될 이벤트 또는 상태 변경 대기, 매칭 조건 정의
+```java
+….andWaitForEventOfType(SomeOtherEvent.class)
+ .matching(event -> …) // Use some predicate here
+ .…
+```
+
+- scenario 실행 최종 operation
+```java
+// scenario 실행
+….toArrive(…)
+    
+// scenario 실행 후 수신된 이벤트 assertion 정의
+….toArriveAndVerify(event -> …)
+```
+
+- 전체 Scenario 정의 코드
+```java
+scenario.publish(new MyApplicationEvent(…))
+        .andWaitForEventOfType(SomeOtherEvent.class)
+        .matching(event -> …)
+        .toArriveAndVerify(event -> …);
+```
+
+### Scenario 실행 커스텀
+
+- 개별 scenario 실행 커스텀
+```java
+scenario.publish(new MyApplicationEvent(…))
+  .customize(it -> it.atMost(Duration.ofSeconds(2)))
+  .andWaitForEventOfType(SomeOtherEvent.class)
+  .matching(event -> …)
+  .toArriveAndVerify(event -> …);
+```
+
+- 글로벌 scenario 실행 커스텀
+```java
+@ExtendWith(MyCustomizer.class)
+class MyTests {
+
+  @Test
+  void myTestCase(Scenario scenario) {
+    // scenario will be pre-customized with logic defined in MyCustomizer
+  }
+
+  static class MyCustomizer implements ScenarioCustomizer {
+
+    @Override
+    Function<ConditionFactory, ConditionFactory> getDefaultCustomizer(Method method, ApplicationContext context) {
+      return it -> …;
+    }
+  }
+}
+```
 
 ## 참고
 
