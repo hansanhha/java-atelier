@@ -7,3 +7,6 @@ management:
     web:
       exposure:
         include: health,applicationmodules
+logging:
+  level:
+    org.springframework.modulith: DEBUG
