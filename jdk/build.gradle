@@ -1,0 +1,19 @@
+subprojects {
+    apply {
+        plugins.apply('java')
+        dependencies.add('testImplementation', 'org.junit.jupiter:junit-jupiter-api:5.10.2')
+        dependencies.add('testImplementation', 'org.junit.jupiter:junit-jupiter-engine:5.10.2')
+
+       test {
+           testLogging {
+               showStandardStreams = true
+               showCauses = true
+               showExceptions = true
+               showStackTraces = true
+               exceptionFormat = 'full'
+           }
+        }
+    }
+
+    group "hansanhha"
+}
