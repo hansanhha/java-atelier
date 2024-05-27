@@ -10,5 +10,7 @@ plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '0.7.0'
 }
 
-rootProject.name = 'junit'
-include('unit_test')
+rootProject.name = 'testing'
+include('junit5')
+include 'mockito'
+
