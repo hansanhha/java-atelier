@@ -138,8 +138,309 @@ Spring은 테스트 간에 application context를 캐시하고, 동일한 config
   - `@ImportAutoConfiguration({CertainAutoConfiguration.class, ...})` 선언
   - 클래스 이름은 `spring-boot-test-autoconfigure/META-INF/spring` 하위에 기능별로 나뉜 imports 파일에서 확인할 수 있음
 
+## Auto-configured Spring MVC Tests
+
+**@WebMvcTest**
+- 스프링 MVC 컨트롤러 테스트 전용 어노테이션
+
+**기능**
+- MVC 인프라 자동 구성
+- 컴포넌트 스캔 대상
+  - @Controller, @ControllerAdvice, @JsonComponent
+  - Converter, GenericConverter, Filter, HandlerInterceptor, HandlerMethodArgumentResolver
+  - WebMvcConfigurer, WebMvcRegistrations
+- 컴포넌트 스캔 제외 대상
+  - @Component, @ConfigurationProperties
+  - @EnableConfigurationProperties를 통해 @ConfigurationProperties 포함 가능
+- Spring Security 의존성이 있는 경우
+  - WebSecurityConfigurer 빈도 컴포넌트 스캔 대상에 포함시킴
+
+**테스트 예시**
+```java
+@WebMvcTest(UserVehicleController.class)
+class MyControllerTests {
+
+  @Autowired
+  private MockMvc mvc;
+
+  @MockBean
+  private UserVehicleService userVehicleService;
+
+  @Test
+  void testExample() throws Exception {
+    given(this.userVehicleService.getVehicleDetails("sboot"))
+            .willReturn(new VehicleDetails("Honda", "Civic"));
+    this.mvc.perform(get("/sboot/vehicle").accept(MediaType.TEXT_PLAIN))
+            .andExpect(status().isOk())
+            .andExpect(content().string("Honda Civic"));
+  }
+
+}
+```
+
+## MVC Testing With Spring Security
+
+### Spring Security Test 어노테이션 공통사항
+
+**SecurityContext 설정 시점 변경**
+
+setupBefore 속성 기본 값이 TestExecutionEvent.TEST_METHOD이므로 SecurityContext는 TestExecutionListener.beforeTestMethod 이벤트 중에 설정되는데 JUnit의 @Before 이전에 발생함
+
+JUnit의 @Before 이후(동시에 테스트 메서드 실행 전)로 설정해야 된다면 `@WithMockUser(setupBefore = TestExecutionEvent.TEST_EXECUTION)` 지정
+
+### @WithMockUser
+
+- 특정 유저로 가정하여 테스트할 수 있는 어노테이션
+- username, password, role, authorities 지정 가능(필수 지정 X)
+- SecurityContext에 UsernamePasswordAuthentication 타입의 Authentication이 채워짐
+- Authentication의 principal은 Spring Security의 User 객체(기본적으로 username과 password를 가지고 ROLE_USER이라는 Single GrantedAuthority가 있음)
+
+**@WithMockUser 테스트 예시(기본 값)**
+```java
+@WebMvcTest(UserController.class)
+class MySecurityTests {
+
+	@Autowired
+	private MockMvc mvc;
+
+	@Test
+	@WithMockUser
+	void requestProtectedUrlWithUser() throws Exception {
+		this.mvc.perform(get("/"));
+	}
+
+}
+```
+
+**@WithMockUser 테스트 예시(값 지정)**
+```java
+@Test
+@WithMockUser(username="spring man", roles={"USER", "ADMIN"})
+void requestProtectedUrlWithUser() throws Exception {
+  this.mvc.perform(get("/"));
+}
+```
+
+**@WithMockUser Class에 선언**
+
+모든 테스트 메서드마다 지정된 유저를 사용함
+
+JUnit5 @Nested 클래스를 감싼 상위 클래스에 선언하면 해당 테스트 클래스의 모든 하위 테스트 메서드에도 적용됨
+```java
+@WebMvcTest
+@WithMockUser(username="admin",roles={"USER","ADMIN"})
+public class WithMockUserTests {
+
+  @Nested
+  public class TestSuite1 {
+    // ... all test methods use admin user
+  }
+}
+```
+
+### @WithAnonymousUser
+
+Anonymous User로 가정하는 어노테이션
+
+클래스에 @WithMockUser가 선언되어 있는 경우 메서드의 @WithAnonymousUser가 오버라이딩됨
+
+```java
+@WebMvcTest
+@WithMockUser
+public class WithUserClassLevelAuthenticationTests {
+
+	@Test
+	public void withMockUser() {
+	}
+
+	@Test
+	@WithAnonymousUser
+	public void anonymous() throws Exception {
+		// override default to run as anonymous user
+	}
+}
+```
+
+### @WithUserDetails
+
+커스텀 UserDetailsService(커스텀 타입과 UserDetails를 구현한 객체 반환)을 통해 테스트 유저를 생성할 때 사용하는 어노테이션
+
+아래는 빈으로 등록된 UserDetailsService이 반환하는 user의 username을 prinpal로 갖는 UsernamePasswordAuthentcationToken 타입의 Authentication을 사용함
+```java
+@Test
+@WithUserDetails
+public void getMessageWithUserDetails() {
+  String message = messageService.getMessage();
+	...
+}
+```
+
+지정된 username을 지정하여 UserDetailsService에서 조회할 수 있음
+```java
+@Test
+@WithUserDetails("customUsername")
+public void getMessageWithUserDetailsCustomUsername() {
+	String message = messageService.getMessage();
+	...
+}
+```
+
+특정 UserDetailsService 빈을 조회하여 지정된 username을 조회할 수 있음
+```java
+@Test
+@WithUserDetails(value="customUsername", userDetailsServiceBeanName="myUserDetailsService")
+public void getMessageWithUserDetailsServiceBeanName() {
+	String message = messageService.getMessage();
+	...
+}
+```
+
+**vs @WithMockUser**
+- 테스트 클래스에 적용할 경우 @WithMockUser와 동일하게 동작
+- @WithMockUser와 달리 실제로 user가 존재해야 됨
+
+### @WithSecurityContext
+
+테스트 시 Spring Security Test 대신 직접 SecurityContext를 설정하는 경우 사용하는 어노테이션
+
+1. @WithSecurityContext를 사용한 커스텀 어노테이션 생성
+
+@WithMockCustomUser는 @WithSecurityContext를 가지고 있는 메타 어노테이션임
+
+@WithSecurityContext의 factory 속성 값에 SecurityCotext를 설정하는 클래스 지정
+```java
+@Retention(RetentionPolicy.RUNTIME)
+@WithSecurityContext(factory = WithMockCustomUserSecurityContextFactory.class)
+public @interface WithMockCustomUser {
+
+  String username() default "rob";
+
+  String name() default "Rob Winch";
+}
+```
+
+2. SecurityContext 설정 클래스 구현
+
+@Autowired을 통해 UserDetailsService를 주입받을 수도 있음
+
+```java
+public class WithMockCustomUserSecurityContextFactory implements WithSecurityContextFactory<WithMockCustomUser> {
+    
+  private UserDetailsService userDetailsService;
+  
+  @Autowired
+  public WithMockCustomUserSecurityContextFactory(UserDetailsService userDetailsService) {
+      this.userDetailsService = userDetailsService;
+  }
+    
+  @Override
+  public SecurityContext createSecurityContext(WithMockCustomUser customUser) {
+    SecurityContext context = SecurityContextHolder.createEmptyContext();
+  
+    CustomUserDetails principal =
+            new CustomUserDetails(customUser.name(), customUser.username());
+    Authentication auth =
+            UsernamePasswordAuthenticationToken.authenticated(principal, "password", principal.getAuthorities());
+    context.setAuthentication(auth);
+    return context;
+  }
+}
+```
+
+## Auto-configured Data JPA Tests
+
+**@DataJpaTest**
+- JPA 테스트 전용 어노테이션
+
+**기능**
+- Spring Data JPA Repository 구성
+- classpath에서 임베디드 DB를 사용할 수 있는 경우 DB도 구성 
+- 컴포넌트 스캔 대상
+  - @Entity
+- 컴포넌트 스캔 제외 대상
+  - @Component, @ConfigurationProperties
+  - @EnableConfigurationProperties를 통해 @ConfigurationProperties 포함 가능
+
+**트랜잭션**
+- 기본적으로 data JPA 테스트는 각 테스트 실행 후 롤백
+
+**엔티티 매니저**
+- Data JPA 테스트 시 표준 JPA EntityManager의 테스트용 TestEntityManager를 주입받을 수 있음
+```java
+@DataJpaTest
+class MyRepositoryTests {
+
+	@Autowired
+	private TestEntityManager entityManager;
+
+	@Autowired
+	private UserRepository repository;
+
+	@Test
+	void testExample() {
+		this.entityManager.persist(new User("sboot", "1234"));
+		User user = this.repository.findByUsername("sboot");
+		assertThat(user.getUsername()).isEqualTo("sboot");
+		assertThat(user.getEmployeeNumber()).isEqualTo("1234");
+	}
+
+}
+```
+
+**DB 설정**
+
+`@AutoConfigureTestDatabase` 어노테이션 사용
+```java
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = Replace.NONE)
+class MyRepositoryTests {
+	// ...
+}
+```
+
+## Auto-configured REST Clients
+
+**@RestClientTest**
+- Rest Client 테스트 전용 어노테이션
+
+**기능**
+- Jackson, GSON, Jsonb 자동 구성
+- RestTemplateBuilder, RestClient.Builder 구성
+- MockRestServiceServer 추가
+- 컴포넌트 스캔 제외 대상
+  - @Component, @ConfigurationProperties
+  - @EnableConfigurationProperties를 통해 @ConfigurationProperties 포함 가능
+
+**빈 지정**
+- @RestClientTest의 value 또는 components 속성에 지정
+
+테스트에 사용되는 빈에서 RestClient.Builder를 사용하거나 rootUri 호출없이 RestTemplateBuilder를 사용하는 경우 전체 URI를 MockRestServiceServer의 expectations에 사용해야 됨
+
+```java
+@RestClientTest(RemoteVehicleDetailsService.class)
+class MyRestClientServiceTests {
+
+	@Autowired
+	private RemoteVehicleDetailsService service;
+
+	@Autowired
+	private MockRestServiceServer server;
+
+	@Test
+	void getVehicleDetailsWhenResultIsSuccessShouldReturnDetails() {
+		this.server.expect(requestTo("https://example.com/greet/details"))
+			.andRespond(withSuccess("hello", MediaType.TEXT_PLAIN));
+		String greeting = this.service.callRestService();
+		assertThat(greeting).isEqualTo("hello");
+	}
+
+}
+```
+
 참고
 
 [spring boot test docs](https://docs.spring.io/spring-boot/reference/testing/index.html)
 
 [spring test context caching](https://docs.spring.io/spring-framework/reference/testing/testcontext-framework/ctx-management/caching.html)
+
+[testing with spring security](https://docs.spring.io/spring-boot/how-to/testing.html#howto.testing.with-spring-security)
