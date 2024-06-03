@@ -1,1 +1,1 @@
-[개념][fundamentals]
+[개념](fundamentals)
