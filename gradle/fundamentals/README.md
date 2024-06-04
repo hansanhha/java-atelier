@@ -1,1 +1,2 @@
 - [gradle project structure](gradle-project-structure.md)
+- [gradle init, gradle wrapper](gradle-init,gradle-wrapper.md)
