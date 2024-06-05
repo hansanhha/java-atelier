@@ -1,2 +1,4 @@
 - [gradle project structure](gradle-project-structure.md)
 - [gradle init, gradle wrapper](gradle-init,gradle-wrapper.md)
+- [gradle task advanced](gradle-tasks-advanced)
+- [gradle build lifecycle](gradle-build-lifecycle.md)

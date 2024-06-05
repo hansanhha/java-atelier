@@ -8,6 +8,10 @@ Tasks : 빌드 스크립트에 추가할 수 있는 개별적인 작업 유닛
 
 Plugins : 유용한 빌드 기능을 제공하는 패키지된 컴포넌트
 
+Gradle Wrapper : gradle project에 gradle을 설치하고, 빌드 및 task를 수행하는 스크립트
+
+Build : 빌드 후 생성된 파일, 아티팩트를 보관하는 디렉토리
+
 ## Project
 
 그레이들에서 Project는 빌드할 애플리케이션 전체를 나타내는 고수준 개념임(gradle build와 gradle project는 동의어)
@@ -71,3 +75,43 @@ plugins {
 ```
 
 [step 4](../step-by-step/4.plugins)
+
+## [Gradle Wrapper](gradle-init,gradle-wrapper.md)
+
+## Build directory
+
+gradle이 프로젝트 아티팩트를 생성하는 기본 디렉토리임
+
+프로젝트 아티팩트
+- 컴파일된 클래스 파일
+- jar 파일
+- gradle build 중 생성된 것들
+
+gradle build directory == maven target directory
+
+## 전체 Gradle 프로젝트 구조
+
+```
+project
+- .gradle/
+- build/
+- build.gradle.kts
+- buildSrc
+- gradle/
+    - wrapper/
+        - gradle-wrapper.jar
+        - gradle-wrapper.properties
+- gradle.properties
+- gradlew
+- gradlew.bat
+- settings.gradle.kts
+```
+
+.gradle : gradle이 해당 프로젝트에서 내부적으로 사용하는 디렉토리
+
+buildSrc(optional) : build.gradle 대신 빌드 로직를 중앙화/캡슐화할 때 사용하는 디렉토리
+
+gradle.properties(optional) : 해당 프로젝트에서 사용하는 프로퍼티(gradle property, 커스텀 property)
+
+**참고사항**
+- 필수 : .gradle과 build 디렉토리는 git 커밋 대상에서 제외

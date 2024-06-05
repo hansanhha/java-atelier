@@ -1,1 +1,1 @@
-[개념](fundamentals)
+[gradle 개념](fundamentals)
