@@ -1,16 +1,18 @@
 ### 그레이들 주요 개념
 
-Project : 전체 빌드 컨테이너
+[Project](#project) : 전체 빌드 컨테이너
 
-Build Script : 빌드 시 수행되는 스크립트
+[Build Script](#build-script) : 빌드 시 수행되는 스크립트
 
-Tasks : 빌드 스크립트에 추가할 수 있는 개별적인 작업 유닛
+[Tasks](#tasks) : 빌드 스크립트에 추가할 수 있는 개별적인 작업 유닛
 
-Plugins : 유용한 빌드 기능을 제공하는 패키지된 컴포넌트
+[Plugins](#plugins) : 유용한 빌드 기능을 제공하는 패키지된 컴포넌트
 
-Gradle Wrapper : gradle project에 gradle을 설치하고, 빌드 및 task를 수행하는 스크립트
+[Gradle Wrapper](gradle-init,gradle-wrapper.md) : gradle project에 gradle을 설치하고, 빌드 및 task를 수행하는 스크립트
 
-Build : 빌드 후 생성된 파일, 아티팩트를 보관하는 디렉토리
+[Build](#전체-gradle-프로젝트-구조) : 빌드 후 생성된 파일, 아티팩트를 보관하는 디렉토리
+
+[Gradle Daemon](#gradle-daemon) : Gradle이 내부적으로 빌드 실행 간 성능 향상을 위해 사용하는 자바 프로세스
 
 ## Project
 
@@ -26,11 +28,11 @@ rootProject.name 속성에다가 프로젝트 이름을 지정할 수 있는데,
 
 [step 1](../step-by-step/1.gradle-project)
 
-## Build  Script 
+## Build Script
 
-프로젝트와 함께 무언가를 선언하거나 실행하고자 할 때 (애플리케이션 빌드) build script에 추가하면 됨
+프로젝트에 무언가를 선언하거나 실행하고자 할 때 (애플리케이션 빌드) build script에 추가하면 됨
 
-build script는 코드(groovy, kotiln)로 작성하기 때문에 유연하게 빌드 로직을 구성할 수 있음
+build script가 실질적으로 프로젝트를 구성하는 데 사용됨
 
 보통 task, plugin, dependency 등을 추가함
 
@@ -115,3 +117,20 @@ gradle.properties(optional) : 해당 프로젝트에서 사용하는 프로퍼�
 
 **참고사항**
 - 필수 : .gradle과 build 디렉토리는 git 커밋 대상에서 제외
+
+## Gradle Daemon
+
+Gradle이 내부적으로 빌드 실행 간 성능 향상을 위해 사용하는 자바 프로세스
+
+gradle command를 실행하면 실제로는 daemon을 사용해서 build가 수행됨
+
+daemon 장점
+- 최초 한 번 daemon 실행 이후 JVM 초기화 대기 시간이 필요하지 않음
+- project, files, tasks 인메모리 캐시 사용
+- JVM이 런타임 코드 최적화를 함
+
+`gradle --status` : 로컬 환경에 띄워진 daemon 출력
+
+`gradle --stop` : 동작 중인 daemon stop 명령
+
+
