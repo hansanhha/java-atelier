@@ -1,4 +1,4 @@
-## 빌드 라이프사이클 3단계
+## Three-phase of Build lifecycle
 
 1. 초기화(initialization)
 2. 구성(configuration)
@@ -25,3 +25,41 @@ gradle이 command line을 통해 전달받은 값을 기반으로 task들을 수
 실제 task들이 모두 실행되면 build를 마침
 
 task를 수행한 후 변경 사항이 없는 상태에서 다시 task 실행을 요청하면 수행하지 않음 - Incremental Build 기능
+
+## Build Process
+
+### normally
+
+```text
+Initialization(settings.gradle)
+1. Create Project
+2. Select which projects to build
+
+Configuration(build.gradle)
+1. Create Tasks
+2. Configure all tasks
+
+Execution
+1. Decide which tasks to execute
+2. Execute task(based on the values passed from the command)
+
+Complete
+
+Execute task again without any changes -> Incremental Build 
+```
+
+### another
+
+```text
+Initialization(settings.gradle)
+1. Create Project
+2. Select which projects to build
+
+Configuration(build.gradle)
+1. Register Tasks
+
+Execution
+1. Decide which tasks to execute
+2. Configure relevant tasks
+3. Execute task(based on the values passed from the command)
+```
