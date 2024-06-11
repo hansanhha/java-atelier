@@ -12,7 +12,7 @@
 
 [Defining tasks](#defining-task)
 
-[Configuration avoidance](#configuration-avoidance)
+[Locating tasks](#locating-tasks)
 
 ## Grouping Tasks
 
@@ -76,6 +76,8 @@ task 이름을 축약해서 사용 가능(custom task도 가능)
 
 ## Defining Task
 
+Defining : task type, 로직 정의
+
 task class
 - task가 수행해야 될 실제 로직이 담겨있는 task 클래스
 - Gradle 소스코드나 플러그인에 미리 정의되어 있는 task 클래스를 "built"라고 일컬음
@@ -91,9 +93,9 @@ task는 크게 두 가지로 나뉨
 
 ### task 정의 방법
 
-1. tasks.register 사용
-
+**방법 1 : tasks.register**
 - tasks.register()
+- [build 시 실제로 사용할 task들만 생성 및 구성](gradle-build-lifecycle.md#configuration-avoidance-buildup-to-date)됨
 
 ```kotlin
 tasks.register<Copy>("generateApiDocs") {
@@ -123,7 +125,7 @@ tasks.register("greeting") {
 }
 ```
 
-2. task() 사용
+**방법 2 : task()**
 
 원래 사용하던 방법으로 지금은 tasks.register()로 대체됨
 
@@ -131,13 +133,13 @@ tasks.register("greeting") {
 task<Copy>("generateApiDocs")
 ```
 
-### task 구성 참고사항
+### task 정의 프로퍼티
 
 task를 정의할 때 [람다식](./kotlin.md#람다식)을 사용하여 함수 또는 프로퍼티 셋을 전달함
 
-람다에 사용하는 프로퍼티들은 정의하고 있는 task 타입에 의존함 - copy 타입의 task 정의시 from(), into() 사용 가능
+람다에 사용하는 프로퍼티들은 정의하고 있는 task 타입에 의존함 - i.g) copy 타입의 task 정의시 from(), into() 사용
 
-task type과 상관없이 공통적으로 사용할 수 있는 프로퍼티
+공통 프로퍼티
 - group
 - description
 - doFirst (lambda)
@@ -184,6 +186,25 @@ tasks.register<Copy>("coding") {
 }
 ```
 
-## Configuration avoidance
+## Locating Tasks
 
-[일반 빌드 과정과 달리](gradle-build-lifecycle.md#normally)
+Locating : task reference를 가져온 뒤, 로직을 수정하는 방법
+
+**방법 1 : tasks.named**
+
+```kotlin
+tasks.named<Copy>("generateApiDocs") {
+  doFirst {
+    println("doFirst modified by locating task")
+  }
+}
+```
+
+named()는 TaskProvider를 반환함 
+
+TaskProvider는 생성되지 않은 task에 대한 reference를 가지고 있음
+
+```java
+// method definition
+TaskProvider<T> named(java.lang.String name, Action<? super T> configurationAction) throws UnknownTaskException
+```

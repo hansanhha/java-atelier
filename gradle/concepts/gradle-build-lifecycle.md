@@ -28,7 +28,7 @@ task를 수행한 후 변경 사항이 없는 상태에서 다시 task 실행을
 
 ## Build Process
 
-### normally
+### Typical build
 
 ```text
 Initialization(settings.gradle)
@@ -48,7 +48,7 @@ Complete
 Execute task again without any changes -> Incremental Build 
 ```
 
-### another
+### Configuration avoidance build(up-to-date)
 
 ```text
 Initialization(settings.gradle)
@@ -63,3 +63,8 @@ Execution
 2. Configure relevant tasks
 3. Execute task(based on the values passed from the command)
 ```
+
+일반적인 빌드 프로세스와의 차이점
+- configuration 단계에서 task들을 등록함 : 실제로 task들을 생성하진 않고 gradle에 등록한 상태
+- execution 단계에서 실제 실행할 task들만 생성, 구성(configuration lambda)을 한 뒤 실행함
+- 실행하지 않는 task들에 대한 불필요한 구성 과정을 생략할 수 있는 빌드 처리임
