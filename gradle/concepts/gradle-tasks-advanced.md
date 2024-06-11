@@ -14,6 +14,10 @@
 
 [Locating tasks](#locating-tasks)
 
+[Task dependencies, ordering](#task-dependencies-ordering)
+
+[Task input, output](#task-input-output)
+
 ## Grouping Tasks
 
 직접 커스텀 task를 정의해본 뒤 `./gradlew tasks`를 실행해보면 정의한 task가 표시되지 않음
@@ -193,18 +197,145 @@ Locating : task reference를 가져온 뒤, 로직을 수정하는 방법
 **방법 1 : tasks.named**
 
 ```kotlin
-tasks.named<Copy>("generateApiDocs") {
-  doFirst {
-    println("doFirst modified by locating task")
+tasks.named<Copy>("generateApiDocs") { 
+    doFirst { 
+        println("doFirst modified by tasks.named locating") 
+    }
+}
+```
+
+```java
+// tasks.named method definition
+TaskProvider<T> named(String name)
+
+TaskProvider<T> named(String name, Action<? super T> configurationAction)
+```
+
+권장 방법
+
+task를 생성, 구성하지 않으면서 참조를 할 수 있는 방법
+
+named()는 TaskProvider를 반환함 
+
+TaskProvider는 task를 생성하지 않으면서 task에 대한 참조를 가져올 수 있음
+
+**방법 2 : tasks.getByName**
+
+```kotlin
+tasks.getByName<Copy>("generateApiDocs").configure { 
+    doFirst { 
+        println("doFirst modified by tasks.getByName locating") 
+    }
+}
+```
+
+```java
+// tasks.getByName method definition
+T getByName(String name)
+
+T getByName(String name, Closure configureClosure)
+```
+
+권장되지 않는 방법
+
+Task 자체를 반환함 -> task 생성 및 구성이 불가피해짐
+
+**방법 3 : tasks.<taskName>**
+
+```kotlin
+tasks.clean {
+      doLast {
+          println("doFirst modified by tasks.<taskName> locating")
+      }
+}
+```
+
+기본 task(help, clean 등)에 대해 적용할 수 있는 방법
+
+named()와 마찬가지로 TaskProvider를 반환함 -> configuration avoidance
+
+## Task dependencies, ordering
+
+task간 의존성을 설정하여 task 실행 순서를 결정
+
+각 task의 의존성은 producer-consumer 관계로 설정됨
+
+producer : 먼저 실행되야 할 task, consumer task에 입력 값을 제공
+
+consumer : producer task 이후에 실행되어야 하거나 출력 값을 사용하는 task
+
+```text
+producer task <---- depends on ----- consumer task
+```
+
+**dependsOn**
+
+다른 task에 대한 의존성을 명시하는 방법
+
+task를 변수에 할당해서 일관적인 참조를 유지할 수 있음
+
+```kotlin
+val producer = tasks.register("producer") {
+  doLast {
+    println("producer task")
+  }
+}
+
+tasks.register("consumer") {
+  dependsOn(producer)
+  doLast {
+    println("consumer task")
   }
 }
 ```
 
-named()는 TaskProvider를 반환함 
+**mustRunAfter**
 
-TaskProvider는 생성되지 않은 task에 대한 reference를 가지고 있음
+특정 task는 명시한 task 후에 실행되어야 할 때 사용
 
-```java
-// method definition
-TaskProvider<T> named(java.lang.String name, Action<? super T> configurationAction) throws UnknownTaskException
+```kotlin
+val producer = tasks.register("producer") {
+  ...
+}
+
+tasks.register("consumer") {
+  mustRunAfter(producer)
+  ...
+}
 ```
+
+**finalizedBy**
+
+특정 task가 실행된 후 무조건 실행되어야 하는 task 명시할 때 사용
+
+try-catch-finally와 유사하게 특정 task가 실패되더라도 명시한 task는 무조건 실행됨
+
+```kotlin
+tasks.register("producer") {
+  ...
+  finalizedBy(consumer)
+}
+
+val consumer = tasks.register("consumer") {
+
+  ...
+}
+```
+
+## Task input, output
+
+task는 입력을 받아 action을 수행한 뒤 출력을 반환함
+
+task가 입출력을 가지는 것이 의무는 아니지만 없을 경우 incremental build 기능을 사용할 수 없음
+
+```text
+inputs ----> task action ----> outputs
+```
+
+gradle task의 입출력이 있다는 사실로 유용한 기능을 제공함
+
+**Incremental build**
+
+task를 실행했을 때 gradle은 이전의 실행 이후 변경된 입출력이 없다면 task를 실행하지 않고 "up-to-date"로 표시함
+
+-> 빌드 실행 시간 단축
