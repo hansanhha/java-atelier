@@ -1,6 +1,34 @@
-## 접근 제어자, 위치, 사용 방식에 따른 분류
+[Top level Class](#top-level-class)
 
-### Top-level Class 
+[Static inner Class](#static-inner-class)
+
+[Non-Static inner Class](#non-static-inner-class)
+
+[Local Class](#local-class)
+
+[Abstract Class](#abstract-class)
+
+[Interface](#interface)
+
+[Anonymous Class](#anonymous-class)
+
+[Functional Interface](#functional-interface)
+
+[Lambda Expression](#lambda-expression)
+
+[Generic](generics.md)
+
+[Annotation](annotations.md)
+
+[Enum Class](enums.md)
+
+[Record Class](records.md)
+
+[Sealed Class](sealed_classes.md)
+
+## Typical Class
+
+### Top-level Class
 
 java file은 모두 java.lang 패키지를 자동으로 import함
 
@@ -26,12 +54,14 @@ public class Number {
 }
 ```
 
-### Inner Class 
+### Static inner Class
 
-Static Inner Class
-- static 키워드를 포함한 내부 클래스
-- 외부 클래스의 인스턴스에 종속적이지 않음(외부 클래스 없이 생성 가능)
-- 외부 클래스의 static 멤버에만 접근 가능
+static 키워드를 포함한 내부 클래스 
+
+외부 클래스의 인스턴스에 종속적이지 않음(외부 클래스 없이 생성 가능)
+
+외부 클래스의 static 멤버에만 접근 가능
+
 ```java
 class Number {
 
@@ -49,9 +79,12 @@ Caculator calculator = new Calcaultor(); // 외부 클래스 인스턴스 없이
 calculator.operate(1,3); 
 ```
 
-Non-Static Inner Class
-- 외부 클래스의 인스턴스에 종속적(외부 클래스를 통해 생성 가능)
-- 외부 클래스의 멤버에 직접 접근 가능
+### Non-Static inner Class
+
+외부 클래스의 인스턴스에 종속적(외부 클래스를 통해 생성 가능)
+
+외부 클래스의 멤버에 직접 접근 가능
+
 ```java
 class Number {
 
@@ -77,11 +110,7 @@ printer.print();
 
 메서드 내의 변수에 접근하기 위한 목적
 
-### Anonymous Class
-
-이름 없이 선언과 동시에 객체가 생성되는 클래스
-
-일회성, 콜백, 이벤트 리스너 목적으로 사용
+## Special Class
 
 ### Abstract Class
 
@@ -91,18 +120,20 @@ printer.print();
 
 상속을 통해 자식 클래스에서 추상 메서드 구현 필요
 
-### Enum Class
-
-[바로가기](../version_1.8/src/java/main/hansanhha/enums/enums.md)
-
 ### Interface
 
-모든 메서드(default, static 제외)가 추상 메서드인 특수 클래스 -> 메서드 시그니처 정의
+모든 메서드(default, static 제외)가 추상 메서드인 특수 클래스 - public abstract 생략 가능
 
 default 메서드 : 메서드 기본 구현 제공(구현 강제 X), 오버라이딩 가능, 구현 클래스 인스턴스를 통해 호출 가능 
 
 static 메서드 : 구현 클래스없이 호출 가능, 오버라이딩 불가능, 메서드 숨김(method hiding) 가능
 - method hiding : 서브 클래스가 슈퍼 클래스의 static 메서드와 같은 시그니처의 static 메서드를 정의했을 때 발생함(컴파일 시점), 참조 변수의 타입에 따라 호출되는 메서드 결정 
+
+### Anonymous Class
+
+이름 없이 선언과 동시에 객체가 생성되는 클래스
+
+일회성, 콜백, 이벤트 리스너 목적으로 사용
 
 ### Functional Interface
 
@@ -122,3 +153,15 @@ java.util.function에 미리 정의되어 있음
     - 함수형 인터페이스 인스턴스를 쉽게 생성
     - 동작 파라미터화, 고차 함수 패턴 구현 시 사용됨
     - 고차 함수 : 함수를 파라미터로 받거나 결과로 반환하는 함수(함수를 값으로 취급)
+
+### [Lambda Expression](../functional/lambda_expression.md)
+
+### [Generic](generics.md
+
+### [Annotation](annotations.md)
+
+### [Enum Class](enums.md)
+
+### [Record Class](records.md)
+
+### [Sealed Class](sealed_classes.md)
