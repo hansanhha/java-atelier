@@ -99,7 +99,7 @@ task는 크게 두 가지로 나뉨
 
 **방법 1 : tasks.register**
 - tasks.register()
-- [build 시 실제로 사용할 task들만 생성 및 구성](gradle-build-lifecycle.md#configuration-avoidance-buildup-to-date)됨
+- [build 시 실제로 사용할 task들만 생성 및 구성](build-lifecycle#configuration-avoidance-buildup-to-date)됨
 
 ```kotlin
 tasks.register<Copy>("generateApiDocs") {
@@ -339,3 +339,25 @@ gradle task의 입출력이 있다는 사실로 유용한 기능을 제공함
 task를 실행했을 때 gradle은 이전의 실행 이후 변경된 입출력이 없다면 task를 실행하지 않고 "up-to-date"로 표시함
 
 -> 빌드 실행 시간 단축
+
+**Link task inputs & outputs**
+
+다른 task의 출력을 입력값으로 사용해야 될 경우 dependsOn() 대신 task에 대한 참조를 입력값으로 직접 설정할 수 있음
+
+아래처럼 task 참조를 입력값으로 사용할 경우 gradle이 의존성을 자동으로 설정함 -> implicit dependencies
+
+dependsOn 명시 생략 가능
+
+```kotlin
+val producer = tasks.register("producer") {
+  ...
+}
+
+tasks.register<Copy>("consumer") {
+  from(producer)
+  into(layout.buildDirectory.dir("consumer"))
+}
+```
+
+
+

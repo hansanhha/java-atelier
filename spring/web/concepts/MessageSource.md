@@ -68,3 +68,37 @@ MessageSource와 함께 동작하며 결정된 Locale에 맞는 메시지 제공
 
 **LocalChangeInterceptor**
 - HTTP Request의 특정 파라미터를 기반으로 Locale을 변경할 수 있는 Interceptor
+
+## ErrorResponse + MessageSource
+
+MessageSource는 bean validation, spring mvc 표준 예외에 대한 메시지를 처리하는 데 사용되는 경우가 많았음
+
+spring 6.0 부터 추가된 [ErrorResponse](Error(exception)%20handling.md#errorresponse)를 통해 예외 메시지를 처리할 수 있음
+
+```java
+// ErrorResponse
+default ProblemDetail updateAndGetBody(@Nullable MessageSource messageSource, Locale locale) {
+  if (messageSource != null) {
+      String type = messageSource.getMessage(getTypeMessageCode(), null, null, locale);
+      if (type != null) {
+          getBody().setType(URI.create(type));
+      }
+      Object[] arguments = getDetailMessageArguments(messageSource, locale);
+      String detail = messageSource.getMessage(getDetailMessageCode(), arguments, null, locale);
+      if (detail != null) {
+          getBody().setDetail(detail);
+      }
+      String title = messageSource.getMessage(getTitleMessageCode(), null, null, locale);
+      if (title != null) {
+          getBody().setTitle(title);
+      }
+  }
+  return getBody();
+}
+```
+
+updateAndGetBody()는 예외 타입, argument, detail message code를 기반으로 MessageSource를 통해 메시지로 변환한 뒤 
+
+각각 ProblemDetail의 type, detail, title로 설정하는 메서드임
+
+근데 사실 ProblemDetail은 MessageSource를 사용하지 않고도 직접 예외 메시지를 처리할 수 있기 때문에 편한 방법으로 사용하면 되지 않을까 싶기도 하고

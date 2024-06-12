@@ -8,7 +8,7 @@
 
 [Plugins](#plugins) : 유용한 빌드 기능을 제공하는 패키지된 컴포넌트
 
-[Gradle Wrapper](gradle-init,gradle-wrapper.md) : gradle project에 gradle을 설치하고, 빌드 및 task를 수행하는 스크립트
+[Gradle Wrapper](gradle init,gradle-wrapper) : gradle project에 gradle을 설치하고, 빌드 및 task를 수행하는 스크립트
 
 [Build](#전체-gradle-프로젝트-구조) : 빌드 후 생성된 파일, 아티팩트를 보관하는 디렉토리
 
@@ -76,9 +76,45 @@ plugins {
 }
 ```
 
+**Legacy apply plugins syntax**
+
+core 플러그인을 적용할 때 버전을 명시하지 않음
+
+3rd party 플러그인을 적용할 땐 버전을 명시해야 됨
+
+레거시 플러그인 적용 문법을 사용하면 최적화가 되지 않음
+
+```groovy
+// apply core plugin using legacy syntax
+apply(plugin = "base")
+
+// apply 3rd party plugin using legacy syntax
+buildscript {
+    repositories {
+        maven {
+            url = uri("https://plugins.gradle.org/m2/")
+        } }
+    dependencies {
+        classpath("group.artifact:version")
+    } 
+}
+```
+
+**Configuration plugin**
+
+몇몇 plugin들은 configuration 기능을 지원함
+
+지원하는 plugin은 별도 확인 필요
+
+```kotlin
+base {
+      archivesName.set("stuff")
+}
+```
+
 [step 4](../step-by-step/4.plugins)
 
-## [Gradle Wrapper](gradle-init,gradle-wrapper.md)
+## [Gradle Wrapper](gradle init,gradle-wrapper)
 
 ## Build directory
 
