@@ -1,6 +1,6 @@
 import org.junit.jupiter.api.Test;
 
-public class BaseTest {
+public class AttendanceManagementSystemTest {
 
     @Test
     void test() {}
