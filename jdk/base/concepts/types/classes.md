@@ -1,34 +1,4 @@
-[Top level Class](#top-level-class)
-
-[Static inner Class](#static-inner-class)
-
-[Non-Static inner Class](#non-static-inner-class)
-
-[Local Class](#local-class)
-
-[Abstract Class](#abstract-class)
-
-[Interface](#interface)
-
-[Anonymous Class](#anonymous-class)
-
-[Functional Interface](#functional-interface)
-
-[Lambda Expression](#lambda-expression)
-
-[Generic](generics.md)
-
-[Annotation](annotations.md)
-
-[Enum Class](enums.md)
-
-[Record Class](records.md)
-
-[Sealed Class](sealed_classes.md)
-
-## Typical Class
-
-### Top-level Class
+### Class (Top-level class)
 
 java file은 모두 java.lang 패키지를 자동으로 import함
 
@@ -110,8 +80,6 @@ printer.print();
 
 메서드 내의 변수에 접근하기 위한 목적
 
-## Special Class
-
 ### Abstract Class
 
 하나 이상의 추상 메서드를 포함하거나 class 정의에 abstract 키워드를 붙인 클래스
@@ -153,15 +121,3 @@ java.util.function에 미리 정의되어 있음
     - 함수형 인터페이스 인스턴스를 쉽게 생성
     - 동작 파라미터화, 고차 함수 패턴 구현 시 사용됨
     - 고차 함수 : 함수를 파라미터로 받거나 결과로 반환하는 함수(함수를 값으로 취급)
-
-### [Lambda Expression](../functional/lambda_expression.md)
-
-### [Generic](generics.md
-
-### [Annotation](annotations.md)
-
-### [Enum Class](enums.md)
-
-### [Record Class](records.md)
-
-### [Sealed Class](sealed_classes.md)

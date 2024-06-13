@@ -15,16 +15,17 @@ Oracle JDK
 Open JDK
 - Open Source(Oracle, Redhat, Microsoft, Community..)
 - GPL2 License
-- TCK(OpenJDK Community TCK License Agreement)
+- Be required TCK(OpenJDK Community TCK License Agreement)
 
 [Open JDK Distributions(21버전 이후 TCK 획득)](https://openjdk.org/groups/conformance/JckAccess/jck-access.html)
-- Amazon
-- Azul
-- Bellsoft
-- Eclipse
-- Microsoft
-- RedHat
-- SUSE
+- Amazon Corretto
+- Azul Zulu Community
+- Bellsoft Liberica JDK
+- Eclipse Temurin(AdoptOpenJDK HotSpot)
+- GraalVM Community Edition
+- Oracle GraalVM
+- Oracle OpenJDK 
+- SAP SapMachine
 
 ## Release cycle 
 
