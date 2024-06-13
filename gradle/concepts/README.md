@@ -3,4 +3,5 @@
 ## [build lifecycle](build-lifecycle.md)
 ## [task](gradle%20tasks%20advanced.md)
 ## [repositories, dependencies](repositories,%20dependencies.md)
+## [note](note.md)
 ## [kotlin](kotlin.md)
