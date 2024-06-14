@@ -10,4 +10,4 @@ plugins {
 }
 
 rootProject.name = "jdk"
-include("useful", "base", "projects")
+include("useful", "core", "experimental")
