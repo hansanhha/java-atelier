@@ -1,9 +1,15 @@
-import java.nio.file.Files
-import java.nio.file.Paths
-
 plugins {
-    application
+    java
 }
+
+tasks.named<Jar>("jar") {
+    manifest {
+        attributes["Main-Class"] = "com.gradle.playground.RideStatusService"
+    }
+}
+
+group = "com.gradle.playground"
+version = "0.1.1-SNAPSHOT"
 
 repositories {
     mavenCentral()
@@ -20,10 +26,6 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
     }
-}
-
-application {
-    mainClass = "com.gradle.playground.App"
 }
 
 tasks.named<Test>("test") {
