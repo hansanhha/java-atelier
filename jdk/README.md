@@ -1,8 +1,8 @@
 ## Java SE
 
-[java](base/README.md)
+[java](core/README.md)
 
-[jdk projects](projects/README.md)
+[jdk projects](experimental/README.md)
 
 [jdk tools](useful/README.md)
 

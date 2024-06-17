@@ -15,3 +15,7 @@
 ## [Concurrent](concepts/concurrent)
 
 ## [Virtual Thread](concepts/virtual%20thread)
+
+**References**
+
+[java se 22 docs](https://docs.oracle.com/javase/specs/jls/se22/html/index.html)
