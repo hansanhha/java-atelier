@@ -47,9 +47,17 @@ gradle은 해당 정보를 통해 의존성을 가져옴(dependency coordinate)
 
 ## Dependency Specifying, Configuration
 
-**의존성 명시 방법**
+**dependency configuration**
 
-참고사항 : transitive 의존성을 제외할 때 해당 의존성을 가져오는 의존성마다 exclude를 해줘야 됨  
+dependency configuration은 의존성이 어느 classpath에 필요한지 그룹화하는 데 사용됨
+
+implementation : compile, runtime classpath에 추가
+
+
+
+**특정 의존성 모듈 제외 명시 방법**
+
+참고사항 : transitive 의존성을 제외하는 경우 해당 의존성을 필요로 하는 의존성마다 exclude를 명시 해줘야 됨  
 
 ```kotlin
 implementation("group:artifact:version")
@@ -73,9 +81,3 @@ implementation("group:artifact:version") {
 각 단계마다 필요한 의존성이 다름
 
 그래서 상황에 맞게 **complile classpath**, **runtime classpath**로 나뉨
-
-**dependency configuration**
-
-dependency configuration은 의존성이 어느 classpath에 필요한지 그룹화하는 데 사용됨
-
-implementation : compile, runtime classpath에 추가

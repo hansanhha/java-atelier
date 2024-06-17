@@ -1,3 +1,19 @@
+[Java plugin](#java-plugin)
+
+[Java plugin task graph](#java-plugin-task-graph)
+
+[Compile classes - compileJava](#compile-classes---compilejava)
+
+[Manage Resources - processResources](#manage-resources---processresources)
+
+[Define Dependencies](#define-dependencies)
+
+[Package - jar](#package---jar)
+
+[Run Tests - test](#run-tests---test)
+
+[Source Set](#source-set)
+
 ## Java plugin
 
 It's gradle core plugin that gave you the follow useful features:
@@ -9,6 +25,52 @@ It's gradle core plugin that gave you the follow useful features:
 The java plugin initialises project as a java project 
 
 It also adds several dependency configuration, which we can declare dependencies against to control the generation of the classpath
+
+## Java plugin task graph
+
+build
+- assemble
+    - **jar**
+        - classes
+            - **compileJava**
+            - **processResources**
+- check
+    - **test**
+        - classes
+            - **compileJava**
+            - **processResources**
+        - testClasses
+            - compileTestJava
+                - testClasses
+                    - **compileJava**
+                    - **processResources**
+            - **processTestResources**
+
+Tasks that bolded are task which actually perform an action when they run
+
+The rest of tasks are operate as aggregate tasks
+
+important tasks:
+
+**Assemble task**
+- aggregate task that compileJava, processResources, jar task are depends on this task
+- thus then you run this task, it will run all of those tasks sequentially and build a jar file
+- assemble and jar task almost the same in that assembling a project without running testing it
+
+**Test task**
+- it's ensures to run tasks which classes, compileJava, processResources tasks
+- besides it also run testClasses, compileTestJava, processTestResources tasks
+- that's ensures that both the main code and test code are built, before running the tests themselves
+- test task has dependency on check task
+- check and test task almost the same in that testing your code without assembling it
+
+**Build task**
+- top level task of the task graph
+- does both assemble and check tasks
+
+if you run the tests without creating the jar file? -> run the `check` task
+
+if you need to build your project, include creating jar file, without testing your changes? -> run the `assemble` task
 
 ### Compile classes - compileJava
 
