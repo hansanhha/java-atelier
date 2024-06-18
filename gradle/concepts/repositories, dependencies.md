@@ -21,7 +21,7 @@ repositories {
     }
 }
 ```
-## Dependency
+## Dependency Metadata
 
 Dependency : build script에 명시한 project build 시 필요한 의존성(artifact)들
 
@@ -30,7 +30,7 @@ Dependency : build script에 명시한 project build 시 필요한 의존성(art
 - Ivy
 - flat directory(local storage)
 
-**.pom file that is describe project** 
+**.pom file that is describes project** 
 
 maven repository에 publish되는 artifact는 .pom 파일에 프로젝트에 대한 정보를 설명해놓음
 
@@ -42,35 +42,21 @@ gradle은 해당 정보를 통해 의존성을 가져옴(dependency coordinate)
 - name(artifact id)
 - version
 
-**trasitive dependency**
+**transitive dependency**
 - artifact가 의존하는 다른 artifact
-
-## Dependency Specifying, Configuration
-
-**dependency configuration**
-
-dependency configuration은 의존성이 어느 classpath에 필요한지 그룹화하는 데 사용됨
-
-implementation : compile, runtime classpath에 추가
-
-
 
 **특정 의존성 모듈 제외 명시 방법**
 
-참고사항 : transitive 의존성을 제외하는 경우 해당 의존성을 필요로 하는 의존성마다 exclude를 명시 해줘야 됨  
+transitive 의존성을 제외하는 경우 해당 의존성을 필요로 하는 의존성마다 exclude를 명시 해줘야 됨
 
 ```kotlin
-implementation("group:artifact:version")
-
-implementation(group = "group", name = "artifact", version = "version")
-
 // transitive dependency 제외
 implementation("group:artifact:version") {
     exclude(group = "group", module = "module")
 }
 ```
 
-**classpath**
+## Classpath, Production classpath
 
 프로젝트를 빌드하는 동안 여러 단계를 거침
 
@@ -78,6 +64,76 @@ implementation("group:artifact:version") {
 
 자바의 classpath는 애플리케이션을 컴파일하거나 실행할 때 jvm에게 전달되는 파일 리스트임
 
-각 단계마다 필요한 의존성이 다름
+Compile phase requires `compile classpath` and run phase requires `runtime classpath`
 
-그래서 상황에 맞게 **complile classpath**, **runtime classpath**로 나뉨
+Gradle gives us fine-grained control of classpath using dependency configurations
+
+**compile classpath**
+- Classpath is used to compile code
+- A list of all the libraries referenced by the code to be compiled
+- Java eliminates the need to load unnecessary libraries
+
+**runtime classpath**
+- Classpath is used to run the compiled code
+- which may or not be the same as the compile classpath
+- Application(artifact) eliminates the need to include unnecessary libraries
+
+**production classpath**
+- compile classpath + runtime classpath
+- Classspaths required to compile and run a java application
+- also is not include test code
+
+## Production classpath dependency configuration
+
+```kotlin
+implementation("group:artifact:version")
+
+implementation(group = "group", name = "artifact", version = "version")
+```
+
+**dependency configuration**
+- Used to specify about dependency where it will add to the certain classpath  
+
+**Note**
+- A dependency configuration can inherit from another, which means it inherits all the dependencies declared on the parent
+- There are actually two types of dependency configurations
+    - **unresolvable** : dependency configuration are used for declaring dependencies only
+      - implementation, compileOnly, runtimeOnly or etc
+    - **resolvable** : dependency configuration are used by Gradle to calculate things like the compile classpath, but you can't declare dependencies against them
+      - compileClasspath, runtimeClasspath
+
+Each resolvable dependency configuration has combination of unresolvable dependency configurations
+- **compileClasspath** is a combination of the implementation and compileOnly dependencies
+- **runtimeClasspath** is a combination of the implementation and runtimeOnly dependencies
+
+**dependency configuration**
+- compileOnly
+  - Use when the dependency is only needed on the compile classpath
+  - Dependency has already provided in the deployed environment but need to compile the code 
+- implementation
+  - When used to required at compileClasspath and runtimeClasspath 
+  - Use when your application's code interacts directly with code from a dependency 
+- runtimeOnly
+  - Use when the dependency is only needed on the runtime classpath
+  - When your application needs to connect to a database. Most case from a code perspective it interacts with the database-agnostic JPA or JDBC SPI. 
+  - Only at runtime do you include the library for the specific database implementation you're using
+
+**dependency configuration that java plugin uses**
+- CompileJava task of java plugin uses compileClasspath configuration to generate the classpath
+- and java plugin itself doesn't hava any task that use runtimeClasspath
+
+## Test classpath dependency configuration
+
+Similar to production classpath, tests have their own testCompileClassPath, testRuntimeClasspath resolvable dependency configurations
+
+They also have their own testCompileOnly, testImplementation and testRuntimeOnly unresolvable dependency configurations which you can declare against
+
+**test dependency configurations extend other**
+- Java plugin sets up testImplementation to extends the implementation configuration
+- TestRuntimeOnly extends the runtimeOnly configuration
+- As a result, declared dependency in production classpath will be available in test classpath
+
+**compileTestJava, test task of java plugin**
+- compileTestJava task resolves testCompileClasspath dependency configuration to generate the test compile classpath, which is used to compile test code
+- test task resolves testRuntimeClasspath dependency configuration to generate the test runtime classpath, which is used to run the tests 
+

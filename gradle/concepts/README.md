@@ -5,4 +5,5 @@
 ## [plugin](plugins%20advanced.md)
 ## [repositories, dependencies](repositories,%20dependencies.md)
 ## [note](note.md)
+## [terminology](terminology.md)
 ## [kotlin](kotlin.md)
