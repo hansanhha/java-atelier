@@ -2,13 +2,16 @@
 
 [Java plugin task graph](#java-plugin-task-graph)
 
-[Compile classes - compileJava](#compile-classes---compilejava)
+[Compile classes - compileJava, compileTestJava](#compile-classes---compilejava-compiletestjava)
+- [JavaCompile Task Class](#javacompile-task-class)
 
-[Manage Resources - processResources](#manage-resources---processresources)
+[Manage Resources - processResources, processTestResources](#manage-resources---processresources-processTestResources)
+- [Copy task Class](#copy-task-class)
 
 [Define Dependencies](#define-dependencies)
 
 [Package - jar](#package---jar)
+- [Jar Task Class](#jar-task-class)
 
 [Run Tests - test](#run-tests---test)
 
@@ -16,7 +19,7 @@
 
 ## Java plugin
 
-It's gradle core plugin that gave you the follow useful features:
+It's gradle core plugin that give you the follow useful features:
 - compiling code
 - processing resources
 - producing a jar file
@@ -72,19 +75,47 @@ if you run the tests without creating the jar file? -> run the `check` task
 
 if you need to build your project, include creating jar file, without testing your changes? -> run the `assemble` task
 
-### Compile classes - compileJava
+## Compile classes - compileJava, compileTestJava
 
-The java plugin compile classes through a task called `compileJava`
+`compileJava` and `compileTestJava` are tasks added by java plugin to compile production and test code
 
-This task use whatever java version you're using to run gradle to compile .java file into .class files
+These task use whatever java version you're using to run gradle to compile .java file into .class files
 
 These .class files get output into the build directory
 
-`src/main/java/....java` -> --> compileJava --> `build/classes/java/main/....class` 
+`src/main/java/....java` -> --> compileJava --> `build/classes/java/main/....class`
 
-### Manage Resources - processResources
+They both type of `JavaCompile` task class
 
-The java plugin's `processResources` task let us manage resources 
+### JavaCompile Task Class
+
+It's task that compiles java source files, it used by compileJava and compileTestJava task of java plugin
+
+This provides compileOption that many ways to configure the compilation
+
+One of them is `setVorbose` option which print the compilation verbose
+
+It can configure as follows:
+
+```kotlin
+ tasks.named<JavaCompile>("compileJava") {
+      options.isVerbose = true
+}
+```
+
+if you need to configure both tasks: 
+
+```kotlin
+tasks.withType<JavaCompile> {
+    options.isVerbose = true
+}
+```
+
+Like this configuration, we can configure compilation through `JavaCompile` task class against compileJava and compileTestJava 
+
+## Manage Resources - processResources, processTestResources
+
+The java plugin's `processResources` and `processTestResources` tasks let us manage resources 
 
 When you execute the processResources task, it scans specific directories within your project, and copies their contents into the build directory 
 
@@ -92,13 +123,25 @@ When you execute the processResources task, it scans specific directories within
 
 The reason it's called "processResources" is that it can do additional processing along the way 
 
-### Define Dependencies
+In fact, these task type of the `Copy` task class, as in addition to compileJava and compileTestJava tasks they also type of `JavaCompile` task class 
+
+### Copy Task Class
+
+To configure processResources and processTestResources task, it should to configure `Copy` task class
+
+```kotlin
+tasks.named<Copy>("processResources") {
+    include("**/*.txt")
+}
+```
+
+## Define Dependencies
 
 The java plugin provides dependency configurations, which determine dependencies are added to the classpath  
 
 `implementation`, `compileOnly`, `runtimeOnly`, `testImplementation`, `testCompileOnly`, `testRuntimeOnly`
 
-### Package - jar
+## Package - jar
 
 The java plugin provides a `jar` task that packages the compiled classes and resources into a single jar file in the build directory
 
@@ -106,7 +149,13 @@ The name of jar file is `projectName-projectVersion.jar` by default, using the p
 
 jar --> `build/libs/projectName-projectVersion.jar`
 
-### Run Tests - test
+### Jar Task Class
+
+Like that compileJava and processResources, jar task of java plugin is type of Jar task class
+
+Jar task class can configure related project metadata 
+
+## Run Tests - test
 
 To run easily your test, the java plugin provides a `test` task that compiles your test code, process any resources, and then run the tests
 

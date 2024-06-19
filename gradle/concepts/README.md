@@ -2,7 +2,7 @@
 ## [gradle init, gradle wrapper](gradle%20init,gradle-wrapper.md)
 ## [build lifecycle](build-lifecycle.md)
 ## [task](tasks%20advanced.md)
-## [plugin](plugins%20advanced.md)
+## [java plugin](java%20plugin.md)
 ## [repositories, dependencies](repositories,%20dependencies.md)
 ## [note](note.md)
 ## [terminology](terminology.md)

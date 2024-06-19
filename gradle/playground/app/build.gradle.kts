@@ -8,6 +8,25 @@ tasks.named<Jar>("jar") {
     }
 }
 
+//tasks.named<JavaCompile>("compileJava") {
+//    options.isVerbose = true
+//}
+
+// compileJava, compileTestJava task configuring
+tasks.withType<JavaCompile> {
+    options.isVerbose = true
+}
+
+// processResources task configuring
+tasks.named<Copy>("processResources") {
+    include("**/*.txt")
+}
+
+// jar task configuring
+//tasks.named<Jar>("jar") {
+//    archiveFileName.set("test.jar")
+//}
+
 group = "com.gradle.playground"
 version = "0.1.1-SNAPSHOT"
 
