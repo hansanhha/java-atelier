@@ -1,6 +1,14 @@
+[Common Usage of Annotations](#common-usage-of-annotations)
+
+[Annotation Interface](#annotation-interface)
+
+[Built-in Annotations](#built-in-annotations)
+
+[Annotations](#annotations)
+
 Annotations were added in java se 5, an annotation is used to provide additional information about program element
 
-These do not directly influence the execution of the program, but they can see indirectly affect it when used by certain elements in the execution context      
+These do not directly influence the execution of the program, but I think they can see indirectly affect it when used by certain elements in the execution context      
 
 In other words, it only provides information, the actual processing is done by the other component
 
@@ -15,52 +23,6 @@ In other words, it only provides information, the actual processing is done by t
 **Runtime processing**
 - It also can be processed at runtime
 - This can be used to control the behavior of the program or provide information to the system
-
-## Built-in Annotations
-
-### Target, Retention Policy
-
-All annotations have a target and retention annotation that is built in
-
-```java
-@Documented
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.ANNOTATION_TYPE)
-public @interface Target {
-    
-    ElementType[] value();
-}
-```
-
-**@Target** is used to provides information about where the applied annotation can be applied in the code
-
-it has an element that returns ElementType[] to specify certain element types
-
-list of element types
-- TYPE, METHOD, CONSTRUCTOR, FIELD, PARAMETER, ANNOTATION_TYPE
-- RECORD_COMPONENT, TYPE_PARAMETER, TYPE_USE 
-- PACKAGE, LOCAL_VARIABLE, MODULE
-
-```java
-@Documented
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.ANNOTATION_TYPE)
-public @interface Retention {
-    
-    RetentionPolicy value();
-}
-```
-
-**@Retention** is used to provides information about when to use the applied annotation
-
-it has an element that returns RetentionPolicy to specify certain retention policy
-
-list of retention policies
-- SOURCE
-- CLASS
-- RUNTIME
-
-### Other Built-in Annotation
 
 ## Annotation Interface
 
@@ -181,7 +143,7 @@ for example using enum member declaration:
 ```
 
 
-#### Marker Annotation Interface
+### Marker Annotation Interface
 
 An annotation with no elements is called a **marker annotation interface**
 
@@ -189,13 +151,13 @@ An annotation with no elements is called a **marker annotation interface**
 @interface Component {}
 ```
 
-#### Single-element Annotation Interface
+### Single-element Annotation Interface
 
 An annotation with single element is called a **single-element annotation interface**
 
 By convention, the name of sole in single element annotation interface is `value` 
 
-Thanks to linguistic support, do not need to specify element name to use when using single-element annotation
+Thanks to linguistic support, do not need to specify element name when using single-element annotation
 
 ```java
 @interface Copyright {
@@ -219,11 +181,173 @@ interface Formatter {}
 }
 ```
 
+### Repeatable Annotation Interface
+
+## Built-in Annotations
+
+### Target, Retention Policy
+
+All annotations have a target and retention annotation that is built in
+
+```java
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.ANNOTATION_TYPE)
+public @interface Target {
+    
+    ElementType[] value();
+}
+```
+
+**@Target** is used to provides information about where the applied annotation can be applied in the code
+
+it has an element that returns ElementType[] to specify certain element types
+
+list of element types
+- TYPE, METHOD, CONSTRUCTOR, FIELD, PARAMETER, ANNOTATION_TYPE
+- RECORD_COMPONENT, TYPE_PARAMETER, TYPE_USE
+- PACKAGE, LOCAL_VARIABLE, MODULE
+
+```java
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.ANNOTATION_TYPE)
+public @interface Retention {
+    
+    RetentionPolicy value();
+}
+```
+
+**@Retention** is used to provides information about when to use the applied annotation
+
+it has an element that returns RetentionPolicy to specify certain retention policy
+
+list of retention policies
+- SOURCE
+- CLASS
+- RUNTIME
+
+### @Inherited
+
+The annotation interface `java.lang.annotation.Inherited` is used to indicate that annotations on a class C corresponding to a given annotation interface are inherited by subclasses of C.
+
+```java
+@Inherited
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Inherited
+@interface Foo {}
+```
+
+```java
+@Foo
+public class Parent{} 
+
+// inherited @Foo annotation interface
+public class Child extends Parent {}
+```
+
 ## Annotations
 
-### Normal Annotations
+An annotation is a marker which associates with a program element, but **no effect at runtime**
 
-### Meta Annotations
+An **annotation** denotes a **specific instance** of an annotation interface and usually provides values for the element of that interface
+
+There are three kinds of annotations:
+- Normal Annotation
+- Marker Annotation
+- Single Element Annotation
+
+### Normal Annotation
+
+A normal annotation specifies the name of an annotation interface and optionally a list of comma-separated `element-value` pairs
+
+Each pair contains an element value that is associated with an element of the annotation interface
+
+**Normal Interface**
+- `@TypeName([Element Value Pair List])`
+
+**Details**
+- Element Value Pair List: `Element Value Pair {, Element Value Pair}`
+- Element Value Pair: `Identifier = ElementValue` (identifier is method of the annotation interface and return type of this defines the element type of the element value)
+- Element Value
+  - Conditional Expression
+  - Element Value Array Initializer
+  - Annotation
+
+**ElementType(T) And ElementValue(V) Correspondence Rules**
+- T is not array type, and the type of V is assignment compatible with T, and:
+  - If T is a primitive type or String, then V is a constant expression
+  - If T is Class or an invocation of Class, then V is a class literal
+  - If T is an enum class type, then V is an enum constant
+  - V is not null
+
+**Element Value Pair Rules**
+- They must contain element-value pair for every element of the annotation interface
+  - **expect** for those elements with default values
+
+```java
+@RequestForEnhancement(
+    id       = 2868724,
+    synopsis = "Provide time-travel functionality",
+    engineer = "Mr. Peabody",
+    date     = "4/1/2004"
+)
+public static void travelThroughTime(Date destination) { 
+     
+}
+```
+
+### Marker Annotation
+
+A marker annotation is a shorthand designed for use with [marker annotation interface](#marker-annotation-interface) 
+
+**Marker Annotation**
+- `@TypeName()`
+
+```java
+@Preliminary 
+public class TimeTravel { 
+    
+}
+```
+ 
+Note that it can be used as marker annotation, even though annotation interface has multiple elements, if all elements of annotation interface have default value  
+
+### Single Element Annotation
+
+A single annotation is a shorthand designed for use with [single-element annotation interface](#single-element-annotation-interface)
+
+**Single Annotation**
+- `@TypeName (ElementValue)`
+
+Note that it can be used as single element annotation, even though annotation interface has multiple elements, if one element is named `value` and all other elements have default value
+
+```java
+@Endorsers("Epicurus")
+public class Pleasure {
+    
+}
+```
+
+```java
+@Author(@Name(first = "Joe", last = "Hacker"))
+public class BitTwiddle {
+    
+}
+```
+
+### Meta Annotation
+
+An annotation that is declared annotation interface declaration
+
+An annotation of interface A may appear as a meta-annotation on the declaration of the interface A itself. 
+
+More generally, circularities in the transitive closure of the "annotates" relation are permitted.
+
+For example, it is legal to annotate the declaration of an annotation interface S with a meta-annotation of interface T, and to annotate T's own declaration with a meta-annotation of interface S. 
+
+The predefined annotation interfaces contain several such circularities.
 
 ### Composite Annotation
 
