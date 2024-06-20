@@ -6,6 +6,8 @@
 
 [Annotations](#annotations)
 
+[Annotation Declaration](#annotation-declaration)
+
 Annotations were added in java se 5, an annotation is used to provide additional information about program element
 
 These do not directly influence the execution of the program, but I think they can see indirectly affect it when used by certain elements in the execution context      
@@ -350,6 +352,51 @@ For example, it is legal to annotate the declaration of an annotation interface 
 The predefined annotation interfaces contain several such circularities.
 
 ### Composite Annotation
+
+
+
+## Annotation Declaration
+
+A **declaration annotation** is an annotation that applies to a declaration, and whose annotation interface is applicable in the declaration context represented by that declaration
+
+or, a **type annotation** that applies to a type(or any part of type or array), and whose annotation interface is applicable in type contexts
+
+```java
+// Field annotation declaration
+@Foo int f;
+```
+
+`@Foo` is a **declaration annotation** if Foo is meta-annotated by `@Target(ElementType.FIELD)` and a **type annotation** if Foo is meta-annotated by `@Target(ElementType.TYPE_USE)`
+
+In addition to it is possible for @Foo to be both a declaration annotation and a type annotation simultaneously
+
+```java
+@A int @B [] @C[] f;
+```
+
+`@A` applies to the element type `int`
+
+`@B` applies to the array type `int[][]`
+
+`@C` applies to its component type `int[]`
+
+It is possible for an annotation to appear at a syntactic location in a program where it could plausibly apply to a declaration or a type or both
+
+This can happen in any of the six declaration contexts where modifiers immediately precede the type of the declared entity
+- Method declarations (including elements of annotation interface)
+- Constructor declarations
+- Field declarations (including enum constants)
+- Formal and exception parameter declarations
+- Local variable declarations
+- Record component declarations
+
+Whether an annotation applies to the declaration or to the type declared entity(whether the annotation is a declaration annotation or type annotation)
+
+depends on the applicability of the annotation's interface
+- If the annotation's interface applicable in the declaration context corresponding to the declaration, and not in type context, then the annotation is deemed to apply only to the declaration
+- If the annotation's interface applicable in the type context, and not in the declaration context corresponding to the declaration, then the annotation is deemed to apply to the type which is closet to the annotation
+- If the annotation's interface applicable in the declaration context corresponding to the declaration, and in type context, then the annotation is deemed to apply both the declaration and the type which is closet to the annotation
+
 
 ## Annotation abstraction
 
