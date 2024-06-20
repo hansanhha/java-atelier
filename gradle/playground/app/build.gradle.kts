@@ -1,12 +1,28 @@
 plugins {
-    java
+//    java
+    application
 }
 
-tasks.named<Jar>("jar") {
-    manifest {
-        attributes["Main-Class"] = "com.gradle.playground.RideStatusService"
-    }
+application {
+    mainClass.set("com.gradle.playground.RideStatusService")
 }
+
+tasks.register<JavaExec>("runJar") {
+    group = "application"
+    description = "Run the jar file itself by gradle"
+
+    classpath(tasks.named("jar").map { it.outputs })
+    classpath(configurations.runtimeClasspath)
+    args("    teacups    ")
+
+    mainClass.set("com.gradle.playground.RideStatusService")
+}
+
+//tasks.named<Jar>("jar") {
+//    manifest {
+//        attributes["Main-Class"] = "com.gradle.playground.RideStatusService"
+//    }
+//}
 
 //tasks.named<JavaCompile>("compileJava") {
 //    options.isVerbose = true
@@ -36,6 +52,7 @@ repositories {
 
 dependencies {
     implementation(libs.guava)
+    implementation(libs.apache.commons.lang3)
 
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")

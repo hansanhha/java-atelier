@@ -1,5 +1,7 @@
 package com.gradle.playground;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -23,7 +25,7 @@ public class RideStatusService {
     }
 
     public static String getRideStatus(String ride) {
-        var rideStatuses = readFile(String.format("%s.txt", ride));
+        var rideStatuses = readFile(String.format("%s.txt", StringUtils.trim(ride)));
         return rideStatuses.get(new Random().nextInt(rideStatuses.size()));
     }
 
