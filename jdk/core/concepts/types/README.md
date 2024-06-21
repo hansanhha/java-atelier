@@ -7,9 +7,10 @@
 **Classes**
 - [Class](classes.md#class-top-level-class)
 - [Abstract Class](classes.md#abstract-class)
-- [Sealed Class](sealed_classes.md) 
+- [Anonymous Class](classes.md#anonymous-class)
+- [Sealed Class](sealed_classes.md)
 
-**Interface**
+**Interfaces**
 - [Interface](classes.md#interface)
 - [Annotation](annotations.md)
 
@@ -17,12 +18,15 @@
 - [Functional Interface](classes.md#functional-interface)
 - [Lambda Expression](../functional/lambda_expression.md)
 
-**Constant**
+**Constants**
 - [Enum Class](enums.md)
 - [Record Class](records.md)
 
 **Parameterized**
 - [Generic](generics.md)
 
-**etc**
-- [Anonymous Class](classes.md#anonymous-class)
+**Predefined**
+- Object
+- String
+- Thread
+- ThreadLocal

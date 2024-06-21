@@ -1,4 +1,4 @@
-## [Modifiers, Keywords](concepts/modifiers,keywords.md)
+## [Grammars](concepts/grammars)
 
 ## [Types](concepts/types)
 
