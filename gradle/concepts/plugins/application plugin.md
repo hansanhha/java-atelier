@@ -22,7 +22,7 @@ In [my playground's build script](../../playground/app/build.gradle.kts), I conf
 
 ```kotlin
 application {
-    mainClass.set("com.gradle.playground.RideStatusService")
+    mainClass.set("com.gradle.theme.park.RideStatusService")
 }
 ```
 
@@ -49,13 +49,14 @@ tasks.register<JavaExec>("runJar") {
     classpath(configurations.runtimeClasspath)
     args("    teacups    ")
 
-    mainClass.set("com.gradle.playground.RideStatusService")
+    mainClass.set("com.gradle.theme.park.RideStatusService")
 }
 ```
 
-JavaExec task class provide 2 relevant configuration
+JavaExec task class provide relevant configuration
 - `classpath()` : The classpath for the main class
 - `args()` : The arguments passed to the main class to be executed
+- `mainClass` : configure execution main class which runs the main method in runtime
 
 The first classpath() is references to get the jar file created by `Jar` task
 

@@ -55,6 +55,7 @@ dependencies {
     implementation(libs.apache.commons.lang3)
 
     testImplementation(libs.junit.jupiter)
+    testImplementation(libs.testng)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
@@ -64,8 +65,22 @@ java {
     }
 }
 
-tasks.named<Test>("test") {
+val rideFailureTest = "**/RideStatusServiceFailureTest.class"
+
+tasks.withType<Test>().configureEach {
+//    useTestNG()
     useJUnitPlatform()
+//    exclude(rideFailureTest)
+}
+
+testing {
+    suites {
+        register<JvmTestSuite>("integrationTest") {
+            dependencies {
+                implementation(project())
+            }
+        }
+    }
 }
 
 sourceSets.main {
