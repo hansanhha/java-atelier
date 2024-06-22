@@ -47,3 +47,36 @@ public class C<T> {
     }
 }
 ```
+
+## Parameterized Types
+
+A class or interface that is generic defines a set of parameterized types
+
+**Parameterized Types form**
+- interface/class TypeName<Type Arguments>
+- Type Argument that denotes a particular parameterization of the generic class or interface
+
+**Well-formed Parameterized Types**
+- `Seq<String>`
+- `Seq<Seq<String>>`
+- `Seq<String>.Zipper<Integer>`
+- `Pair<String, Integer>`
+
+**Incorrect Parameterization**
+- `Seq<int>` : primitive types cannot be type arguments
+- `Pair<String>` : not enough type arguments
+- `Pair<String, String, String>` : too many type arguments
+
+### Type Arguments of Parameterized Types
+
+Type argument are be either reference types or wildcards
+
+Unlike ordinary [type variables](#type-variables) declared in a method signature, no type inference is required when using a wildcard
+
+**Upper Bound Wildcard**
+
+`extends ReferenceType` : `? extends B` (B is the upper bound)
+
+**Lower Bound Wildcard**
+
+`? super RefercenType` : `? super B` (B is the lower bound)
