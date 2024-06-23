@@ -1,4 +1,4 @@
-package com.gradle.theme.park;
+package com.gradle.theme_park;
 
 import org.apache.commons.lang3.StringUtils;
 
