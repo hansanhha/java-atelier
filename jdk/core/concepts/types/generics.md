@@ -1,3 +1,29 @@
+## Why use generic
+
+Generics enable types to be parameters when defining classes, interface and methods
+
+Type parameters provide a way for you to re-use the same code with different inputs  
+
+The difference is that the inputs to formal parameters are values, while the inputs to type parameters are types
+
+**Benefit of using generic**
+- Stronger type checks at compile time
+  - A java compiler applies strong type checking to generic code and issues error if the code violates type safety
+- Eliminates of type casts
+  - ```java
+    // non-generic code
+    List list = new ArrayList();
+    list.add("hello");
+    String s = (String) list.get(0);
+    
+    // using generic
+    List<String> list = new ArrayList<String>();
+    list.add("hello");
+    String s = list.get(0);   // no cast
+    ```
+- Enabling programmers to implement generic algorithms
+
+
 ## Type Parameter
 
 **type parameter** : `{type parameter modifier} type identifier [type bound]`
@@ -76,6 +102,7 @@ Unlike ordinary [type variables](#type-variables) declared in a method signature
 **Upper Bound Wildcard**
 
 `extends ReferenceType` : `? extends B` (B is the upper bound)
+- `? extends Object` is equivalent to the unbounded wildcard `?`
 
 **Lower Bound Wildcard**
 
