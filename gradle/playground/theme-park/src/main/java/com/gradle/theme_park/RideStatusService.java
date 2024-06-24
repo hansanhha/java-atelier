@@ -13,6 +13,8 @@ import java.util.Random;
 public class RideStatusService {
 
     public static void main(String[] args) {
+        System.out.println(System.getProperty("java.version"));
+
         if (args.length != 1) {
             System.out.println("A single ride name must be passed");
             System.exit(1);

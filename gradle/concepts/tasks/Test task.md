@@ -41,7 +41,7 @@ then gradle use cached test result  when you run test after first run test
 
 `./gradlew :playground:theme-park:cleanTest :playground:theme-park:test --console=verbose`
 
-## Separate Test Task and Directory that Unit Test and Integration Test  
+## Separate Test Task and Directory that Unit Test and Integration Test
 
 The [JVM Test suite plugin(`jvm-test-suite`)](https://docs.gradle.org/current/userguide/jvm_test_suite_plugin.html) provides a DSL and API to model multiple groups of automated tests into test suite in JVM based proejcts
 

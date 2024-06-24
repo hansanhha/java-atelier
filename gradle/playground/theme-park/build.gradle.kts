@@ -3,12 +3,18 @@ plugins {
 }
 
 application {
-    mainClass.set("com.gradle.playground.RideStatusService")
+    mainClass.set("com.gradle.theme_park.RideStatusService")
 }
 
 repositories {
     mavenCentral()
 }
+
+//tasks.withType<JavaExec>().configureEach {
+//    javaLauncher.set(javaToolchains.launcherFor {
+//        languageVersion.set(JavaLanguageVersion.of(8))
+//    })
+//}
 
 tasks.register<JavaExec>("runJar") {
     group = "application"
@@ -18,7 +24,7 @@ tasks.register<JavaExec>("runJar") {
     classpath(configurations.runtimeClasspath)
     args("    teacups    ")
 
-    mainClass.set("com.gradle.playground.RideStatusService")
+    mainClass.set("com.gradle.theme_park.RideStatusService")
 }
 
 //tasks.named<Jar>("jar") {
@@ -53,11 +59,9 @@ dependencies {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion.set(JavaLanguageVersion.of(21))
     }
 }
-
-val rideFailureTest = "**/RideStatusServiceFailureTest.class"
 
 testing {
     suites {
