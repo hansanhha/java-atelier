@@ -129,4 +129,6 @@ tasks.withType<JavaExec>().configureEach {
 
 ### Publishing to Maven Repository
 
-If an artifact(library) is stored where maven repository, whether public or private, then it can be referenced by some other project  
+If an artifact(library) is stored where maven repository, whether public or private, then it can be referenced by some other project
+
+[maven publish plugin](./plugins/maven-public%20plugin.md)

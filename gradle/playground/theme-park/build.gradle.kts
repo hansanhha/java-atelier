@@ -1,5 +1,6 @@
 plugins {
     application
+    `maven-publish`
 }
 
 application {
@@ -8,6 +9,24 @@ application {
 
 repositories {
     mavenCentral()
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            from(components["java"])
+        }
+    }
+
+    repositories {
+        maven {
+//            url = uri()
+//            credentials {
+//                username = "aws"
+//                password = System.getenv("")
+//            }
+        }
+    }
 }
 
 //tasks.withType<JavaExec>().configureEach {
