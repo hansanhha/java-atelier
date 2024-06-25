@@ -4,19 +4,134 @@
 
 ## Record
 
-데이터 집합, 불변 데이터 모델링을 돕는 특수 클래스
+Record is a restricted kind of class that defines a "simple aggregate of values"
 
-```
-record Rectangle(double length, double width) {} 
+```text
+Record Declaration:
+    {Class Modifier} record TypeIdentifier [TypeParameters] RecordHeader [ClassImplements] RecordBody
 ```
 
-구성
-- record 이름 : Rectangle
-- type paramenter(optional)
-- header(component list) : length, width
-    - header에 명시된 각 component마다 동일한 이름과 타입으로 private final 필드를 가짐
-    - 또한 동일한 타입을 반환하는 동일한 이름의 public accessor 메서드도 가짐(length(), width())
-- body
+**A Record Declaration Rules** 
+- Record class can be declared in top-level, member, local
+- Do not has the modifier "abstract", "sealed", "non-sealed"
+- A record class is implicitly **final**
+- A nested record class im implicitly **static**
+- The direct superclass type of record class is `Record` - A record class does not have an `extends` clause, so it is not possible to explicitly declare a direct superclass 
+
+## Record Components
+
+The record components of a record class are values of record class and if any, are specified in the header of a record declaration
+
+A record component corresponds to two members of the record class
+- a "private field" declared implicitly
+- a "public accessor method" declared explicitly or implicitly
+
+```text
+RecordHeader:
+    ( {RecordComponentList} )
+    
+RecordComponentList:
+    RecordComponent, {, RecordComponent}
+    
+RecordComponent:
+    Annotation UnannotationType Identifier
+    
+    or 
+    
+    VariableArgumentRecordComponent
+
+VariableArgumentRecordComponent:
+    Annotation UnannotationType {Annotation} ... Identifier
+```
+
+**The Record Components Rules**
+- Variable argument record component can be declared only once and placed last
+- If the record component is not a variable argument record component, then the declared type is denoted by UnannotationType
+
+## Record Body
+
+The body of record declaration may contain constructor and member declaration as well as static initializers
+
+```text
+RecordBody:
+    { {RecordBodyDeclaration} }
+    
+RecordBodyDeclaration:
+    ClassBodyDeclaration
+    CompactConstructorDeclaration
+```
+
+```text
+ClassBodyDeclaration:
+    ClassMemberDeclaration
+    InstanceInitializer
+    StaticInitializer
+    ConstructorDeclaration
+    
+ClassMemberDeclaration:
+    FieldDeclaration
+    MethodDeclaration
+    ClassDeclaration
+    InterfaceDeclaration
+```
+
+**The Record Body Declaration Rules**
+- The body of record declaration cannot contain the following:
+  - non-static field
+  - method declaration that is "abstract" or "native"
+  - instance initializer
+
+## Record Members
+
+For each record component, a record class has a field with the same name as the record component and the same type as the declared type of the record component
+
+This field, which is declared implicitly is known as a "component field"
+
+**A component field features**
+- A component field is "private", "field" and "non-static" 
+- A component field is annotated with annotations, if any, that appear on the corresponding record component and whose annotation interfaces are applicable in the field declaration context or in type context or both
+- For each component, a record class has a method with the same name as the record component and an empty formal parameter list (this method, which is declared implicitly or explicitly, is known as an "accessor" method)
+
+**The explicitly declaring accessor method rules**
+- The return type of the accessor method must be the same as the declared type of the record component
+- The accessor method not be generic
+- The accessor method must be a public instance method with no formal parameter list and no throws clause
+
+**The implicitly declared accessor method properties following:**
+- Its name is the same as the name of the record component
+- Its return type is the same as the declared type of the record component
+- It is not generic
+- It is a public instance method with no formal parameters and no throws clause 
+- It is annotated with the annotations, if any, that appear on the corresponding record component and whose annotation interfaces are applicable in the method declaration context, or in type contexts, or both
+- Its body returns the value of the corresponding component field
+
+## Direct Superclass Record
+
+Every class of record type are implicitly extend `Record` class
+
+```java
+public abstract class Record {
+    /**
+     * Constructor for record classes to call.
+     */
+    protected Record() {}
+
+    @Override
+    public abstract boolean equals(Object obj);
+
+    @Override
+    public abstract int hashCode();
+
+    @Override
+    public abstract String toString();
+}
+```
+
+A record class provides implementations of all the abstract methods declared in class Record. 
+
+For each of the following methods, if a record class R does not explicitly declare a method with the same modifiers, name, and signature, then the method is implicitly declared as follows:
+
+
 
 ### compact constructor
 
@@ -51,39 +166,6 @@ record Rectangle(double length, doule width) {
 매개변수, 할당문 생략
 
 생성자 마지막 부분에서 매개변수가 field에 암시적으로 할당됨
-
-### 선언 규칙
-
-record 내 선언 가능한 것
-- static field, static initializer, static method
-- instance method
-- nested class, interface, record
-
-불가능한 것
-- instance field, instance initializer, native method
-
-## 특징
-
-모든 Record 타입은 java.lang.Record를 상속함
-
-accessor, constructor, equals, hashcode, toString 메서드 자동 생성
-    - 자동 생성되는 생성자 매개변수는 header와 동일함
-    - new 키워드로 인스턴스 생성 가능
-    - 자동 생성되는 메서드를 직접 구현하는 경우 동일한 특성(이름, 반환 타입 등)을 갖도록 강제함
-
-record 클래스는 암시적으로 final이므로 다른 record를 명시적으로 extends 할 수 없음
-
-generic record 생성 가능
-
-interface implmenents 가능
-
-각 component에 annotate 가능
-- 선언한 annotation의 @Target에 따라 멤버와 생성자에 전파됨
-
-Record라는 이름의 클래스를 만들고 import 경로에 클래스명을 포함하여 명시하지 않는 경우 컴파일 에러 발생
-- java 파일은 암시적으로 import java.lang.* 문이 붙음
-- com.example.* 으로 커스텀 Record 클래스를 만들고 사용하는 경우 컴파일러가 어느 Record 클래스를 가져와야되는지 모르기 때문에 컴파일 에러 발생
-- com.exmaple.Record와 같이 구체적인 클래스명을 적어주면 됨
 
 
 
