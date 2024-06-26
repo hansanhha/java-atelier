@@ -22,7 +22,7 @@ In [my playground's build script](../../playground/app/build.gradle.kts), I conf
 
 ```kotlin
 application {
-    mainClass.set("com.gradle.theme_park.RideStatusService")
+    mainClass.set("com.gradle.theme_park.status.RideStatusService")
 }
 ```
 
@@ -49,7 +49,7 @@ tasks.register<JavaExec>("runJar") {
     classpath(configurations.runtimeClasspath)
     args("    teacups    ")
 
-    mainClass.set("com.gradle.theme_park.RideStatusService")
+    mainClass.set("com.gradle.theme_park.status.RideStatusService")
 }
 ```
 

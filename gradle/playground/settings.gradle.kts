@@ -3,4 +3,4 @@ plugins {
 }
 
 rootProject.name = "playground"
-include("theme-park", "theme-park-hq")
+include("theme-park-status", "theme-park-api")
