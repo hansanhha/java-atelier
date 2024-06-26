@@ -1,6 +1,12 @@
-[JEP 395](https://openjdk.org/jeps/395)
+[Record](#record)
 
-[oracle docs](https://docs.oracle.com/en/java/javase/17/language/records.html)
+[Record Components](#record-components)
+
+[Record Body](#record-body)
+
+[Record Members](#record-members)
+
+[Record Constructor Declaration](#record-constructor-declaration)
 
 ## Record
 
@@ -132,6 +138,110 @@ A record class provides implementations of all the abstract methods declared in 
 For each of the following methods, if a record class R does not explicitly declare a method with the same modifiers, name, and signature, then the method is implicitly declared as follows:
 
 
+## Record Constructor Declaration
+
+To ensure proper initialization of its record components, a record class does not implicitly declare a default constructor
+
+Instead, a record class has **canonical constructor**, declared explicitly or implicitly, that initializes all the component fields of the record class
+
+```java
+public record Point(int x, int y) {
+    
+    // canonical constructor
+    public Point(int x, int y) {
+        
+    }
+} 
+```
+
+There are two ways to explicitly declare a canonical constructor in a record declaration
+- Declaring a normal constructor with a suitable signature
+- Declaring a compact constructor
+
+## Normal Canonical Constructor
+
+**Explicitly Declared Canonical Constructor Rules**
+- Must provide at least as much access as the record class
+  - record class(R) is public - canonical constructor(C) must be public
+  - R is protected - C be protected or public
+  - R is package   - C be package access, protected, or public
+  - R is private   - C be declared with any accessibility
+- Each formal parameter in the formal parameter list must have the same name and declared type as the corresponding record component
+- The constructor body must not contain an explicit constructor invocation statement
+
+```java
+protected record Point(int x, int y) {
+    
+    // explicitly declared canonical constructor
+    public Point(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
+}
+```
+
+**If not explicitly declare Canonical Constructor**
+- Canonical Constructor C is implicitly declared in record class R with the following properties
+- The signature of C has not type parameter, and has formal parameters given by the derived formal parameter list of R
+- C has the same access modifier as R
+- C has no throws clause
+- The body of C initializes each component field of R with the corresponding formal parameter list of C, in the order that record components appear in the record header 
+
+**Non-canonical Constructor Rules**
+- A record class may contain declaration of constructors that are not canonical constructors
+- The body of them must start with an alternate constructor invocation
+
+```java
+public record Point(int x, int y) {
+    
+    private int calculate(int level, int point) {
+        return level + point;
+    } 
+    
+    public Point(int level, int x, int y) {
+        // alternate constructor invocation (this constructor invocation)
+        this(calculate(level, x), calculate(level, y));
+    }
+} 
+```
+
+## Compact Canonical Constructor
+
+A compact constructor is a succinct form of constructor declaration, only available in a record declaration
+
+The formal parameters of a compact constructor of record class are implicitly declared
+
+The signature of a compact constructor is equal to the derived constructor signature of record class
+
+**Compact Constructor Rules**
+- must not contain a return statement
+- must not contain an explicit constructor invocation statement
+
+After last statement, all component fields of the record class are implicitly initialized to the value of the corresponding formal parameters
+
+```java
+record Rational(int num, int denom) {
+    private static int gcd(int a, int b) {
+        if (b == 0) return Math.abs(a);
+        else return gcd(b, a % b);
+    }
+   
+    Rational {
+        int gcd = gcd(num, denom);
+        num    /= gcd;
+        denom  /= gcd;
+    }
+}
+
+// The compact constructor Rational {...} behaves the same as this normal constructor:
+Rational(int num, int denom) {
+  int gcd = gcd(num, denom);
+  num    /= gcd;
+  denom  /= gcd;
+  this.num   = num;
+  this.denom = denom;
+}
+```
 
 ### compact constructor
 
