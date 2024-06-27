@@ -6,6 +6,7 @@
 ## Plugins
 ### [java plugin](plugins/java%20plugin.md)
 ### [application plugin](plugins/application%20plugin.md)
+### [java library plugin](plugins/java%20library.md)
 ### [maven-plugin](plugins/maven-publish%20plugin.md)
 ### [spring plugins](plugins/spring%20plugins.md)
 ## [repositories, dependencies](repositories,%20dependencies.md)

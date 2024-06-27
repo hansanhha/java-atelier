@@ -13,7 +13,7 @@ repositories {
 }
 
 dependencies {
-    implementation(libs.springboot.web)
+//    implementation(libs.springboot.web)
     implementation("com.gradle.theme-park:theme-park-status:1.0.0")
 }
 
