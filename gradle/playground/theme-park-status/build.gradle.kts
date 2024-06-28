@@ -1,11 +1,12 @@
 plugins {
-    application
+//    application
+    `java-library`
     `maven-publish`
 }
 
-application {
-    mainClass.set("com.gradle.theme_park.status.RideStatusService")
-}
+//application {
+//    mainClass.set("com.gradle.theme_park.status.RideStatusService")
+//}
 
 repositories {
     mavenCentral()
@@ -63,7 +64,7 @@ tasks.named<Copy>("processResources") {
 }
 
 group = "com.gradle.theme-park"
-version = "1.0.0"
+version = "1.0.1"
 
 repositories {
     mavenCentral()
@@ -72,7 +73,7 @@ repositories {
 dependencies {
     implementation(libs.guava)
     implementation(libs.apache.commons.lang3)
-    implementation(libs.jackson.databind)
+    api(libs.jackson.databind)
 
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }

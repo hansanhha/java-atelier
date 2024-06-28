@@ -1,10 +1,20 @@
+[Library](#library)
+
+[Consumer And Producer with micro project](#consumer-and-producer-with-micro-project)
+
+[ABI](#abi)
+
+[The java-library plugin](#the-java-library-plugin)
+
+[Maven .pom XML file](#maven-pom-xml-file)
+
 ## Library
 
 Library is producer that it generates an artifact to be consumed by others
 
 So that, as a producer of a library you need to think about how library transitive dependencies affect your consumer that is standalone application
 
-By default, any implementation dependencies of the library you're creating will end up on the runtime classpath of any consumer, but not on the compile classpath
+By default, **any implementation dependencies of the library you're creating will end up on the runtime classpath of any consumer, but not on the compile classpath**
 
 ## Consumer And Producer with micro project
 
@@ -89,6 +99,8 @@ pubilc class ThemeParkApiApplication {
 
 Application Binary Interface, ABI is that any types used within it need to be available on the compile classpath of the consuming application
 
+So that, ABI types of a library need to be on the compile and runtime classpaths of any consumer
+
 **ABI types include:**
 - return types
 - public method parameters 
@@ -124,6 +136,19 @@ It's gradle's core plugin and is make fine-grained classpath control possible
 
 It allows to you as creator of a library to define which dependencies should be included in the compile or runtime classpaths of whatever application is consuming the library
 
+Since this plugin adds additional dependency configuration that is called `api`,
 
+"api dependencies" are part of the library's ABI, and will therefore **appear on the compile and runtime classpaths of any consumer**
 
+"implementation dependencies" aren't part of the ABI, and will **only appear on the runtime classpath of consumers**
+
+**Retouching micro project**
+1. Swap the java plugin for the java-library plugin in the "theme-park-status library"
+2. Change the jackson-databind dependency declaration from `implementation` to `api` to make it part of the library's ABI
+3. Run `publishToMavenLocal`
+4. Back in "theme-park-status application"
+5. Pick up the latest version of the library and figured out that jackson-databind now also belongs on the compile classpath
+6. Run the application or `./gradlew :theme-park-api:assemble`
+
+## Maven .pom XML file
 

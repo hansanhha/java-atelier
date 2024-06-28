@@ -14,7 +14,7 @@ public class ThemeParkRideController {
 //    @GetMapping("/rides")
     public Iterator<ThemeParkRide> getRides() {
 //        ObjectNode rollercoaster = RideStatusService.getRideStatus("rollercoaster");
-        System.out.println(RideStatusService.getRideStatus("rollercoaster"));
+//        System.out.println(RideStatusService.getRideStatus("rollercoaster"));
         return Arrays.asList(
 //                new ThemeParkRide("rollercoaster",
 //                        rollercoaster.get("status").asText()),
