@@ -55,7 +55,7 @@ tasks.register<JavaExec>("runJar") {
 
 // compileJava, compileTestJava task configuring
 tasks.withType<JavaCompile> {
-    options.isVerbose = true
+//    options.isVerbose = true
 }
 
 // processResources task configuring

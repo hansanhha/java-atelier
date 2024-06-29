@@ -2,10 +2,23 @@ plugins {
     java
     alias(libs.plugins.spring.boot)
     alias(libs.plugins.spring.dependency.management)
+    `maven-publish`
 }
 
-group = "com.gradle.theme-park"
-version = "0.0.1-SNAPSHOT"
+publishing {
+    publications {
+        create<MavenPublication>("maven") {
+            from(components["java"])
+        }
+    }
+
+    repositories {
+        mavenLocal {
+            group = property("group").toString()
+            version = property("version").toString()
+        }
+    }
+}
 
 repositories {
     mavenCentral()

@@ -11,5 +11,6 @@
 ### [spring plugins](plugins/spring%20plugins.md)
 ## [repositories, dependencies](repositories,%20dependencies.md)
 ## [note](note.md)
+## [gradle properties](gradle%20properties.md)
 ## [terminology](terminology.md)
 ## [kotlin](kotlin.md)
