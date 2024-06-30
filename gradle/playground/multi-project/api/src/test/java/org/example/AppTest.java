@@ -3,6 +3,7 @@
  */
 package org.example;
 
+import gradle.is.awesome.App;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 

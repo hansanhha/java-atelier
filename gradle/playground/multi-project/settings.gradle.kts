@@ -11,4 +11,4 @@ plugins {
 }
 
 rootProject.name = "multi-project"
-include("app")
+include("api", "message")
