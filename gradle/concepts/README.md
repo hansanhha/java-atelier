@@ -13,5 +13,6 @@
 ## [note](note.md)
 ## [gradle properties](gradle%20properties.md)
 ## [multi project build](multi%20project%20build.md)
+## [file handling](file%20handling.md)
 ## [terminology](terminology.md)
 ## [kotlin](kotlin.md)

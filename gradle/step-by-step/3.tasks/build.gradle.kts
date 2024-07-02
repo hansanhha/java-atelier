@@ -10,7 +10,9 @@ tasks.register<Copy>("generateOSFileInWindows") {
     description = "print own os name when windows environment"
     enabled = true
 
-    from("your-os.txt")
+    from(fileTree(layout.projectDirectory) {
+        include("resources/your-os.txt")
+    })
     into(layout.buildDirectory)
 
     filter<ReplaceTokens>("tokens" to mapOf("MESSAGE" to os))
@@ -33,7 +35,9 @@ tasks.register<Copy>("generateOSFileInMac") {
     description = "print own os name when mac environment"
     enabled = true
 
-    from("your-os.txt")
+    from(fileTree(layout.projectDirectory) {
+        include("resources/your-os.txt")
+    })
     into(layout.buildDirectory)
 
     filter<ReplaceTokens>("tokens" to mapOf("MESSAGE" to os))
