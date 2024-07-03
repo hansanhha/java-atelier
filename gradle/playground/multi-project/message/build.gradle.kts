@@ -1,5 +1,3 @@
 plugins {
-    java
+    id("common-conventions")
 }
-
-group = "gradle.is.awesome"
