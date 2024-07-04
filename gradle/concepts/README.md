@@ -9,6 +9,7 @@
 ### [java library plugin](plugins/java%20library.md)
 ### [maven-plugin](plugins/maven-publish%20plugin.md)
 ### [spring plugins](plugins/spring%20plugins.md)
+### [custom plugin, task](../playground/custom-plugin)
 ## [repositories, dependencies](repositories,%20dependencies.md)
 ## [note](note.md)
 ## [gradle properties](gradle%20properties.md)
