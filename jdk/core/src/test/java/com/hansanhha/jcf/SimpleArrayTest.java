@@ -1,4 +1,4 @@
-package com.hansanhha.collection_framework;
+package com.hansanhha.jcf;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

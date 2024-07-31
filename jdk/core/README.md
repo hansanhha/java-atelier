@@ -6,7 +6,7 @@
 
 ## [Exceptions](concepts/exceptions.md)
 
-## [Collection Frameworks](concepts/collection%20frameworks)
+## [Collection Frameworks](concepts/jcf)
 
 ## [Util](concepts/util)
 
