@@ -2,16 +2,19 @@
 
 [Arrays](#arrays)
 
-[ArrayList](#arraylist)
+[ArrayList, SynchronizedList, CopyOnWriteArrayList 개념](#arraylist-synchronizedlist-copyonwritearraylist-개념)
+
+[ArrayList 분석](#arraylist-분석)
+
+[Awesome Readings](#awesome-readings)
 
 ## Array-Based Classes
 
 Java Collection Framework에 속하는 배열 관련 클래스들
 - [Arrays](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Arrays.html)
 - [ArrayList](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/ArrayList.html)
-- [ArrayBlockingQueue](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/ArrayBlockingQueue.html)
+- SynchronizedRandomAccessList
 - [CopyOnWriteArrayList](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/CopyOnWriteArrayList.html)
-- [CopyOnWriteArraySet](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/CopyOnWriteArraySet.html)
 
 ## Arrays
 
@@ -27,7 +30,7 @@ Java Collection Framework에 속하는 배열 관련 클래스들
 - List 변환(toList)
 - Stream 변환(stream)
 
-## ArrayList
+## ArrayList, SynchronizedList, CopyOnWriteArrayList 개념
 
 배열의 크기를 조정할 수 있는 List 인터페이스 구현체
 - List 인터페이스의 모든 optional 작업 구현
@@ -126,12 +129,78 @@ iterator가 동작하는 동안에는 배열이 변경되지 않고 간섭되지
 또한 iterator에서 수정 작업을 지원하지 않으므로 호출하면 `UnsupportedOperationException`를 터뜨림
 
 ```java
+final transient Object lock = new Object();
+
+public E set(int index, E element) {
+        synchronized (lock) {
+            ...
+        }
+    }
+    
+public boolean add(E e) {
+    synchronized (lock) {
+        ...
+    }
+}
+
+public E remove(int index) {
+    synchronized (lock) {
+        ...
+    }
+}
+
+static final class COWIterator<E> implements ListIterator<E> {
+    
+    private final Object[] snapshot;
+    private int cursor;
+    
+    public void add(E e) {
+        throw new UnsupportedOperationException();
+    }
+    
+}
+```
+
+```java
 var list = new CopyOnWriteArrayList<Integer>();
 
 list.add(1);
 list.add(2);
 ```
 
+## ArrayList 분석
+
+### 계층 구조
+
+<img src="./images/arraylist hierarchy.png" alt="ArrayList 계층 구조" style="width: 70%; height: 70%"/>
+
+### 주요 필드
+
+```java
+private static final int DEFAULT_CAPACITY = 10;
+
+Object[] elementData;
+
+private int size;
+```
 
 
 
+### 메서드
+
+add, addAll, addFist, addLast
+
+remove, removeAll, removeFist, removeLast, removeIf
+
+retainAll, replaceAll
+
+set, get, getFist, getLast, subList, indexOf
+
+grow, trimToSize, ensureCapacity
+
+
+## SynchronizedList 분석
+
+## CopyOnWriteArrayList 분석
+
+## [Awesome Readings](https://github.com/deepak-malik/Data-Structures-In-Java/blob/master/src/com/deepak/data/structures/Arrays/Arrays_Introduction.md)
