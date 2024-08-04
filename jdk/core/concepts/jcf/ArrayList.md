@@ -197,4 +197,142 @@ grow()에서 size+1을 값으로 전달하기에 newLength에 전달되는 minGr
 
 고로 **ArrayList는 내부적으로 배열 길이를 늘릴 때, 자신의 배열 길이의 절반을 늘린다는 것**을 알 수 있음
 
+### 삽입(add)
+
+**요소만 전달해서 삽입하는 경우**
+
+```java
+public boolean add(E e) {
+    modCount++;
+    add(e, elementData, size);
+    return true;
+}
+
+private void add(E e, Object[] elementData, int s) {
+    if (s == elementData.length)
+        elementData = grow();
+    elementData[s] = e;
+    size = s + 1;
+}
+```
+
+요소만 전달받는 경우 내부적으로 add()를 호출하고 있음
+
+`add(E e, Object[] elementData, int s)`는 `add(E e)`에서만 사용하는 걸로 봐서 재사용성을 염두에 둔 게 아닌 것 같은데
+
+굳이 내부적으로 add 메서드를 한 번 더 호출하는 이유가 뭘까?
+
+JIT 컴파일러는 **메서드 인라이닝**이라는 성능 최적화 기법을 제공함
+
+런타임에 자주 호출되는 메서드를 분석해서 메서드의 크기와 호출 빈도를 기반으로 인라이닝을 결정하는데, 
+
+메서드 인라이닝이 적용되면 메서드 호출 지점에 메서드의 실제 코드로 대체함
+
+만약 다음과 같이 1백만 번의 add 메서드를 호출하는 코드가 있다고 가정해보면
+
+```java
+for (int i; i<1_000_000; i++) {
+    add(i);
+}
+```
+
+for문의 add(E e)를 호출이 다음과 같이 변경됨
+
+```java
+for (int i = 1; i <= 1_000_000; i++) {
+    modCount++;
+    add(i, elementData, size);
+}
+```
+
+그리고 `add(e, elementData, size)`는 다시 메서드 인라이닝이 적용됨
+
+```java
+for (int i; i<1_000_000; i++) {
+    modCount++;
+    if (s == elementData.length) {
+    elementData = grow();
+    }
+    elementData[s] = i;
+    size = s + 1;
+}
+```
+
+메서드 인라이닝이 적용되려면 메서드의 크기를 줄여야되기 때문에 `add(E e)`와 `add(E e, Object[] elementData, int s)`를 분리해놓음
+
+(C1 컴파일 루프 문에서 바이트코드 사이즈가 35(-XX:MaxInlineSize 기본 값) 이하인 경우)
+
+이러한 메서드를 **헬퍼 메서드**라고 함
+
+**인덱스를 지정해서 삽입하는 경우**
+
+```java
+public void add(int index, E element) {
+        rangeCheckForAdd(index);
+        modCount++;
+        final int s;
+        Object[] elementData;
+        if ((s = size) == (elementData = this.elementData).length)
+            elementData = grow();
+        System.arraycopy(elementData, index,
+                         elementData, index + 1,
+                         s - index);
+        elementData[index] = element;
+        size = s + 1;
+    }
+```
+
+index 범위 확인 후 modCount 변경
+
+현재 배열 길이와 size가 동일한 경우 grow()를 호출하고
+
+인덱스부터 (size - index) 길이만큼 한 칸씩 뒤로 이동시킨 후 삽입
+
+**컬렉션을 전달해서 삽입하는 경우**
+
+```java
+    public boolean addAll(Collection<? extends E> c) {
+        Object[] a = c.toArray();
+        modCount++;
+        int numNew = a.length;
+        if (numNew == 0)
+            return false;
+        Object[] elementData;
+        final int s;
+        if (numNew > (elementData = this.elementData).length - (s = size))
+            elementData = grow(s + numNew);
+        System.arraycopy(a, 0, elementData, s, numNew);
+        size = s + numNew;
+        return true;
+    }
+```
+
+매개변수로 받은 컬렉션 구현체를 배열로 변환한 후 길이가 0이라면 리턴
+
+아니라면 현재 삽입 가용한 길이보다 컬렉션 배열의 길이가 더 큰지 확인하고, 길다면 grow() (minCapacity: 현재 배열의 크기와 컬렉션 길이를 합한 값) 호출
+
+이후 컬렉션 배열을 size 인덱스부터 삽입
+
+**맨 처음과 맨 마지막에 삽입하는 경우**
+
+```java
+public void addFirst(E element) {
+    add(0, element);
+}
+
+public void addLast(E element) {
+    add(element);
+}    
+```
+
+addFirst의 경우 인덱스 0을 지정해서 요소를 삽입(나머지 모든 요소는 한 칸씩 이동)하고
+
+addLast의 경우 `add(E e)`를 호출해서 size 인덱스에 요소를 삽입함
+
+### Iterator
+
+add나 remove처럼 리스트의 크기(size)를 변경시키는 구조적 수정(structural modification) 메서드의 경우
+
+iterator의 fail-fast를 제공하기 위해 modCount를 사용함
+
 ## [ArrayList 구현](../../src/main/java/com/hansanhha/jcf/MyArrayList.java)
