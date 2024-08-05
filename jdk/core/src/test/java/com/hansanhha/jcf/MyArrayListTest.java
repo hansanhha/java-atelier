@@ -2,7 +2,7 @@ package com.hansanhha.jcf;
 
 import org.junit.jupiter.api.*;
 
-import java.util.LinkedList;
+import java.util.ArrayList;import java.util.LinkedList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -21,29 +21,35 @@ class MyArrayListTest {
 
     @Test
     void 요소만_삽입() {
+        // given/when
         list.add(1);
         list.add(2);
         list.add(3);
 
+        // then
         assertThat(list.size()).isEqualTo(3);
         assertThat(list).containsSequence(1,2,3);
     }
 
     @Test
     void 인덱스_지정_삽입() {
+        // given
         list.add(1);
         list.add(2);
         list.add(4);
         list.add(5);
 
+        // when
         list.add(2, 3);
 
+        // then
         assertThat(list.size()).isEqualTo(5);
         assertThat(list).containsSequence(1,2,3,4,5);
     }
 
     @Test
     void 컬렉션_삽입() {
+        // given
         list.add(1);
         list.add(2);
         list.add(3);
@@ -57,14 +63,17 @@ class MyArrayListTest {
         other.add(9);
         other.add(10);
 
+        // when
         list.addAll(other);
 
+        // then
         assertThat(list.size()).isEqualTo(10);
         assertThat(list).containsSequence(1,2,3,4,5,6,7,8,9,10);
     }
 
     @Test
     void 컬렉션_인덱스_지정_삽입() {
+        // given
         list.add(1);
         list.add(2);
         list.add(10);
@@ -78,34 +87,175 @@ class MyArrayListTest {
         other.add(8);
         other.add(9);
 
+        // when
         list.addAll(2, other);
 
+        // then
         assertThat(list.size()).isEqualTo(10);
         assertThat(list).containsSequence(1,2,3,4,5,6,7,8,9,10);
     }
 
     @Test
     void 맨_처음_삽입() {
+        // given
         list.add(2);
         list.add(3);
         list.add(4);
 
+        // when
         list.addFirst(1);
 
+        // then
         assertThat(list.size()).isEqualTo(4);
         assertThat(list).containsSequence(1,2,3,4);
     }
 
     @Test
     void 맨_마지막_삽입() {
+        // given
         list.add(1);
         list.add(2);
         list.add(3);
 
+        // when
         list.addLast(4);
 
+        // then
         assertThat(list.size()).isEqualTo(4);
         assertThat(list).containsSequence(1,2,3,4);
     }
 
+    @Test
+    void 인덱스_기반_삭제() {
+        // given
+        Integer removed = 99999;
+
+        list.add(1);
+        list.add(2);
+        list.add(removed);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+
+        // when
+        list.remove(2);
+
+        // then
+        assertThat(list.size()).isEqualTo(5);
+        assertThat(list).containsSequence(1,2,3,4,5);
+        assertThat(list.contains(removed)).isFalse();
+    }
+
+    @Test
+    void 객체_기반_삭제() {
+        // given
+        Integer removed = 99999;
+
+        list.add(1);
+        list.add(2);
+        list.add(removed);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+
+        // when
+        list.remove(removed);
+
+        // then
+        assertThat(list.size()).isEqualTo(5);
+        assertThat(list).containsExactly(1,2,3,4,5);
+        assertThat(list.contains(removed)).isFalse();
+    }
+
+    @Test
+    void 맨_처음_삭제() {
+        // given
+        Integer removed = 99999;
+
+        list.add(removed);
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+
+        // when
+        list.removeFirst();
+
+        // then
+        assertThat(list.size()).isEqualTo(5);
+        assertThat(list).containsExactly(1,2,3,4,5);
+        assertThat(list.contains(removed)).isFalse();
+    }
+
+    @Test
+    void 맨_마지막_삭제() {
+        // given
+        Integer removed = 99999;
+
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+        list.add(removed);
+
+        // when
+        list.remove(removed);
+
+        // then
+        assertThat(list.size()).isEqualTo(5);
+        assertThat(list).containsExactly(1,2,3,4,5);
+        assertThat(list.contains(removed)).isFalse();
+    }
+
+    @Test
+    void 컬렉션_기반_삭제_removeAll() {
+        // given
+        var removedAll = List.of(3,4,5,6,7);
+
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+        list.add(6);
+        list.add(7);
+        list.add(8);
+        list.add(9);
+        list.add(10);
+
+        // when
+        list.removeAll(removedAll);
+
+        // then
+        assertThat(list.size()).isEqualTo(5);
+        assertThat(list).containsExactly(1,2,8,9,10);
+        assertThat(list.containsAll(removedAll)).isFalse();
+    }
+
+    @Test
+    void 컬렉션_기반_삭제_retainAll() {
+        // given
+        var retainedAll = List.of(3,4,5,6,7);
+
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+        list.add(6);
+        list.add(7);
+        list.add(8);
+        list.add(9);
+        list.add(10);
+
+        // when
+        list.retainAll(retainedAll);
+
+        // then
+        assertThat(list.size()).isEqualTo(5);
+        assertThat(list).containsExactly(retainedAll.toArray(new Integer[0]));
+        assertThat(list.containsAll(retainedAll)).isTrue();
+    }
 }

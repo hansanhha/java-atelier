@@ -142,6 +142,136 @@ public class MyArrayList<E> extends AbstractList<E> implements List<E>, RandomAc
         add(e);
     }
 
+    @Override
+    public E remove(int index) {
+        Objects.checkIndex(index, size);
+        final Object[] es = elements;
+
+        @SuppressWarnings("unchecked")
+        E oldValue = (E) es[index];
+        fastRemove(es, index);
+
+        return oldValue;
+    }
+
+    @Override
+    public boolean remove(Object o) {
+        final Object[] es = elements;
+        final int size = this.size;
+        int i = 0;
+
+        found: {
+            if (o == null) {
+                for (; i < size; i++) {
+                    if (es[i] == null)
+                        break found;
+                }
+            } else {
+                for (; i<size; i++) {
+                    if (es[i].equals(o))
+                        break found;
+                }
+            }
+            return false;
+        }
+
+        fastRemove(es, i);
+        return true;
+    }
+
+    @Override
+    public E removeFirst() {
+        if (size == 0) {
+            throw new NoSuchElementException();
+        }
+
+        Object[] es = elements;
+        @SuppressWarnings("unchecked")
+        E oldValue = (E) es[0];
+        fastRemove(es, 0);
+        return oldValue;
+    }
+
+    @Override
+    public E removeLast() {
+        int last = size - 1;
+
+        if (last < 0) {
+            throw new NoSuchElementException();
+        }
+
+        Object[] es = elements;
+        @SuppressWarnings("unchecked")
+        E oldValue = (E) es[last];
+        fastRemove(es, last);
+        return oldValue;
+    }
+
+    private void fastRemove(Object[] es, int index) {
+        int newSize = size - 1;
+
+        if (newSize > index) {
+            System.arraycopy(es, index + 1, es, index, newSize - index);
+        }
+
+        es[size = newSize] = null;
+    }
+
+    @Override
+    public boolean removeAll(Collection<?> c) {
+        return batchRemove(c, false, 0, size);
+    }
+
+    @Override
+    public boolean retainAll(Collection<?> c) {
+        return batchRemove(c, true, 0, size);
+    }
+
+    private boolean batchRemove(Collection<?> c, boolean complement, final int start, final int end) {
+        Objects.requireNonNull(c);
+
+        final Object[] es = elements;
+        int r = start;
+
+        // 조건에 맞는 값이 있는지 확인하는 과정
+        for (;; r++) {
+            if (r == end) {
+                return false;
+            }
+
+            if (c.contains(es[r]) != complement) {
+                break;
+            }
+        }
+
+        int w = r++;
+
+        try {
+            // 조건에 맞는 값들을 복사하는 과정
+            for (Object e; r < end; r++) {
+                if (c.contains(e = es[r]) == complement) {
+                    es[w++] = e;
+                }
+            }
+        } catch (Throwable ex) {
+            System.arraycopy(es, r, es, w, end - r);
+            w += end - r;
+            throw ex;
+        } finally {
+            // 나머지 값들을 정리하는 과정
+            shiftTailOverGap(es, w, end);
+        }
+
+        return true;
+    }
+
+    private void shiftTailOverGap(Object[] es, int lo, int hi) {
+        System.arraycopy(es, hi, es, lo, size - hi);
+        for (int to = size, i = (size -= hi - lo); i < to; i++) {
+            es[i] = null;
+        }
+    }
+
     private Object[] grow(int minCapacity) {
         var oldCapacity = elements.length;
 
