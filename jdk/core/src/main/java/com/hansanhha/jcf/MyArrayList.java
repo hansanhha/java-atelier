@@ -2,7 +2,8 @@ package com.hansanhha.jcf;
 
 import java.util.*;
 
-public class MyArrayList<E> extends AbstractList<E> implements List<E>, RandomAccess {
+public class MyArrayList<E> extends AbstractList<E>
+        implements List<E>, RandomAccess, Cloneable {
 
     private static final int DEFAULT_CAPACITY = 10;
 
@@ -44,6 +45,19 @@ public class MyArrayList<E> extends AbstractList<E> implements List<E>, RandomAc
     @SuppressWarnings("unchecked")
     public E get(int index) {
         Objects.checkIndex(index, size);
+        return (E) elements[index];
+    }
+
+    @Override
+    public E set(int index, E element) {
+        Objects.checkIndex(index, size);
+        E oldValue = elements(index);
+        elements[index] = element;
+        return oldValue;
+    }
+
+    @SuppressWarnings("unchecked")
+    E elements(int index) {
         return (E) elements[index];
     }
 
@@ -270,6 +284,46 @@ public class MyArrayList<E> extends AbstractList<E> implements List<E>, RandomAc
         for (int to = size, i = (size -= hi - lo); i < to; i++) {
             es[i] = null;
         }
+    }
+
+    public void clear() {
+        Object[] es = elements;
+
+        for (int to = size, i = size = 0; i < to; i++) {
+            es[i] = null;
+        }
+    }
+
+    @Override
+    public MyArrayList<E> clone() {
+        try {
+            MyArrayList<E> clone = (MyArrayList<E>) super.clone();
+            clone.elements  = Arrays.copyOf(elements, size);
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new InternalError();
+        }
+    }
+
+    @Override
+    public Object[] toArray() {
+        return Arrays.copyOf(elements, size);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> T[] toArray(T[] a) {
+        if (size > a.length) {
+            return (T[]) Arrays.copyOf(elements, size, a.getClass());
+        }
+
+        System.arraycopy(elements, 0, a, 0, size);
+
+        if (a.length > size) {
+            a[size] = null;
+        }
+
+        return a;
     }
 
     private Object[] grow(int minCapacity) {

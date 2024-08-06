@@ -10,6 +10,8 @@
 - [크기 조정](#grow-동적-배열-크기-조정)
 - [삽입](#삽입)
 - [삭제](#삭제)
+- [clone](#clone)
+- [toArray](#toarray)
 
 [ArrayList 구현](#arraylist-구현)
 
@@ -342,7 +344,7 @@ addLast의 경우 `add(E e)`를 호출해서 size 인덱스에 요소를 삽입�
 
 ### 삭제
 
-삭제 메서드: remove, removeAll, removeFirst, removeLast, removeIf
+삭제 메서드: remove, removeAll, removeFirst, removeLast, removeIf, clear
 
 **remove**
 
@@ -549,6 +551,76 @@ public E removeLast() {
 ```
 
 각각 검증 로직을 거친 뒤 fastRemove() 호출
+
+**clear**
+
+```java
+public void clear() {
+        modCount++;
+        final Object[] es = elementData;
+        for (int to = size, i = size = 0; i < to; i++)
+            es[i] = null;
+    }
+```
+
+요소를 순회하면서 null 처리
+
+### clone
+
+```java
+public Object clone() {
+    try {
+        ArrayList<?> v = (ArrayList<?>) super.clone();
+        v.elementData = Arrays.copyOf(elementData, size);
+        v.modCount = 0;
+        return v;
+    } catch (CloneNotSupportedException e) {
+        // this shouldn't happen, since we are Cloneable
+        throw new InternalError(e);
+    }
+}
+```
+
+`super.clone()`
+- 자기 자신 복사(shallow-copy)
+- ArrayList는 `Cloneable`을 명시하고, Object.clone()을 오버라이딩하고 있음
+
+`Arrays.copyOf()`
+- 요소 복사
+- Arrays.copyOf()는 내부적으로 System.arraycopy()를 호출함
+
+### toArray
+
+**매개변수가 없는 경우**
+
+```java
+public Object[] toArray() {
+    return Arrays.copyOf(elementData, size);
+}
+```
+
+자기 자신의 요소들을 복사하여 반환
+
+**T[] 타입의 배열 매개변수가 있는 경우**
+
+```java
+public <T> T[] toArray(T[] a) {
+    if (a.length < size)
+        // Make a new array of a's runtime type, but my contents:
+        return (T[]) Arrays.copyOf(elementData, size, a.getClass());
+    System.arraycopy(elementData, 0, a, 0, size);
+    if (a.length > size)
+        a[size] = null;
+    return a;
+}
+```
+
+매개변수의 길이에 따른 분기 처리
+- 매개변수 배열의 길이가 ArrayList의 배열에 담긴 요소 개수보다 작은 경우
+  - 새로운 a 타입의 배열을 만들고 자기 자신의 요소들을 복사 후 반환
+- 아닌 경우
+  - 매개변수로 받은 배열에 자기 자신의 요소들을 복사 후 반환
+  - 만약 매개변수 배열의 길이가 ArrayList의 size보다 큰 경우 맨 마지막 index에 null 처리
 
 ### Iterator
 
