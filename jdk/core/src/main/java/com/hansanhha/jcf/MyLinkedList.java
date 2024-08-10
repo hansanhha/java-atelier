@@ -1,17 +1,27 @@
 package com.hansanhha.jcf;
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
+import java.util.*;
 
-public class MyLinkedList<E> implements List<E> {
+public class MyLinkedList<E> extends AbstractSequentialList<E>
+        implements List<E>, Deque<E>, Cloneable {
 
     private int size;
 
     private Node<E> first;
 
     private Node<E> last;
+
+    private static class Node<E> {
+        E item;
+        Node<E> prev;
+        Node<E> next;
+
+        public Node(Node<E> prev, E item, Node<E> next) {
+            this.prev = prev;
+            this.item = item;
+            this.next = next;
+        }
+    }
 
     private void linkFirst(E e) {
         final Node<E> f = first;
@@ -205,6 +215,269 @@ public class MyLinkedList<E> implements List<E> {
     }
 
     @Override
+    public boolean remove(Object o) {
+        if (o == null) {
+            for (Node<E> x = first; x != null; x = x.next) {
+                if (x.item == null) {
+                    unlink(x);
+                    return true;
+                }
+            }
+        }
+
+        for (Node<E> x = first; x != null; x = x.next) {
+            if (x.item.equals(o)) {
+                unlink(x);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    @Override
+    public E remove(int index) {
+        checkPositionIndex(index);
+        return unlink(node(index));
+    }
+
+
+    @Override
+    public E removeFirst() {
+        Node<E> f = first;
+
+        if (f == null) {
+            throw new NoSuchElementException();
+        }
+
+        return unlinkFirst(f);
+    }
+
+    @Override
+    public E removeLast() {
+        Node<E> l = last;
+
+        if (l == null) {
+            throw new NoSuchElementException();
+        }
+
+        return unlinkLast(l);
+    }
+
+    @Override
+    public void clear() {
+        for (Node<E> x = first; x != null; ) {
+            Node<E> next = x.next;
+            x.item = null;
+            x.prev = null;
+            x.next = null;
+
+            x = next;
+        }
+
+        first = last = null;
+        size = 0;
+    }
+
+    @Override
+    public E get(int index) {
+        return node(index).item;
+    }
+
+    @Override
+    public E getFirst() {
+        Node<E> f = first;
+
+        if (f == null) {
+            throw new NoSuchElementException();
+        }
+
+        return f.item;
+    }
+
+    @Override
+    public E getLast() {
+        Node<E> l = last;
+
+        if (l == null) {
+            throw new NoSuchElementException();
+        }
+
+        return l.item;
+    }
+
+    @Override
+    public int indexOf(Object o) {
+        int index = 0;
+        if (o == null) {
+            for (Node<E> x = first; x != null; x = x.next) {
+                if (x.item == null) {
+                    return index;
+                }
+                index++;
+            }
+        }
+
+        for (Node<E> x = first; x != null; x = x.next) {
+            if (x.item.equals(o)) {
+                return index;
+            }
+            index++;
+        }
+
+        return -1;
+    }
+
+    @Override
+    public int lastIndexOf(Object o) {
+        int index = size;
+        if (o == null) {
+            for (Node<E> x = last; x != null; x = x.prev) {
+                if (x.item == null) {
+                    return index;
+                }
+                index--;
+            }
+        }
+
+        for (Node<E> x = last; x != null; x = x.prev) {
+            if (x.item.equals(o)) {
+                return index;
+            }
+            index--;
+        }
+
+        return -1;
+    }
+
+    @Override
+    public boolean contains(Object o) {
+        return indexOf(o) >= 0;
+    }
+
+    @Override
+    public boolean containsAll(Collection<?> c) {
+        for (Object o : c) {
+            if (!contains(o)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    @Override
+    public E set(int index, E element) {
+        checkPositionIndex(index);
+
+        Node<E> node = node(index);
+        E oldVal = node.item;
+        node.item = element;
+
+        return oldVal;
+    }
+
+
+    @Override
+    public boolean offer(E e) {
+        return add(e);
+    }
+
+    @Override
+    public boolean offerFirst(E e) {
+        addFirst(e);
+        return true;
+    }
+
+    @Override
+    public boolean offerLast(E e) {
+        addLast(e);
+        return true;
+    }
+
+    @Override
+    public E remove() {
+        return removeFirst();
+    }
+
+    @Override
+    public E poll() {
+        Node<E> f = first;
+        return (f == null) ? null : unlinkFirst(f);
+    }
+
+    @Override
+    public E pollFirst() {
+        Node<E> f = first;
+        return (f == null) ? null : unlinkFirst(f);
+    }
+
+    @Override
+    public E pollLast() {
+        Node<E> l = last;
+        return (l == null) ? null : unlinkLast(l);
+    }
+
+    @Override
+    public boolean removeFirstOccurrence(Object o) {
+        return remove(o);
+    }
+
+    @Override
+    public boolean removeLastOccurrence(Object o) {
+        if (o == null) {
+            for (Node<E> x = first; x != null; x = x.next) {
+                if (x.item == o) {
+                    unlink(x);
+                    return true;
+                }
+            }
+        }
+
+        for (Node<E> x = first; x != null; x = x.next) {
+            if (x.item.equals(o)) {
+                unlink(x);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    @Override
+    public E peek() {
+        Node<E> f = first;
+        return (f == null) ? null : f.item;
+    }
+
+    @Override
+    public E peekFirst() {
+        Node<E> f = first;
+        return (f == null) ? null : f.item;
+    }
+
+    @Override
+    public E peekLast() {
+        Node<E> l = last;
+        return (l == null) ? null : l.item;
+    }
+
+    @Override
+    public E element() {
+        return getFirst();
+    }
+
+    @Override
+    public void push(E e) {
+        addFirst(e);
+    }
+
+    @Override
+    public E pop() {
+        return removeFirst();
+    }
+
+    @Override
     public int size() {
         return size;
     }
@@ -212,16 +485,6 @@ public class MyLinkedList<E> implements List<E> {
     @Override
     public boolean isEmpty() {
         return size == 0;
-    }
-
-    @Override
-    public boolean contains(Object o) {
-        return false;
-    }
-
-    @Override
-    public Iterator<E> iterator() {
-        return null;
     }
 
     @Override
@@ -235,53 +498,8 @@ public class MyLinkedList<E> implements List<E> {
     }
 
     @Override
-    public boolean remove(Object o) {
-        return false;
-    }
-
-    @Override
-    public boolean containsAll(Collection<?> c) {
-        return false;
-    }
-
-    @Override
-    public boolean removeAll(Collection<?> c) {
-        return false;
-    }
-
-    @Override
-    public boolean retainAll(Collection<?> c) {
-        return false;
-    }
-
-    @Override
-    public void clear() {
-
-    }
-
-    @Override
-    public E get(int index) {
-        return null;
-    }
-
-    @Override
-    public E set(int index, E element) {
-        return null;
-    }
-
-    @Override
-    public E remove(int index) {
-        return null;
-    }
-
-    @Override
-    public int indexOf(Object o) {
-        return 0;
-    }
-
-    @Override
-    public int lastIndexOf(Object o) {
-        return 0;
+    public Iterator<E> iterator() {
+        return listIterator();
     }
 
     @Override
@@ -295,6 +513,16 @@ public class MyLinkedList<E> implements List<E> {
     }
 
     @Override
+    public Iterator<E> descendingIterator() {
+        return null;
+    }
+
+    @Override
+    public LinkedList<E> reversed() {
+        return null;
+    }
+
+    @Override
     public List<E> subList(int fromIndex, int toIndex) {
         return List.of();
     }
@@ -302,17 +530,5 @@ public class MyLinkedList<E> implements List<E> {
     private void checkPositionIndex(int index) {
         if (!(index >= 0 && index <= size))
             throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + size);
-    }
-
-    private static class Node<E> {
-        E item;
-        Node<E> prev;
-        Node<E> next;
-
-        public Node(Node<E> prev, E item, Node<E> next) {
-            this.prev = prev;
-            this.item = item;
-            this.next = next;
-        }
     }
 }
