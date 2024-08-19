@@ -7,9 +7,10 @@
 
 ## 맵
 - ### 인터페이스
-  - #### [Map]()
-  - #### [SortedMap]()
-  - #### [NavigableMap]()
+  - #### [Map](Map.md)
+  - #### [SequencedMap](Map.md#sequencedmap)
+  - #### [SortedMap](Map.md#sortedmap)
+  - #### [NavigableMap](Map.md#navigablemap)
   - #### [ConcurrentMap]()
 - ### 구현체
   - #### [HashMap](./HashMap.md)

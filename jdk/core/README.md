@@ -4,11 +4,11 @@
 
 ## [Functional](concepts/functional)
 
-## [Exceptions](concepts/exceptions.md)
-
 ## [Collection Frameworks](concepts/jcf)
 
 ## [Util](concepts/util)
+
+## [Exceptions](concepts/exceptions.md)
 
 ## [File I/O](concepts/file%20i-o)
 
