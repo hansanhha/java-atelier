@@ -2,17 +2,17 @@ package com.hansanhha.jcf;
 
 import java.util.Objects;
 
-public final class MyNullableKeyValueHolder<K, V> implements MyMap.Entry<K, V>{
+public final class SimpleNullableKeyValueHolder<K, V> implements SimpleMap.Entry<K, V>{
 
     final K key;
     final V value;
 
-    public MyNullableKeyValueHolder(K key, V value) {
+    public SimpleNullableKeyValueHolder(K key, V value) {
         this.key = key;
         this.value = value;
     }
 
-    public MyNullableKeyValueHolder(MyMap.Entry<K, V> entry) {
+    public SimpleNullableKeyValueHolder(SimpleMap.Entry<K, V> entry) {
         Objects.requireNonNull(entry);
         key = entry.getKey();
         value = entry.getValue();
@@ -34,7 +34,7 @@ public final class MyNullableKeyValueHolder<K, V> implements MyMap.Entry<K, V>{
     }
 
     public boolean equals(Object o) {
-        if (o instanceof MyMap.Entry<?, ?> e) {
+        if (o instanceof SimpleMap.Entry<?, ?> e) {
             return Objects.equals(key, e.getKey()) && Objects.equals(value, e.getValue());
         }
 

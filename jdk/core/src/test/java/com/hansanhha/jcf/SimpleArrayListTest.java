@@ -10,13 +10,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("MyArrayList 테스트")
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
-class MyArrayListTest {
+class SimpleArrayListTest {
 
     List<Integer> list;
 
     @BeforeEach
     void init() {
-        list = new MyArrayList<>();
+        list = new SimpleArrayList<>();
     }
 
     @Test
@@ -282,7 +282,7 @@ class MyArrayListTest {
         int changedValue = 99999;
 
         // when
-        var clone = ((MyArrayList<Integer>) list).clone();
+        var clone = ((SimpleArrayList<Integer>) list).clone();
         clone.set(0, changedValue);
 
         assertThat(clone).isNotSameAs(list);
@@ -293,7 +293,7 @@ class MyArrayListTest {
     @Test
     void clone은_얕은_복사() {
         // given, Sushi 클래스만 Cloneable 명시, clone() 오버라이딩함
-        var chickenGOAT = new MyArrayList<Chicken>();
+        var chickenGOAT = new SimpleArrayList<Chicken>();
         Chicken BBQ황금올리브 = new Chicken(25_000);
         Chicken 교촌레드콤보 = new Chicken(20_000);
         Chicken BHC뿌링클 = new Chicken(24_000);
@@ -315,7 +315,7 @@ class MyArrayListTest {
     @Test
     void 배열_변환_toArray() {
         // given
-        var myArrayList = new MyArrayList<String>();
+        var myArrayList = new SimpleArrayList<String>();
 
         myArrayList.add("a");
         myArrayList.add("b");
@@ -335,7 +335,7 @@ class MyArrayListTest {
     void toArray_매개변수_배열이_ArrayList_size_보다_큰_경우() {
         // given
         var strings = new String[10];
-        var myArrayList = new MyArrayList<String>();
+        var myArrayList = new SimpleArrayList<String>();
 
         myArrayList.add("a");
         myArrayList.add("b");
@@ -356,7 +356,7 @@ class MyArrayListTest {
     void toArray_매개변수_배열이_ArrayList_size_보다_작은_경우() {
         // given (배열이 ArrayList의 size 보다 작은 경우)
         var strings = new String[1];
-        var myArrayList = new MyArrayList<String>();
+        var myArrayList = new SimpleArrayList<String>();
 
         myArrayList.add("a");
         myArrayList.add("b");

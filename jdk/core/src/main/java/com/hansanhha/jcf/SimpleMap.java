@@ -3,7 +3,7 @@ package com.hansanhha.jcf;
 import java.util.*;
 import java.util.function.BiConsumer;
 
-public interface MyMap<K, V> {
+public interface SimpleMap<K, V> {
 
     // 검색 작업 (Query Operation)
 
@@ -13,7 +13,9 @@ public interface MyMap<K, V> {
 
     boolean containsKey(Object key);
 
-    V get(Object Key);
+    boolean containsValue(Object value);
+
+    V get(Object key);
 
     V put(K key, V value);
 
@@ -21,7 +23,7 @@ public interface MyMap<K, V> {
 
     // 벌크 연산 (Bulk Operation)
 
-    void putAll(MyMap<? extends K, ? extends V> m);
+    void putAll(SimpleMap<? extends K, ? extends V> m);
 
     void clear();
 
@@ -31,7 +33,7 @@ public interface MyMap<K, V> {
 
     Collection<V> values();
 
-    Set<MyMap.Entry<K,V>> entrySet();
+    Set<SimpleMap.Entry<K,V>> entrySet();
 
     interface Entry<K, V> {
 
@@ -57,7 +59,7 @@ public interface MyMap<K, V> {
     default void forEach(BiConsumer<? super K, ? super V> action) {
         Objects.requireNonNull(action);
 
-        for (MyMap.Entry<K, V> entry : entrySet()) {
+        for (SimpleMap.Entry<K, V> entry : entrySet()) {
             K k;
             V v;
             try {

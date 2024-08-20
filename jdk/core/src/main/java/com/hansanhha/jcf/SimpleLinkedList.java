@@ -2,7 +2,7 @@ package com.hansanhha.jcf;
 
 import java.util.*;
 
-public class MyLinkedList<E> extends AbstractSequentialList<E>
+public class SimpleLinkedList<E> extends AbstractSequentialList<E>
         implements List<E>, Deque<E>, Cloneable {
 
     private int size;

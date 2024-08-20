@@ -11,7 +11,7 @@
   - #### [SequencedMap](Map.md#sequencedmap)
   - #### [SortedMap](Map.md#sortedmap)
   - #### [NavigableMap](Map.md#navigablemap)
-  - #### [ConcurrentMap]()
+  - #### [ConcurrentMap](Map.md#concurrentmap)
 - ### 구현체
   - #### [HashMap](./HashMap.md)
   - #### [LinkedHashMap]()
@@ -22,6 +22,6 @@
 - ### 구현체 (동시성 해결)
   - #### [ConcurrentHashMap]()
   - #### [ConcurrentLinkedHashMap]()
-  - #### [SynchronizedMap]()
+  - #### [SynchronizedMap](Map.md#synchronizedmap)
 
 ## [Awesome Readings](https://github.com/deepak-malik/Data-Structures-In-Java/blob/master/src/com/deepak/data/structures/Arrays/Arrays_Introduction.md)

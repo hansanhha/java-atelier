@@ -2,8 +2,6 @@ package com.hansanhha.jcf;
 
 import org.junit.jupiter.api.*;
 
-import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -11,13 +9,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("MyLinkedList 테스트")
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
-class MyLinkedListTest {
+class SimpleLinkedListTest {
 
     List<Integer> list;
 
     @BeforeEach
     void init() {
-        list = new MyLinkedList<>();
+        list = new SimpleLinkedList<>();
     }
 
     @Nested

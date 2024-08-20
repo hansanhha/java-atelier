@@ -2,7 +2,7 @@ package com.hansanhha.jcf;
 
 import java.util.*;
 
-public class MyArrayList<E> extends AbstractList<E>
+public class SimpleArrayList<E> extends AbstractList<E>
         implements List<E>, RandomAccess, Cloneable {
 
     private static final int DEFAULT_CAPACITY = 10;
@@ -13,11 +13,11 @@ public class MyArrayList<E> extends AbstractList<E>
 
     private int size;
 
-    public MyArrayList() {
+    public SimpleArrayList() {
         elements = EMPTY_ELEMENTS;
     }
 
-    public MyArrayList(int capacity) {
+    public SimpleArrayList(int capacity) {
         if (capacity <= 0) {
             elements = EMPTY_ELEMENTS;
             return;
@@ -26,7 +26,7 @@ public class MyArrayList<E> extends AbstractList<E>
         elements = new Object[capacity];
     }
 
-    public MyArrayList(Collection<? extends E> c) {
+    public SimpleArrayList(Collection<? extends E> c) {
         Object[] array = c.toArray();
 
         if ((size = array.length) > 0) {
@@ -295,9 +295,9 @@ public class MyArrayList<E> extends AbstractList<E>
     }
 
     @Override
-    public MyArrayList<E> clone() {
+    public SimpleArrayList<E> clone() {
         try {
-            MyArrayList<E> clone = (MyArrayList<E>) super.clone();
+            SimpleArrayList<E> clone = (SimpleArrayList<E>) super.clone();
             clone.elements  = Arrays.copyOf(elements, size);
             return clone;
         } catch (CloneNotSupportedException e) {

@@ -5,7 +5,7 @@ import java.util.Comparator;
 import java.util.Set;
 import java.util.SortedMap;
 
-public interface MySortedMap<K, V> extends MySequencedMap<K, V> {
+public interface SimpleSortedMap<K, V> extends SimpleSequencedMap<K, V> {
 
     Comparator<? super K> comparator();
 
@@ -23,7 +23,7 @@ public interface MySortedMap<K, V> extends MySequencedMap<K, V> {
 
     Collection<V> values();
 
-    Set<MyMap.Entry<K, V>> entrySet();
+    Set<SimpleMap.Entry<K, V>> entrySet();
 
     default V putFirst(K k, V v) {
         throw new UnsupportedOperationException();
