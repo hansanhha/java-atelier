@@ -20,8 +20,6 @@ dependencies {
      */
     implementation variantOf(libs.querydsl.jpa) { classifier("jakarta") }
     annotationProcessor variantOf(libs.querydsl.apt) { classifier("jakarta") }
-    annotationProcessor libs.jakarta.annotation.api
-    annotationProcessor libs.jakarta.persistence.api
 
     runtimeOnly libs.h2
 }

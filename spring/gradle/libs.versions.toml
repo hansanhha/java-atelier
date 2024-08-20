@@ -1,7 +1,7 @@
 [versions]
-spring_boot = "3.2.4"
-spring_management = "1.1.3"
-querydsl = "5.0.0"
+spring_boot = "3.3.2"
+spring_management = "1.1.5"
+querydsl = "5.1.0"
 spring_modulith = "1.1.2"
 h2 = "2.3.232"
 
@@ -11,16 +11,15 @@ spring-management = { id="io.spring.dependency-management", version.ref= "spring
 
 [libraries]
 # Spring
-spring-boot = { module="org.springframework.boot:spring-boot-starter", version.ref= "spring_boot" }
-spring-boot-test = { module="org.springframework.boot:spring-boot-starter-test", version.ref= "spring_boot" }
-spring-boot-data-jpa = { module="org.springframework.boot:spring-boot-starter-data-jpa", version.ref= "spring_boot" }
-spring-boot-web = { module="org.springframework.boot:spring-boot-starter-web", version.ref= "spring_boot" }
-spring-boot-thymeleaf = { module="org.springframework.boot:spring-boot-starter-thymeleaf", version.ref= "spring_boot" }
-spring-boot-actuator = { module="org.springframework.boot:spring-boot-starter-actuator", version.ref= "spring_boot" }
-spring-boot-configuration-processor = { module="org.springframework.boot:spring-boot-configuration-processor", version.ref= "spring_boot" }
-spring-boot-security = { module="org.springframework.boot:spring-boot-starter-security", version.ref= "spring_boot" }
-spring-boot-security-oauth2-client = { module="org.springframework.boot:spring-boot-starter-oauth2-client", version.ref= "spring_boot" }
-spring-boot-security-oauth2-resource-server = { module="org.springframework.boot:spring-boot-starter-oauth2-resource-server", version.ref= "spring_boot" }
+spring-boot = { module="org.springframework.boot:spring-boot-starter"}
+spring-boot-test = { module="org.springframework.boot:spring-boot-starter-test"}
+spring-boot-data-jpa = { module="org.springframework.boot:spring-boot-starter-data-jpa"}
+spring-boot-web = { module="org.springframework.boot:spring-boot-starter-web"}
+spring-boot-thymeleaf = { module="org.springframework.boot:spring-boot-starter-thymeleaf"}
+spring-boot-actuator = { module="org.springframework.boot:spring-boot-starter-actuator"}
+spring-boot-configuration-processor = { module="org.springframework.boot:spring-boot-configuration-processor"}
+spring-boot-security = { module="org.springframework.boot:spring-boot-starter-security"}
+spring-boot-security-oauth2-client = { module="org.springframework.boot:spring-boot-starter-oauth2-client"}
 
 # Spring Modulith
 spring-modulith-core = { module="org.springframework.modulith:spring-modulith-starter-core", version.ref= "spring_modulith" }
@@ -33,7 +32,5 @@ spring-modulith-actuator = { module="org.springframework.modulith:spring-modulit
 # QueryDSL
 querydsl-jpa = { module = "com.querydsl:querydsl-jpa", version.ref= "querydsl" }
 querydsl-apt = { module = "com.querydsl:querydsl-apt", version.ref= "querydsl" }
-jakarta-annotation-api = { module = "jakarta.annotation:jakarta.annotation-api" }
-jakarta-persistence-api = { module = "jakarta.persistence:jakarta.persistence-api" }
 
 h2 = { module = "com.h2database:h2", version.ref= "h2" }
