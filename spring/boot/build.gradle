@@ -1,13 +1,18 @@
 plugins {
-    alias io.plugins.spring.boot
-    alias io.plugins.spring.management
+    id("java")
+    alias libs.plugins.spring.boot
+    alias libs.plugins.spring.management
+}
+
+repositories {
+    mavenCentral()
 }
 
 dependencies {
-    implementation io.spring.boot
-    implementation io.spring.boot.test
-    implementation io.spring.boot.data.jpa
-    implementation io.spring.boot.web
-    runtimeOnly db.h2
+    implementation libs.spring.boot
+    implementation libs.spring.boot.test
+    implementation libs.spring.boot.data.jpa
+    implementation libs.spring.boot.web
+    runtimeOnly libs.h2
 }
 

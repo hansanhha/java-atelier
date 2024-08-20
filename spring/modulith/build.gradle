@@ -1,22 +1,25 @@
 plugins {
-    alias io.plugins.spring.boot
-    alias io.plugins.spring.management
+    id("java")
+    alias libs.plugins.spring.boot
+    alias libs.plugins.spring.management
+}
+
+repositories {
+    mavenCentral()
 }
 
 dependencies {
-    implementation io.spring.modulith.core
-    implementation io.spring.modulith.events.api
-    implementation io.spring.modulith.events.core
-    implementation io.spring.modulith.jpa
-    runtimeOnly io.spring.modulith.actuator
-    testImplementation io.spring.moduliith.test
-    implementation libs.jmolecules.spring
+    implementation libs.spring.modulith.core
+    implementation libs.spring.modulith.events.api
+    implementation libs.spring.modulith.events.core
+    implementation libs.spring.modulith.jpa
+    runtimeOnly libs.spring.modulith.actuator
+    testImplementation libs.spring.moduliith.test
 
-    implementation io.spring.boot.configuration.processor
-    implementation io.spring.boot.data.jpa
-    implementation io.spring.boot.web
-    runtimeOnly io.spring.boot.actuator
-    testImplementation io.spring.boot.test
+    implementation libs.spring.boot.configuration.processor
+    implementation libs.spring.boot.data.jpa
+    implementation libs.spring.boot.web
+    runtimeOnly libs.spring.boot.actuator
+    testImplementation libs.spring.boot.test
 
-    runtimeOnly db.h2
 }

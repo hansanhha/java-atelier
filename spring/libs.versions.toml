@@ -1,7 +1,0 @@
-[versions]
-jmolecules_spring_version = "1.6.0"
-
-[libraries]
-jmolecules-spring = { module="org.jmolecules.integrations:jmolecules-spring", version.ref="jmolecules_spring_version" }
-
-
