@@ -248,6 +248,85 @@ JPA의 핵심 인터페이스로, 데이터베이스 관리 및 엔티티 객체
 - JPQL 또는 네이티브 SQL을 사용한 쿼리 실행
 - 트랜잭션 관리(`EntityTransaction`)
 
+```java
+public interface EntityManager extends AutoCloseable {}
+
+public interface AutoCloseable {
+    void close();
+}
+```
+
+EntityManager는 AutoCloseable 인터페이스를 확장하는데, AutoCloseable을 구현한 객체는 try-wich-resources 블록 안에서 선언될 때
+
+블록이 끝나면 자동으로 close() 메서드가 호출되어 리소스를 정리함
+
+```java
+public interface EntityManager extends AutoCloseable {
+
+    /* ------------ 엔티티 관련  ------------- */
+    
+    public void persist(Object entity);
+    
+    public <T> T merge(T entity);
+    
+    public void remove(Object entity);
+    
+    public <T> T find(Class<T> entityClass, Object primaryKey);
+    
+    public <T> T getReference(Class<T> entityClass, Object primaryKey);
+
+    public void detach(Object entity);
+
+    public boolean contains(Object entity);
+
+    /* ------------ 영속성 컨텍스트 관련  ------------- */
+    
+    public void flush();
+    
+    public void lock(Object entity, LockModeType lockMode);
+    
+    public void refresh(Object entity);
+
+    public boolean isOpen();
+    
+    public void clear();
+    
+    /* ------------ 쿼리 관련 ------------- */
+    
+    public Query createQuery(String sqlString);
+    
+    public <T> TypedQuery<T> createQuery(CreteriaQuery<T> creteriaQuery);
+    
+    public Query createNamedQuery(String name);
+    
+    public <T> TypedQuery<T> createNamedQuery(String name, Class<T> resultClass);
+    
+    public Query createNativeQuery(String sqlString);
+
+    public StoredProcedureQuery createNamedStoredProcedureQuery(String name);
+
+    public CriteriaBuilder getCriteriaBuilder();
+
+    /* ------------ 트랜잭션 관련 ------------- */
+  
+    public void joinTransaction();
+    
+    public boolean isJoinedToTransaction();
+    
+    public EntityTransaction getTransaction();
+
+    /* ------------ 엔티티 그래프 관련 ------------- */
+      
+    public <T> EntityGraph<T> createEntityGraph(Class<T> rootType);
+
+    public EntityGraph<?> createEntityGraph(String graphName);
+
+    public  EntityGraph<?> getEntityGraph(String graphName);
+
+    public <T> List<EntityGraph<? super T>> getEntityGraphs(Class<T> entityClass);
+}
+```
+
 #### EntityManagerFactory
 
 EntityManager 인스턴스를 생성하는 인터페이스로, 데이터베이스와의 상호작용을 관리하며 엔티티 매니저의 생명 주기를 제어함
@@ -261,11 +340,53 @@ EntityManager 인스턴스를 생성하는 인터페이스로, 데이터베이�
 - 캐시 관리: 2차 캐시 관리, 여러 엔티티 매니저가 공유할 수 있는 글로벌 캐시 제공
 - 리소스 관리: 애플리케이션 종료 시 데이터베이스 연결, 캐시 등과 같은 리소스를 정리함
 
+```java
+public interface EntityManagerFactory extends AutoCloseable {
+    
+  public EntityManager createEntityManager();
+
+  public CriteriaBuilder getCriteriaBuilder();
+
+  public Metamodel getMetamodel();
+
+  public boolean isOpen();
+  
+  public void close();
+
+  public Cache getCache();
+
+  public void addNamedQuery(String name, Query query);
+
+  public <T> void addNamedEntityGraph(String graphName, EntityGraph<T> entityGraph);
+}
+```
+
 #### Persistence
 
 EntityManagerFactory를 생성하기 위한 유틸리티 클래스임
 
 persistence.xml 파일에 정의된 영속성 유닛의 이름을 통해 엔티티 매니저 팩토리를 생성함
+
+```java
+public class Persistence {
+    
+  public static EntityManagerFactory createEntityManagerFactory(String persistenceUnitName) {
+    return createEntityManagerFactory(persistenceUnitName, null);
+  }
+  
+  public static void generateSchema(String persistenceUnitName, Map map) {
+    ...
+  }
+
+  public static PersistenceUtil getPersistenceUtil() {
+    return new PersistenceUtilImpl();
+  }
+
+  private static class PersistenceUtilImpl implements PersistenceUtil {
+    ...
+  }
+}
+```
 
 #### @PersistenceContext
 

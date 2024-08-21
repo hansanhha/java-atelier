@@ -1,0 +1,15 @@
+plugins {
+    id("java")
+    alias(libs.plugins.spring.boot)
+    alias(libs.plugins.spring.management)
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation libs.spring.boot.data.jpa
+    runtimeOnly libs.h2
+}
+

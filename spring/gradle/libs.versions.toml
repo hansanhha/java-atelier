@@ -1,13 +1,15 @@
 [versions]
-spring_boot = "3.3.2"
-spring_management = "1.1.5"
+spring-boot = "3.3.2"
+spring-management = "1.1.5"
+spring-modulith = "1.1.2"
+hibernate-orm = "6.6.0.Final"
+hibernate-validator = "8.0.0.Final"
 querydsl = "5.1.0"
-spring_modulith = "1.1.2"
 h2 = "2.3.232"
 
 [plugins]
-spring-boot = { id="org.springframework.boot", version.ref= "spring_boot" }
-spring-management = { id="io.spring.dependency-management", version.ref= "spring_management" }
+spring-boot = { id="org.springframework.boot", version.ref= "spring-boot" }
+spring-management = { id="io.spring.dependency-management", version.ref= "spring-management" }
 
 [libraries]
 # Spring
@@ -22,15 +24,26 @@ spring-boot-security = { module="org.springframework.boot:spring-boot-starter-se
 spring-boot-security-oauth2-client = { module="org.springframework.boot:spring-boot-starter-oauth2-client"}
 
 # Spring Modulith
-spring-modulith-core = { module="org.springframework.modulith:spring-modulith-starter-core", version.ref= "spring_modulith" }
-spring-modulith-events-api =  { module="org.springframework.modulith:spring-modulith-events-api", version.ref= "spring_modulith" }
-spring-modulith-events-core = { module="org.springframework.modulith:spring-modulith-events-core", version.ref= "spring_modulith" }
-spring-modulith-jpa = { module="org.springframework.modulith:spring-modulith-starter-jpa", version.ref= "spring_modulith" }
-spring-moduliith-test = { module="org.springframework.modulith:spring-modulith-starter-test", version.ref= "spring_modulith" }
-spring-modulith-actuator = { module="org.springframework.modulith:spring-modulith-actuator", version.ref= "spring_modulith" }
+spring-modulith-core = { module="org.springframework.modulith:spring-modulith-starter-core", version.ref= "spring-modulith" }
+spring-modulith-events-api =  { module="org.springframework.modulith:spring-modulith-events-api", version.ref= "spring-modulith" }
+spring-modulith-events-core = { module="org.springframework.modulith:spring-modulith-events-core", version.ref= "spring-modulith" }
+spring-modulith-jpa = { module="org.springframework.modulith:spring-modulith-starter-jpa", version.ref= "spring-modulith" }
+spring-moduliith-test = { module="org.springframework.modulith:spring-modulith-starter-test", version.ref= "spring-modulith" }
+spring-modulith-actuator = { module="org.springframework.modulith:spring-modulith-actuator", version.ref= "spring-modulith" }
+
+# Hibernate
+hibernate-orm = { module = "org.hibernate.orm:hibernate-core", version.ref = "hibernate-orm" }
+hibernate-validator = { module = "org.hibernate.validator:hibernate-validator", version.ref = "hibernate-validator" }
+hibernate-agroal = { module = "org.hibernate.orm:hibernate-agroal", version.ref = "hibernate-orm" }
+hibernate-jpamodelgen = { module = "org.hibernate.orm:hibernate-jpamodelgen", version.ref = "hibernate-orm" }
+glassfish-el = { module = "org.glassfish:jakarta.el", version = "4.0.2" }
+agroal = { module = "io.agroal:agroal-pool", version = "2.1" }
 
 # QueryDSL
 querydsl-jpa = { module = "com.querydsl:querydsl-jpa", version.ref= "querydsl" }
 querydsl-apt = { module = "com.querydsl:querydsl-apt", version.ref= "querydsl" }
+
+# Logging
+log4j = { module = "org.apache.logging.log4j:log4j-core", version = "2.20.0" }
 
 h2 = { module = "com.h2database:h2", version.ref= "h2" }
