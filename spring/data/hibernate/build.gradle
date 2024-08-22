@@ -13,8 +13,8 @@ dependencies {
     implementation libs.hibernate.validator
     implementation libs.glassfish.el
 
-    implementation libs.hibernate.agroal
-    implementation libs.agroal
+//    implementation libs.hibernate.agroal
+//    implementation libs.agroal
 
     implementation libs.log4j
 
