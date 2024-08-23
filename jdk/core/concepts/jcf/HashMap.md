@@ -7,9 +7,12 @@
 - [주요 필드](#주요-필드)
 - [생성자](#생성자)
 - [크기 조정](#크기-조정)
+- [트리화, 역트리화](#트리화-역트리화)
 - [해시](#해시)
 - [삽입](#삽입)
 - [삭제](#삭제)
+- [조회](#조회)
+- [업데이트](#업데이트)
 
 ## HashMap
 
@@ -96,7 +99,7 @@ TreeNode는 일반 노드보다 약 2배 정도 크기 때문에, `TREEIFY_THRES
 // 반대로 오른쪽 시프트 연산은 x를 2의 n승만큼 나누는것과 동일함
 static final int DEFAULT_INITIAL_CAPACITY = 1 << 4; // aka 16
 
-// 최대 용량 (약 10억정도의 값을 가질 수 있음)
+// 최대 용량 (약 10억개개 정도의 키-값 쌍을 가질 수 있음)
 static final int MAXIMUM_CAPACITY = 1 << 30;
 
 // 기본 로드 팩터
@@ -236,7 +239,8 @@ public HashMap(Map<? extends K, ? extends V> m) {
 /*
     해시맵이 가득차거나 새로운 데이터를 추가할 때 테이블 크기를 초기화하거나 두 배로 늘림
     기존 table이 null인 경우 threshold값에 따른 initial capacity로 설정
-    해시 테이블의 크기는 무조건 2의 거듭제곱으로 커지기 떄문에 각 요소가 동일한 인덱스에 유지되거나 새 테이블에서 2의 거듭제곱 오프셋으로 이동해야 함
+    해시 테이블의 크기는 무조건 2의 거듭제곱으로 커지기 때문에 
+    각 요소가 동일한 인덱스에 유지되거나 새 테이블에서 2의 거듭제곱 오프셋으로 이동해야 함
  */
 final Node<K, V>[] resize() {
     Node<K, V>[] oldTab = table;
@@ -292,7 +296,7 @@ final Node<K, V>[] resize() {
     /*
         새로 할당된 capacity, threshold에 따라 새 테이블을 생성하고 기존 요소를 재배치하는 로직
      */
-    Node<K, V>[] newTab = (Node<K, V>[]) new Node[newCap];
+            Node<K, V>[] newTab = (Node<K, V>[]) new Node[newCap];
     table = newTab;
     if (oldTab != null) {
         // 기존 테이블의 모든 슬롯을 순회
@@ -303,10 +307,10 @@ final Node<K, V>[] resize() {
                 // 첫 번째 노드가 단일 노드인 경우
                 if (e.next == null)
                     newTab[e.hash & (newCap - 1)] = e;
-                // 노드가 TreeNode (트리 구조)인 경우
+                    // 노드가 TreeNode (트리 구조)인 경우
                 else if (e instanceof TreeNode)
                     ((TreeNode<K, V>) e).split(this, newTab, j, oldCap);
-                // 연결 리스트인 경우
+                    // 연결 리스트인 경우
                 else { // preserve order
                     Node<K, V> loHead = null, loTail = null;
                     Node<K, V> hiHead = null, hiTail = null;
@@ -348,6 +352,111 @@ final Node<K, V>[] resize() {
 }
 ```
 
+## 트리화, 역트리화
+
+#### 트리화
+
+```java
+final void treeifyBin(Node<K, V>[] tab, int hash) {
+    int n, index;
+    Node<K, V> e;
+    // 트리화 조건에 충족되지 않는 경우 리사이징
+    if (tab == null || (n = tab.length) < MIN_TREEIFY_CAPACITY)
+        resize();
+        // 매개변수로 주어진 hash 값에 대응되는 인덱스에 노드가 있는 경우
+    else if ((e = tab[index = (n - 1) & hash]) != null) {
+        TreeNode<K, V> hd = null, tl = null;
+        // 해당 연결 리스트의 노드들을 트리 노드로 변환
+        do {
+            TreeNode<K, V> p = replacementTreeNode(e, null);
+            if (tl == null)
+                hd = p;
+            else {
+                p.prev = tl;
+                tl.next = p;
+            }
+            tl = p;
+        } while ((e = e.next) != null);
+        // 트리화
+        if ((tab[index] = hd) != null)
+            hd.treeify(tab);
+    }
+}
+
+TreeNode<K, V> replacementTreeNode(Node<K, V> p, Node<K, V> next) {
+    return new TreeNode<>(p.hash, p.key, p.value, next);
+}
+
+// TreeNode 메서드
+final void treeify(Node<K, V>[] tab) {
+    TreeNode<K, V> root = null;
+    /*
+        루프문 초기값의 this는 위의 hd.treeify(tab)을 호출한 hd 인스턴스임
+        트리화를 진행할 연결 리스트만 루프문을 돌아서 연결 리스트 구조에서 Red-Black Tree 구조로 변환함
+        
+        Red-Black Tree는 자기 균형 이진 탐색 트리(self-balancing binary search tree)의 일종으로,
+        데이터가 삽입되거나 삭제될 때 트리의 높이가 균형을 유지함
+        이 덕분에 탐색, 삽입, 삭제 연산의 최악의 시간 복잡도를 O(log n)으로 유지할 수 있음
+        또 다른 자기 균형 이진 탐색 트리로는 AVL 트리가 있음
+     */
+    for (TreeNode<K, V> x = this, next; x != null; x = next) {
+        next = (TreeNode<K, V>) x.next;
+        x.left = x.right = null;
+        if (root == null) {
+            x.parent = null;
+            x.red = false;
+            root = x;
+        } else {
+            K k = x.key;
+            int h = x.hash;
+            Class<?> kc = null;
+            for (TreeNode<K, V> p = root; ; ) {
+                int dir, ph;
+                K pk = p.key;
+                if ((ph = p.hash) > h)
+                    dir = -1;
+                else if (ph < h)
+                    dir = 1;
+                else if ((kc == null &&
+                        (kc = comparableClassFor(k)) == null) ||
+                        (dir = compareComparables(kc, k, pk)) == 0)
+                    dir = tieBreakOrder(k, pk);
+
+                TreeNode<K, V> xp = p;
+                if ((p = (dir <= 0) ? p.left : p.right) == null) {
+                    x.parent = xp;
+                    if (dir <= 0)
+                        xp.left = x;
+                    else
+                        xp.right = x;
+                    root = balanceInsertion(root, x);
+                    break;
+                }
+            }
+        }
+    }
+    moveRootToFront(tab, root);
+}
+```
+
+#### 역트리화
+
+```java
+final Node<K, V> untreeify(HashMap<K, V> map) {
+    Node<K, V> hd = null, tl = null;
+    // 루프문을 돌면서 연결 리스트 구조로 변환
+    for (Node<K, V> q = this; q != null; q = q.next) {
+        Node<K, V> p = map.replacementNode(q, null);
+        if (tl == null)
+            hd = p;
+        else
+            tl.next = p;
+        tl = p;
+    }
+    return hd;
+}
+```
+
 ## 해시
 
 ```java
@@ -372,7 +481,9 @@ static final int hash(Object key) {
 
 ## 삽입
 
-#### 공통 메서드
+### 공통 메서드
+
+#### putVal(int, K, V, boolean, boolean)
 
 ```java
 /*
@@ -394,7 +505,7 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
     // hash에 대응되는 인덱스에 노드가 없는 경우엔 새 노드를 삽입
     if ((p = tab[i = (n - 1) & hash]) == null)
         tab[i] = newNode(hash, key, value, null);
-    // 인덱스에 이미 노드가 있는 경우
+        // 인덱스에 이미 노드가 있는 경우
     else {
         Node<K, V> e;
         K k;
@@ -402,12 +513,10 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
         if (p.hash == hash &&
                 ((k = p.key) == key || (key != null && key.equals(k))))
             e = p;
-        // 트리 구조인 경우
+            // 트리 구조인 경우
         else if (p instanceof TreeNode)
             e = ((TreeNode<K, V>) p).putTreeVal(this, tab, hash, key, value);
-        /*
-            연결 리스트에 저장해야 되는 경우(key값과 해시 값이 다르면서 트리 구조가 아닌 경우)
-         */
+            // 연결 리스트에 저장해야 되는 경우(key값과 해시 값이 다르면서 트리 구조가 아닌 경우)
         else {
             for (int binCount = 0; ; ++binCount) {
                 if ((e = p.next) == null) {
@@ -448,16 +557,62 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 }
 ```
 
-#### 키와 값을 전달하는 경우
+#### putMapEntries(Map, boolean)
+
+```java
+final void putMapEntries(Map<? extends K, ? extends V> m, boolean evict) {
+    int s = m.size();
+    if (s > 0) {
+        // 테이블 배열이 null인 경우 매개변수로 받은 맵의 크기를 기반으로 테이블 용량 설정
+        if (table == null) { // pre-size
+            double dt = Math.ceil(s / (double) loadFactor);
+            int t = ((dt < (double) MAXIMUM_CAPACITY) ?
+                    (int) dt : MAXIMUM_CAPACITY);
+            if (t > threshold)
+                threshold = tableSizeFor(t);
+        } else {
+            // Because of linked-list bucket constraints, we cannot
+            // expand all at once, but can reduce total resize
+            // effort by repeated doubling now vs later
+            while (s > threshold && table.length < MAXIMUM_CAPACITY)
+                resize();
+        }
+
+        // 루프문을 돌면서 맵의 요소를 삽입
+        for (Map.Entry<? extends K, ? extends V> e : m.entrySet()) {
+            K key = e.getKey();
+            V value = e.getValue();
+            putVal(hash(key), key, value, false, evict);
+        }
+    }
+}
+```
+
+#### put(K, V)
 
 ```java
 public V put(K key, V value) {
-    // 키에 대한 해시값을 구한 뒤 putVal() 메서드 호출
+    /*
+        키-값 쌍을 삽입하는 메서드
+        onlyIfAbsent의 값을 false로 전달하면 중복된 키가 있는 경우 그 값을 대체함
+     */
     return putVal(hash(key), key, value, false, true);
 }
 ```
 
-#### 맵을 전달하는 경우
+```java
+
+@Override
+public V putIfAbsent(K key, V value) {
+    /*
+        키-값 쌍을 삽입하는 메서드
+        onlyIfAbsent의 값을 true로 전달하면 중복된 키가 없는 경우에만 값이 삽입됨
+     */
+    return putVal(hash(key), key, value, true, true);
+}
+```
+
+#### putAll(Map)
 
 ```java
 public void putAll(Map<? extends K, ? extends V> m) {
@@ -466,3 +621,366 @@ public void putAll(Map<? extends K, ? extends V> m) {
 ```
 
 ## 삭제
+
+### 공통 메서드
+
+#### removeNode(int, Object, Object, boolean, boolean)
+
+```java
+/*
+    hash: 해시값
+    key: 키 값
+    value: 값
+    matchValue: 해시 충돌로 인해 동일한 키를 가진 노드들이 있을 수 있는데, 값이 동등한 경우에만 삭제하는 플래그 
+    movable: 삭제할 노드가 트리 노드인 경우 삭제에 따른 다른 노드들의 이동 여부 플래그
+ */
+final Node<K, V> removeNode(int hash, Object key, Object value,
+                            boolean matchValue, boolean movable) {
+    Node<K, V>[] tab;
+    Node<K, V> p;
+    int n, index;
+    // 매개변수로 주어진 hash에 대응되는 인덱스에 노드가 있는 경우에만 삭제
+    if ((tab = table) != null && (n = tab.length) > 0 &&
+            (p = tab[index = (n - 1) & hash]) != null) {
+        Node<K, V> node = null, e;
+        K k;
+        V v;
+        /*
+            해시값과 키값을 통해 실제로 삭제할 노드를 찾는 과정
+            
+            해시값과 키값이 같은 경우
+         */
+        if (p.hash == hash &&
+                ((k = p.key) == key || (key != null && key.equals(k))))
+            node = p;
+        /*
+            해시값은 같지만, 키 값이 다른 경우
+            트리 노드인 경우엔 트리 구조에서 노드를 찾고, 
+            아닌 경우 연결 리스트에서 루프문을 돌아서 노드를 찾음
+         */
+        else if ((e = p.next) != null) {
+            if (p instanceof TreeNode)
+                node = ((TreeNode<K, V>) p).getTreeNode(hash, key);
+            else {
+                do {
+                    if (e.hash == hash &&
+                            ((k = e.key) == key ||
+                                    (key != null && key.equals(k)))) {
+                        node = e;
+                        break;
+                    }
+                    p = e;
+                } while ((e = e.next) != null);
+            }
+        }
+        // 삭제할 노드를 찾았고, matchValue가 true인 경우엔 값까지 동일한 경우
+        if (node != null && (!matchValue || (v = node.value) == value ||
+                (value != null && value.equals(v)))) {
+            // 삭제할 노드가 트리 노드인 경우 TreeNode의 삭제 메서드로 삭제
+            if (node instanceof TreeNode)
+                ((TreeNode<K, V>) node).removeTreeNode(this, tab, movable);
+            /*
+                삭제할 노드가 인덱스의 처음에 위치하는 경우
+                해당 인덱스가 연결 리스트라면 다음 노드를 인덱스의 처음으로 옮기고
+                삭제할 노드만 있다면 node.next는 null이므로 해당 인덱스에 null 처리를 함
+             */
+            else if (node == p)
+                tab[index] = node.next;
+            /*
+                삭제할 노드가 연결 리스트 중간에 있는 경우
+                이전 노드의 next를 삭제할 노드의 next로 수정
+             */
+            else
+                p.next = node.next;
+            ++modCount;
+            --size;
+            // LinkedHashMap 콜백 메서드
+            afterNodeRemoval(node);
+            return node;
+        }
+    }
+    return null;
+}
+```
+
+#### remove(Object)
+
+```java
+public V remove(Object key) {
+    Node<K, V> e;
+    // matchValue false 지정, 키가 같으면 제거
+    return (e = removeNode(hash(key), key, null, false, true)) == null ?
+            null : e.value;
+}
+```
+
+#### remove(Object, Object)
+
+```java
+
+@Override
+public boolean remove(Object key, Object value) {
+    // matchValue true 지정, 키와 값이 같으면 제거
+    return removeNode(hash(key), key, value, true, true) != null;
+}
+```
+
+#### clear()
+
+```java
+public void clear() {
+    Node<K, V>[] tab;
+    modCount++;
+    // 싹다 null 처리
+    if ((tab = table) != null && size > 0) {
+        size = 0;
+        for (int i = 0; i < tab.length; ++i)
+            tab[i] = null;
+    }
+}
+```
+
+## 조회
+
+### 공통 메서드
+
+#### getNode(Object)
+
+```java
+final Node<K, V> getNode(Object key) {
+    Node<K, V>[] tab;
+    Node<K, V> first, e;
+    int n, hash;
+    K k;
+    // hash(key)에 대응되는 인덱스에 노드가 있는 경우만 노드 검색 시도
+    if ((tab = table) != null && (n = tab.length) > 0 &&
+            (first = tab[(n - 1) & (hash = hash(key))]) != null) {
+        /*
+            해시 충돌로 인해 키 값이 다르더라도 동일한 인덱스에 노드들이 위치할 수 있음
+            해당 인덱스에 위치한 첫 노드의 키 값과 매개변수로 주어진 키 값이 동일한 경우
+         */
+        if (first.hash == hash && // always check first node
+                ((k = first.key) == key || (key != null && key.equals(k))))
+            return first;
+        /*
+            아닌 경우 찾고 있는 노드는 연결 리스트 또는 트리 구조에 속한 노드임
+            트리 노드인 경우 TreeNode의 검색 메서드를 호출해서 찾고
+            연결 리스트인 경우 루프문을 돌면서 키 값과 동일한 노드가 있는지 확인함
+         */
+        if ((e = first.next) != null) {
+            if (first instanceof TreeNode)
+                return ((TreeNode<K, V>) first).getTreeNode(hash, key);
+            do {
+                if (e.hash == hash &&
+                        ((k = e.key) == key || (key != null && key.equals(k))))
+                    return e;
+            } while ((e = e.next) != null);
+        }
+    }
+    return null;
+}
+```
+
+#### get(Object)
+
+```java
+public V get(Object key) {
+    Node<K, V> e;
+    // getNode() 메서드에서 null을 반환한 경우 null 반환, 아니라면 노드의 값 반환
+    return (e = getNode(key)) == null ? null : e.value;
+}
+```
+
+#### getOrDefault(Object, V)
+
+```java
+
+@Override
+public V getOrDefault(Object key, V defaultValue) {
+    Node<K, V> e;
+    // getNode() 메서드에서 null을 반환한 경우 매개변수로 주어진 기본 값 반환, 아니라면 노드의 값 반환
+    return (e = getNode(key)) == null ? defaultValue : e.value;
+}
+```
+
+#### containsKey(Object)
+
+```java
+public boolean containsKey(Object key) {
+    return getNode(key) != null;
+}
+```
+
+#### containsValue(Object)
+
+```java
+public boolean containsValue(Object value) {
+    Node<K, V>[] tab;
+    V v;
+    // 이중 루프문을 돌면서 값이 있는지 확인
+    if ((tab = table) != null && size > 0) {
+        for (Node<K, V> e : tab) {
+            for (; e != null; e = e.next) {
+                if ((v = e.value) == value ||
+                        (value != null && value.equals(v)))
+                    return true;
+            }
+        }
+    }
+    return false;
+}
+```
+
+## 업데이트
+
+#### compute(K, BiFunction<? super K, ? super V, ? extends V>)
+
+```java
+/*
+    지정된 키에 대해 BiFunction을 사용하여 새로운 값을 계산하고 업데이트하는 메서드
+    주어진 키가 존재하지 않거나 null인 경우: 새로 계산된 값이 해시맵에 저장됨 
+    값이 있는 경우: 새로 계산된 값으로 대체함, 만약 계산된 값이 null이면 해시맵에서 항목이 제거됨
+ */
+@Override
+public V compute(K key,
+                 BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
+    if (remappingFunction == null)
+        throw new NullPointerException();
+    // 해시
+    int hash = hash(key);
+    Node<K, V>[] tab;
+    Node<K, V> first;
+    int n, i;
+    int binCount = 0;
+    TreeNode<K, V> t = null;
+    Node<K, V> old = null;
+    /*
+        경우에 따라 항목을 새로 삽입해야 될 수 있기 때문에
+        리사이징이 필요한 경우 미리 수행
+     */
+    if (size > threshold || (tab = table) == null ||
+            (n = tab.length) == 0)
+        n = (tab = resize()).length;
+    /*
+        해시값에 대응되는 인덱스에 노드가 있는 경우
+        매개변수로 주어진 키값과 동일한 노드를 찾으려고 시도
+        해시충돌로 인해 동일한 인덱스에 여러 노드들이 위치해도 키 값에 대응되는 노드가 없을 수 있음 
+     */
+    if ((first = tab[i = (n - 1) & hash]) != null) {
+        if (first instanceof TreeNode)
+            old = (t = (TreeNode<K, V>) first).getTreeNode(hash, key);
+        else {
+            Node<K, V> e = first;
+            K k;
+            do {
+                if (e.hash == hash &&
+                        ((k = e.key) == key || (key != null && key.equals(k)))) {
+                    old = e;
+                    break;
+                }
+                ++binCount;
+            } while ((e = e.next) != null);
+        }
+    }
+    V oldValue = (old == null) ? null : old.value;
+    int mc = modCount;
+    // BiFunction 새로운 값 계산 
+    V v = remappingFunction.apply(key, oldValue);
+    /*
+        compute 메서드는 HashMap의 동작 중 동기화되지 않음
+        만약 주어진 BiFunction에서 삽입, 삭제같은 구조적 수정을 수행한 경우 예외 처리
+     */
+    if (mc != modCount) {
+        throw new ConcurrentModificationException();
+    }
+    // 매개변수로 주어진 키 값을 가진 노드가 있는 경우
+    if (old != null) {
+        // 새로 계산된 값이 null아닌 경우 기존의 값을 대체함
+        if (v != null) {
+            old.value = v;
+            afterNodeAccess(old);
+        } else // null인 경우 해당 노드를 삭제함
+            removeNode(hash, key, null, false, true);
+    } else if (v != null) {
+        if (t != null) // 트리 노드인 경우
+            t.putTreeVal(this, tab, hash, key, v);
+        else { // 매개변수로 주어진 키 값을 가진 노드가 없는 경우, 새 노드 생성
+            tab[i] = newNode(hash, key, v, first);
+            if (binCount >= TREEIFY_THRESHOLD - 1) // 트리화 임계값을 넘어서면 트리화 진행
+                treeifyBin(tab, hash);
+        }
+        modCount = mc + 1;
+        ++size;
+        afterNodeInsertion(true);
+    }
+    return v;
+}
+```
+
+#### computeIfAbsent(K, BiFunction<? super K, ? super V, ? extends V>)
+
+```java
+// 새로 계산된 값이 null인 경우 compute() 메서드와 달리 기존 항목을 삭제하지 않음
+@Override
+public V computeIfAbsent(K key,
+                         Function<? super K, ? extends V> mappingFunction) {
+    // compute와 동일한 로직 ...
+    
+    // 새로 계산된 값이 null인 경우 리턴
+    if (v == null) {
+        return null;
+    } else if (old != null) {
+        old.value = v;
+        afterNodeAccess(old);
+        return v;
+    } else if (t != null)
+        t.putTreeVal(this, tab, hash, key, v);
+    else {
+        tab[i] = newNode(hash, key, v, first);
+        if (binCount >= TREEIFY_THRESHOLD - 1)
+            treeifyBin(tab, hash);
+    }
+    modCount = mc + 1;
+    ++size;
+    afterNodeInsertion(true);
+    return v;
+}
+```
+
+#### computeIfPresent(K, BiFunction<? super K, ? super V, ? extends V>)
+
+```java
+/*
+    주어진 키에 대한 노드가 있는 경우(값도 null이 아닌 경우)에만 새로 계산된 값으로 대체함
+    새 값이 null인 경우 해당 항목 삭제
+ */
+@Override
+public V computeIfPresent(K key,
+                          BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
+    if (remappingFunction == null)
+        throw new NullPointerException();
+    Node<K, V> e;
+    V oldValue;
+    if ((e = getNode(key)) != null &&
+            (oldValue = e.value) != null) {
+        int mc = modCount;
+        V v = remappingFunction.apply(key, oldValue);
+        /*
+            compute 메서드는 HashMap의 동작 중 동기화되지 않음
+            만약 주어진 BiFunction에서 삽입, 삭제같은 구조적 수정을 수행한 경우 예외 처리
+        */
+        if (mc != modCount) {
+            throw new ConcurrentModificationException();
+        }
+        if (v != null) {
+            e.value = v;
+            afterNodeAccess(e);
+            return v;
+        } else {
+            int hash = hash(key);
+            removeNode(hash, key, null, false, true);
+        }
+    }
+    return null;
+}
+```
