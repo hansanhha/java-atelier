@@ -121,6 +121,30 @@ JPA에 대한 스프링 데이터 리포지토리
 
 ## Common 모듈 분석
 
+### Annotation
+
+#### Auditing
+
+`@CreatedBy`: 엔티티가 처음 생성될 때, 해당 엔티티를 생성한 사용자를 기록하기 위해 사용됨
+
+`@LastModifiedBy`: 엔티티가 마지막으로 수정될 때, 해당 엔티티를 수정한 사용자를 기록하기 위해 사용됨
+
+`@CreatedDate`: 엔티티가 처음 저장될 때, 생성 시간을 자동으로 기록하기 위해 사용됨
+
+`LastModifiedDate`: 엔티티가 마지막으로 수정된 날짜와 시간을 자동으로 기록하기 위해 사용됨
+
+#### Reference
+
+`@Reference` 어노테이션은 데이터 저장소 간의 참조 관계를 나타내기 위해 사용됨
+
+주로 Sprin Data REST 모듈에서 사용되며, 한 엔티티가 다른 엔티티를 참조할 때 해당 참조를 명시적으로 나타냄
+
+#### Transient
+
+`@Transient` 어노테이션은 특정 필드가 데이터베이스에 저장되지 않도록 표시함
+
+엔티티에 포함되어 있어도, 데이터베이스 테이블에 매핑되지 않음
+
 ### Repository Abstraction
 
 org.springframework.data.repository 패키지
@@ -452,7 +476,37 @@ public interface Page<T> extends Slice<T> {
 
 #### Example
 
-### Util
+##### QBE (Query by Example)
+
+개발자가 직접 쿼리를 직접 작성하지 않고 동적으로 쿼리를 생성할 수 있는 기술임
+
+데이터베이스 쿼리를 생성할 때 엔티티 인스턴스를 기반으로 쿼리를 생성하며, 필터링할 조건을 객체 자체로 표현하고
+
+해당 객체의 필드 값을 기반으로 동적으로 쿼리를 생성함
+
+QBE 구성 요소
+- Probe: 쿼리할 도메인 객체
+- ExampleMatcher: 쿼리 조건을 정의한 객체 (여러 Example에서 사용될 수 있음)
+- Example: 쿼리를 생성하는 객체, Probe와 ExampleMatcher로 구성됨
+- FetchableFluentQuery: Example에서 파생된 쿼리를 추가로 커스텀할 수 있는 API 제공
+
+QBE 유즈케이스
+- 정적 또는 동적 제약 조건 집합으로 data source 쿼리
+- 기존 쿼리 수정없이 도메인 객체 리팩토링
+- data source API로부터 독립적으로 작성
+
+QBE 한계
+- `firstname = ?0 or (firstname = ?1 and lastname = ?2)`와 같이 중첩되거나 그룹화된 속성 제약 조건 지원 X
+  - 단일 레벨의 조건만 사용할 수 있음
+  - 복잡한 논리 연산(AND, OR, NOT 조합 등)을 지원하지 않음
+- 데이터베이스에 의존적인 문자열 매칭 지원함 
+  - QBE의 문자열 매칭 기능은 데이터베이스의 구현에 따라 다를 수 있음
+  - 특정 기능이 모든 데이터베이스에서 지원되지 않을 수 있음
+- 다른 데이터 타입에 대한 정확한 일치만 지원함
+  - 문자열 외의 다른 데이터 타입에 대해서는 정확한 일치만 가능함
+  - 범위 조건과 같은 복잡한 검색 조건을 지원하지 않음
+
+### Querydsl
 
 
 ## Spring Data JPA

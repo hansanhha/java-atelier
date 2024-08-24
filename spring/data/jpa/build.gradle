@@ -9,7 +9,15 @@ repositories {
 }
 
 dependencies {
+    implementation libs.spring.boot
     implementation libs.spring.boot.data.jpa
+
+    testImplementation libs.spring.boot.test
+    testImplementation libs.jupiter
+
     runtimeOnly libs.h2
 }
 
+tasks.named("test") {
+    test.useJUnitPlatform();
+}
