@@ -13,6 +13,9 @@
 - [삭제](#삭제)
 - [조회](#조회)
 - [업데이트](#업데이트)
+- [forEach](#foreachbiconsumer-super-k--super-v)
+- [Iterator](#iterator)
+- [View](#view)
 
 ## HashMap
 
@@ -233,7 +236,7 @@ public HashMap(Map<? extends K, ? extends V> m) {
 }
 ```
 
-## 크기 조정
+### 크기 조정
 
 ```java
 /*
@@ -352,7 +355,7 @@ final Node<K, V>[] resize() {
 }
 ```
 
-## 트리화, 역트리화
+### 트리화, 역트리화
 
 #### 트리화
 
@@ -457,7 +460,7 @@ final Node<K, V> untreeify(HashMap<K, V> map) {
 }
 ```
 
-## 해시
+### 해시
 
 ```java
 /*
@@ -479,11 +482,11 @@ static final int hash(Object key) {
 }
 ```
 
-## 삽입
+### 삽입
 
-### 공통 메서드
+#### 공통 메서드
 
-#### putVal(int, K, V, boolean, boolean)
+##### putVal(int, K, V, boolean, boolean)
 
 ```java
 /*
@@ -557,7 +560,7 @@ final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
 }
 ```
 
-#### putMapEntries(Map, boolean)
+##### putMapEntries(Map, boolean)
 
 ```java
 final void putMapEntries(Map<? extends K, ? extends V> m, boolean evict) {
@@ -620,11 +623,11 @@ public void putAll(Map<? extends K, ? extends V> m) {
 }
 ```
 
-## 삭제
+### 삭제
 
-### 공통 메서드
+#### 공통 메서드
 
-#### removeNode(int, Object, Object, boolean, boolean)
+##### removeNode(int, Object, Object, boolean, boolean)
 
 ```java
 /*
@@ -740,11 +743,11 @@ public void clear() {
 }
 ```
 
-## 조회
+### 조회
 
-### 공통 메서드
+#### 공통 메서드
 
-#### getNode(Object)
+##### getNode(Object)
 
 ```java
 final Node<K, V> getNode(Object key) {
@@ -831,16 +834,18 @@ public boolean containsValue(Object value) {
 }
 ```
 
-## 업데이트
+### 업데이트
 
 #### compute(K, BiFunction<? super K, ? super V, ? extends V>)
 
+지정된 키에 대해 BiFunction을 사용하여 새로운 값을 계산하고 업데이트하는 메서드
+
+주어진 키가 존재하지 않거나 null인 경우: 새로 계산된 값이 해시맵에 저장됨
+
+값이 있는 경우: 새로 계산된 값으로 대체함, 만약 계산된 값이 null이면 해시맵에서 항목이 제거됨
+
 ```java
-/*
-    지정된 키에 대해 BiFunction을 사용하여 새로운 값을 계산하고 업데이트하는 메서드
-    주어진 키가 존재하지 않거나 null인 경우: 새로 계산된 값이 해시맵에 저장됨 
-    값이 있는 경우: 새로 계산된 값으로 대체함, 만약 계산된 값이 null이면 해시맵에서 항목이 제거됨
- */
+
 @Override
 public V compute(K key,
                  BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
@@ -919,13 +924,15 @@ public V compute(K key,
 
 #### computeIfAbsent(K, BiFunction<? super K, ? super V, ? extends V>)
 
+새로 계산된 값이 null인 경우 compute() 메서드와 달리 기존 항목을 삭제하지 않음
+
 ```java
-// 새로 계산된 값이 null인 경우 compute() 메서드와 달리 기존 항목을 삭제하지 않음
+
 @Override
 public V computeIfAbsent(K key,
                          Function<? super K, ? extends V> mappingFunction) {
     // compute와 동일한 로직 ...
-    
+
     // 새로 계산된 값이 null인 경우 리턴
     if (v == null) {
         return null;
@@ -949,11 +956,12 @@ public V computeIfAbsent(K key,
 
 #### computeIfPresent(K, BiFunction<? super K, ? super V, ? extends V>)
 
+주어진 키에 대한 노드가 있는 경우(값도 null이 아닌 경우)에만 새로 계산된 값으로 대체하는 메서드
+
+새 값이 null인 경우 해당 항목 삭제
+
 ```java
-/*
-    주어진 키에 대한 노드가 있는 경우(값도 null이 아닌 경우)에만 새로 계산된 값으로 대체함
-    새 값이 null인 경우 해당 항목 삭제
- */
+
 @Override
 public V computeIfPresent(K key,
                           BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
@@ -982,5 +990,375 @@ public V computeIfPresent(K key,
         }
     }
     return null;
+}
+```
+
+#### merge(K, V, BiFunction<? super V, ? super V, ? extends V>)
+
+키-값, 값을 재계산하는 람다식을 매개변수로 받는 메서드
+
+compute의 람다식은 키와 값을 기반으로 재계산을 하고, merge의 람다식은 해당 키에 대응되는 값과 새로운 값을 기반으로 재계산을 수행함
+
+특징
+
+- 키에 매핑된 노드의 값이 null인 경우 매개변수로 주어진 value로 값을 대체함
+- 재계산된 값이 null인 경우 매핑된 항목을 삭제함
+- 키에 대응되는 항목을 찾지 못한 경우 새로운 노드를 생성함
+
+```java
+
+@Override
+public V merge(K key, V value,
+               BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
+    if (value == null || remappingFunction == null)
+        throw new NullPointerException();
+    int hash = hash(key);
+    Node<K, V>[] tab;
+    Node<K, V> first;
+    int n, i;
+    int binCount = 0;
+    TreeNode<K, V> t = null;
+    Node<K, V> old = null;
+    /*
+        경우에 따라 항목을 새로 삽입해야 될 수 있기 때문에
+        리사이징이 필요한 경우 미리 수행
+     */
+    if (size > threshold || (tab = table) == null ||
+            (n = tab.length) == 0)
+        n = (tab = resize()).length;
+    // 키와 해시값이 동일한 노드 찾기
+    if ((first = tab[i = (n - 1) & hash]) != null) {
+        if (first instanceof TreeNode)
+            old = (t = (TreeNode<K, V>) first).getTreeNode(hash, key);
+        else {
+            Node<K, V> e = first;
+            K k;
+            do {
+                if (e.hash == hash &&
+                        ((k = e.key) == key || (key != null && key.equals(k)))) {
+                    old = e;
+                    break;
+                }
+                ++binCount;
+            } while ((e = e.next) != null);
+        }
+    }
+    if (old != null) { // 노드를 찾은 경우
+        V v;
+        if (old.value != null) { // 찾은 노드의 값이 null이 아닌 경우(해시맵은 null 값을 허용함)
+            int mc = modCount;
+            v = remappingFunction.apply(old.value, value); // 기존의 값과 주어진 값을 기반으로 재계산 수행
+            if (mc != modCount) {
+                throw new ConcurrentModificationException(); // 재계산 도중 구조적 수정을 하면 예외 터뜨림
+            }
+        } else {
+            v = value; // 찾은 노드의 값이 null인 경우
+        }
+        if (v != null) { // 재계산 결과가 null이 아닌 경우, 찾은 노드의 값 수정
+            old.value = v;
+            afterNodeAccess(old);
+        } else
+            removeNode(hash, key, null, false, true); // 재계산 결과가 nul인 경우 찾은 노드 삭제
+        return v;
+    } else { // 노드를 찾지 못한 경우, 새 노드 생성
+        if (t != null)
+            t.putTreeVal(this, tab, hash, key, value);
+        else {
+            tab[i] = newNode(hash, key, value, first);
+            if (binCount >= TREEIFY_THRESHOLD - 1)
+                treeifyBin(tab, hash);
+        }
+        ++modCount;
+        ++size;
+        afterNodeInsertion(true);
+        return value;
+    }
+}
+```
+
+### forEach(BiConsumer<? super K, ? super V>)
+
+모든 노드들을 순회해서 키-값에 대한 로직을 수행하는 메서드
+
+주어진 action 메서드에서 구조적 수정을 수행한 경우 예외 처리
+
+```java
+
+@Override
+public void forEach(BiConsumer<? super K, ? super V> action) {
+    Node<K, V>[] tab;
+    if (action == null)
+        throw new NullPointerException();
+    if (size > 0 && (tab = table) != null) {
+        int mc = modCount;
+        for (Node<K, V> e : tab) { // 이중 루프문을 돌면서 action 메서드 실행
+            for (; e != null; e = e.next)
+                action.accept(e.key, e.value);
+        }
+        if (modCount != mc) // action 메서드에서 구조적 수정을 수행하면 예외를 터뜨림
+            throw new ConcurrentModificationException();
+    }
+}
+```
+
+### Iterator
+
+#### HashIterator
+
+해시맵의 모든 이터레이터의 추상 클래스
+
+hasNext, nextNode, remove 메서드를 구현해놓음
+
+```java
+abstract class HashIterator {
+    Node<K, V> next;        // next entry to return
+    Node<K, V> current;     // current entry
+    int expectedModCount;  // for fast-fail
+    int index;             // current slot
+
+    HashIterator() {
+        expectedModCount = modCount; // 이터레이터를 사용하는 중에 modCount의 값이 달라지면 예외 처리를 하기 위해
+        Node<K, V>[] t = table;      // modCount 값을 캡처해놓음
+        current = next = null;
+        index = 0;
+        if (t != null && size > 0) { // 노드가 위치한 인덱스 찾기
+            do {
+            } while (index < t.length && (next = t[index++]) == null);
+        }
+    }
+
+    public final boolean hasNext() { // 다음 노드가 있는지 확인
+        return next != null;
+    }
+
+    final Node<K, V> nextNode() { // 다음 노드 반환
+        Node<K, V>[] t;
+        Node<K, V> e = next;
+        if (modCount != expectedModCount) // 이터레이터를 사용하는 중에 다른 곳에서 구조적 수정을 한 경우 예외 처리
+            throw new ConcurrentModificationException();
+        if (e == null) // next 노드가 없는 경우 예외 처리, 즉 nextNode를 호출하기 전에 hasNext()로 먼저 값이 있는지 확인이 필요함
+            throw new NoSuchElementException();
+        /*
+            해시맵은 각 버킷을 연결 리스트 또는 트리 구조로 관리하기 때문에
+            해당 버킷의 모든 노드를 순회하면 다음 인덱스로 이동함
+         */
+        if ((next = (current = e).next) == null && (t = table) != null) {
+            do {
+            } while (index < t.length && (next = t[index++]) == null);
+        }
+        return e;
+    }
+
+    public final void remove() { // 이터레이터의 현재 노드 삭제
+        Node<K, V> p = current;
+        if (p == null)
+            throw new IllegalStateException();
+        if (modCount != expectedModCount) // 이터레이터를 사용하는 중에 다른 곳에서 구조적 수정을 한 경우 예외 처리
+            throw new ConcurrentModificationException();
+        // 삭제 후 modCount 캡처 값 수정
+        current = null;
+        removeNode(p.hash, p.key, null, false, false);
+        expectedModCount = modCount;
+    }
+}
+```
+
+#### KeyIterator, ValueIterator, EntryIterator
+
+해시맵은 키, 값, 키-값으로 순회를 돌 수 있는데, 그 부분을 실질적으로 담당하는 클래스
+
+모두 똑같이 HashIterator를 상속받아서 부모를 통해 순회를 도는데, Iterator의 next 메서드로 반환하는 값만 다름
+
+```java
+final class KeyIterator extends HashIterator
+        implements Iterator<K> {
+    public final K next() {
+        return nextNode().key; // 키 값 반환
+    }
+}
+
+final class ValueIterator extends HashIterator
+        implements Iterator<V> {
+    public final V next() {
+        return nextNode().value; // 값 반환
+    }
+}
+
+final class EntryIterator extends HashIterator
+        implements Iterator<Map.Entry<K, V>> {
+    public final Map.Entry<K, V> next() {
+        return nextNode(); // 노드 반환
+    }
+}
+```
+
+### View
+
+#### KeySet View
+
+현재 맵에 포함된 키의 Set View와 이를 반환하는 메서드
+
+맵 <-> 키 셋 간에 변경사항이 반영되며, 맵이 수정된 후로 keySet을 통해 순회를 돌면 예외가 발생함
+
+```java
+// HashMap은 AbstractMap으로부터 상속받은 keySet을 사용함
+transient Set<K> keySet;
+```
+
+```java
+// keySet을 반환하는 메서드, keySet이 null인 경우에만 새로운 KeySet을 생성함
+public Set<K> keySet() {
+    Set<K> ks = keySet;
+    if (ks == null) {
+        ks = new KeySet();
+        keySet = ks;
+    }
+    return ks;
+}
+```
+
+```java
+/*
+    Key Set View, AbstractSet으로부터 상속받음
+    AbstractSet은 AbstractCollection을 상속받는 추상 클래스임
+    따라서 remove, removeAll, retainAll 등 삭제 관련 메서드를 사용할 수 있음(삽입은 불가)
+ */
+final class KeySet extends AbstractSet<K> {
+    public final int size() {
+        return size;
+    }
+
+    public final void clear() {
+        HashMap.this.clear();
+    }
+
+    // KeyIterator를 통해 키 값을 순회함
+    public final Iterator<K> iterator() {
+        return new KeyIterator();
+    }
+
+    /*
+        키에 매핑되는 노드가 있는 경우 true 반환
+        public boolean containsKey(Object key) {
+            return getNode(key) != null;
+        }
+     */
+    public final boolean contains(Object o) {
+        return containsKey(o);
+    }
+
+    public final boolean remove(Object key) {
+        return removeNode(hash(key), key, null, false, true) != null;
+    }
+
+    public final Spliterator<K> spliterator() {
+        return new KeySpliterator<>(HashMap.this, 0, -1, 0, 0);
+    }
+
+    public Object[] toArray() {
+        return keysToArray(new Object[size]);
+    }
+
+    public <T> T[] toArray(T[] a) {
+        return keysToArray(prepareArray(a));
+    }
+
+    // 모든 노드를 순회하면서 key값을 기반으로 로직 수행
+    public final void forEach(Consumer<? super K> action) {
+        Node<K, V>[] tab;
+        if (action == null)
+            throw new NullPointerException();
+        if (size > 0 && (tab = table) != null) {
+            int mc = modCount;
+            for (Node<K, V> e : tab) { // 이중 루프문을 돌면서 모든 노드를 순회함
+                for (; e != null; e = e.next)
+                    action.accept(e.key); // 키 값만 전달
+            }
+            if (modCount != mc) // 람다식 내부에서 구조적 수정이 발생한 경우 예외를 터뜨림
+                throw new ConcurrentModificationException();
+        }
+    }
+}
+```
+
+#### Values View
+
+현재 맵에 포함된 값의 Collection View와 이를 반환하는 메서드
+
+set과 일부분의 차이를 제외하고 큰 차이는 없어서 코드는 생략함
+
+- AbstractMap으로부터 상속받은 `Collection<V> values` 필드 사용
+- values() 메서드는 Collection 타입으로 value 뷰를 반환함
+- Values는 KeySet과 달리 AbstractCollection을 상속받아서 구현함
+
+#### EntrySet View
+
+현재 맵에 포함된 노드의 Set View와 이를 반환하는 메서드
+
+keySet, values와 동일하게 맵 <-> 엔트리 셋 간에 변경사항이 반영되며, 맵이 수정된 후로 entrySet을 통해 순회를 돌면 예외가 발생함
+
+```java
+// entrySet은 해시맵에서 관리함
+transient Set<Map.Entry<K, V>> entrySet;
+```
+
+```java
+// entrySet이 null인 경우에만 새 EntrySet 생성
+public Set<Map.Entry<K, V>> entrySet() {
+    Set<Map.Entry<K, V>> es;
+    return (es = entrySet) == null ? (entrySet = new EntrySet()) : es;
+}
+```
+
+```java
+final class EntrySet extends AbstractSet<Map.Entry<K, V>> {
+    public final int size() {
+        return size;
+    }
+
+    public final void clear() {
+        HashMap.this.clear();
+    }
+
+    public final Iterator<Map.Entry<K, V>> iterator() {
+        return new EntryIterator();
+    }
+
+    public final boolean contains(Object o) {
+        if (!(o instanceof Map.Entry<?, ?> e))
+            return false;
+        Object key = e.getKey();
+        Node<K, V> candidate = getNode(key);
+        return candidate != null && candidate.equals(e);
+    }
+
+    public final boolean remove(Object o) {
+        if (o instanceof Map.Entry<?, ?> e) {
+            Object key = e.getKey();
+            Object value = e.getValue();
+            return removeNode(hash(key), key, value, true, true) != null;
+        }
+        return false;
+    }
+
+    public final Spliterator<Map.Entry<K, V>> spliterator() {
+        return new EntrySpliterator<>(HashMap.this, 0, -1, 0, 0);
+    }
+
+    // 모든 노드를 순회하면서 키-값 쌍을 기반으로 로직 수행
+    public final void forEach(Consumer<? super Map.Entry<K, V>> action) {
+        Node<K, V>[] tab;
+        if (action == null)
+            throw new NullPointerException();
+        if (size > 0 && (tab = table) != null) {
+            int mc = modCount;
+            for (Node<K, V> e : tab) { // 이중 루프문을 돌면서 모든 노드를 순회함
+                for (; e != null; e = e.next)
+                    action.accept(e);
+            }
+            if (modCount != mc) // 람다식 내부에서 구조적 수정이 발생한 경우 예외를 터뜨림
+                throw new ConcurrentModificationException();
+        }
+    }
 }
 ```
