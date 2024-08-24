@@ -1,10 +1,6 @@
-## Java SE
+## [Java Base](base/README.md)
 
-[java](core/README.md)
-
-[jdk projects](experimental/README.md)
-
-[jdk tools](useful/README.md)
+## [Advanced](useful/README.md)
 
 ## JDK Distributions
 
