@@ -1,10 +1,12 @@
 ## 개념
 
-[JPA](./concepts/jpa.md)
+[JPA](./jpa/jpa.md)
 
-[Hibernate](./concepts/hibernate.md)
+[Hibernate](./hibernate/hibernate.md)
 
-[Spring Data JPA](./concepts/spring%20data%20jpa.md)
+[Spring Data](./jpa/spring%20data.md)
+
+[Spring Data JPA](./jpa/spring%20data%20jpa.md)
 
 ## 구현
 

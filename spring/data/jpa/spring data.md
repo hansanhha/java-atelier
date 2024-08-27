@@ -4,16 +4,15 @@ spring boot 3.3.2 기준
 - [주요 기능](#주요-기능)
 - [메인 모듈](#메인-모듈)
 - [Common 모듈 분석](#common-모듈-분석)
-  - [Repository 추상화](#repository-abstraction)
-  - [Domain](#domain)
-  - [Util](#util)
-
+    - [Repository 추상화](#repository-abstraction)
+    - [Domain](#domain)
+    - [Querydsl](#querydsl)
 
 ## Spring Data Project
 
 [Spring Data](https://spring.io/projects/spring-data)
 
-스프링 데이터는 기본 데이터 저장소의 특수성을 유지하면서 데이터 접근을 위한 일관성 있는 스프링 기반 프로그래밍 모델을 제공함
+스프링 데이터는 기본 데이터 저장소의 특수성을 유지하면서 데이터 접근을 위한 일관성 있는 스프링 기반 프로그래밍 모델을 제공하여
 
 관계형, 비관계형 데이터베이스, 데이터 접근 기술, 클라우드 기반 데이터 서비스, 맵 리듀스 프레임워크를 쉽게 사용할 수 있음
 
@@ -131,17 +130,17 @@ JPA에 대한 스프링 데이터 리포지토리
 
 `@CreatedDate`: 엔티티가 처음 저장될 때, 생성 시간을 자동으로 기록하기 위해 사용됨
 
-`LastModifiedDate`: 엔티티가 마지막으로 수정된 날짜와 시간을 자동으로 기록하기 위해 사용됨
+`@LastModifiedDate`: 엔티티가 마지막으로 수정된 날짜와 시간을 자동으로 기록하기 위해 사용됨
 
 #### Reference
 
-`@Reference` 어노테이션은 데이터 저장소 간의 참조 관계를 나타내기 위해 사용됨
+`@Reference`: 데이터 저장소 간의 참조 관계를 나타내기 위해 사용
 
 주로 Sprin Data REST 모듈에서 사용되며, 한 엔티티가 다른 엔티티를 참조할 때 해당 참조를 명시적으로 나타냄
 
 #### Transient
 
-`@Transient` 어노테이션은 특정 필드가 데이터베이스에 저장되지 않도록 표시함
+`@Transient`: 특정 필드가 데이터베이스에 저장되지 않도록 표시
 
 엔티티에 포함되어 있어도, 데이터베이스 테이블에 매핑되지 않음
 
@@ -151,12 +150,6 @@ org.springframework.data.repository 패키지
 
 #### Repository<T, ID>
 
-@Indexed
-- `@Indexed`는 spring 5.0에 추가된 어노테이션으로 컴포넌트 스캔을 최적화하는 용도로 사용됨
-- 스프링이 클래스패스에서 컴포넌트를 검색할 때 인덱스를 생성하여, 컴포넌트 스캔의 성능을 향상시켜 애플리케이션 컨텍스트 초기화를 빠르게 할 수 있음
-- `@Component`와 달리 빈 등록 여부를 결정하진 않음
-- 스프링 데이터의 최상위 인터페이스인 Repository에 `@Indexed`를 적용시켜, 컴포넌트 스캔 시 인덱스 정보를 활용할 수 있도록 함
-
 Repository 인터페이스는 관리할 도메인 타입과 ID 타입을 캡처하는 마커 인터페이스임
 
 ```java
@@ -165,12 +158,13 @@ public interface Repository<T, ID> {
 }
 ```
 
-#### CrudRepository<T, ID>
+@Indexed
+- `@Indexed`는 spring 5.0에 추가된 어노테이션으로 컴포넌트 스캔을 최적화하는 용도로 사용됨
+- 스프링이 클래스패스에서 컴포넌트를 검색할 때 인덱스를 생성하여, 컴포넌트 스캔의 성능을 향상시켜 애플리케이션 컨텍스트 초기화를 빠르게 할 수 있음
+- `@Component`와 달리 빈 등록 여부를 결정하진 않음
+- 스프링 데이터의 최상위 인터페이스인 Repository에 `@Indexed`를 적용시켜, 컴포넌트 스캔 시 인덱스 정보를 활용할 수 있도록 함
 
-@NoRepositoryBean
-- CrudRepository나 JpaRepository 같이 공통적인 메서드를 제공하는 리포지토리를 기반 리포지토리(base repository)라고 하는데,
-- `@NoRepositoryBean` 어노테이션은 기반 리포지토리에 선언해서, 해당 인터페이스 자체가 스프링 빈으로 등록되지 않게 함
-- 이를 구현한 구체적인 리포지토리 인터페이스만 빈으로 등록하게 됨
+#### CrudRepository<T, ID>
 
 CrudRepository 인터페이스는 특정 타입에 대한 일반적인 CRUD 연산을 추상화함
 
@@ -206,9 +200,14 @@ public interface CrudRepository<T, ID> extends Repository<T, ID> {
 }
 ```
 
+@NoRepositoryBean
+- CrudRepository나 JpaRepository 같이 공통적인 메서드를 제공하는 리포지토리를 기반 리포지토리(base repository)라고 하는데,
+- `@NoRepositoryBean` 어노테이션은 기반 리포지토리에 선언해서, 해당 인터페이스 자체가 스프링 빈으로 등록되지 않게 함
+- 이를 구현한 구체적인 리포지토리 인터페이스만 빈으로 등록하게 됨
+
 #### ListCrudRepository<T, ID>
 
-CrudRepository를 확장한 인터페이스로, Iterable 대신 List로 반환하는 메서드를 정의함
+ListCrudRepository는 CrudRepository를 확장한 인터페이스로, Iterable 대신 List로 반환하는 메서드를 정의함
 
 빈 등록 방지를 위해 `@NoRepositoryBean`을 적용함
 
@@ -228,9 +227,9 @@ public interface ListCrudRepository<T, ID> extends CrudRepository<T, ID> {
 
 페이징과 정렬을 추상화한 리포지토리
 
-PagingAndSortingRepository 인터페이스는 Repository를 확장하므로
+PagingAndSortingRepository 인터페이스는 Repository를 확장하므로 기본 crud 연산을 지원하지 않음
 
-이를 확장할 인터페이스나 구현체는 기본적인 Crud 연산을 위해 CrudRepository도 포함해야 됨
+이를 확장할 인터페이스나 구현체는 기본적인 crud 연산을 위해 CrudRepository도 포함해야 됨
 
 빈 등록 방지를 위해 `@NoRepositoryBean`을 적용함
 
@@ -264,7 +263,7 @@ public interface ListPagingAndSortingRepository<T, ID> extends PagingAndSortingR
 
 스프링 데이터 표준 리포지토리를 상속받지 않고, 특정한 리포지토리 기능을 직접 정의할 수 있도록 하는 어노테이션
 
-Repository처럼 @Indexed가 포함되어 있으며, T, ID를 어노테이션 속성으로 지정함 
+Repository처럼 @Indexed가 포함되어 있으며, T, ID를 어노테이션 속성으로 지정함
 
 ```java
 @Indexed
@@ -388,19 +387,25 @@ public interface Page<T> extends Slice<T> {
 
 쿼리의 정렬 정보를 다루는 클래스
 
+여러 개의 Order 중첩 클래스를 가짐 (각 Order 클래스는 Direction과 NullHandling을 가짐)
+
 데이터베이스나 다른 저장소에서 데이터를 쿼리할 때 정렬 기준을 정의함
+- by(): 정렬 조건 지정
+- reverse(): 역정렬
+- ascending(): 현재 Order들에 대한 오름차순 정렬 수행
+- descending(): 현재 Order들에 대한 내림차순 정렬 지정
 
 ##### 중첩 클래스
 - Direction
-  - 정렬 방향을 나타내는 enum 
-  - ```java
+    - 정렬 방향을 나타내는 enum
+    - ```java
     public enum Direction {
         ASC, DESC;
     }
     ```
 - NullHandling
-  - 정렬 시 null 값을 어떻게 처리할 지 정의하는 enum
-  - ```java
+    - 정렬 시 null 값을 어떻게 처리할 지 정의하는 enum
+    - ```java
     public enum NullHandling {
         /*
             DataSource의 기본 null 처리 방식을 따름
@@ -414,22 +419,21 @@ public interface Page<T> extends Slice<T> {
     }
     ``` 
 - Order
-  - 특정 필드에 대해 정렬 방향과 null 처리 방식을 포함한 정렬 정보를 정의하는 클래스
-  - Sort 객체는 여러 개의 Order 객체를 포함할 수 있음
-  - ```java
+    - 특정 필드에 대해 정렬 방향(Direction)과 null 처리 방식(NullHandling)을 포함한 정렬 정보를 정의하는 클래스
+    - Sort 객체는 여러 개의 Order 객체를 포함할 수 있음
+    - ```java
     public static class Order implements Serializable {
     
         private static final boolean DEFAULT_IGNORE_CASE = false;
 		private static final NullHandling DEFAULT_NULL_HANDLING = NullHandling.NATIVE;
     
         private final Direction direction;
+        // 정렬 대상 속성
 		private final String property;
-        // 대소문자 구분, 기본값은 대소문자 구분 안함
+        // 대소문자 구분(기본값: 대소문자 구분 안함)
 		private final boolean ignoreCase;
-        // null처리, 기본값은 데이터베이스 처리 방식을 따름
+        // null처리(기본값: 데이터베이스 처리 방식을 따름)
 		private final NullHandling nullHandling;
-    
-        public 
     
         // 특정 속성을 ASC 정렬
         public static Order by(String property) {
@@ -460,19 +464,12 @@ public interface Page<T> extends Slice<T> {
     }
     ```
 - TypedSort
-  - 정렬이 적용된 특정 타입의 속성을 정의하는 데 사용되는 클래스로, Sort 클래스로부터 상속받음
-  - 타입 안전성을 보장함
-  - ```java
+    - 정렬이 적용된 특정 타입의 속성을 정의하는 데 사용되는 클래스로, Sort 클래스로부터 상속받음
+    - 타입 안전성을 보장함
+    - ```java
     Sort.TypedSort<Book> bookSort = Sort.by(Book.class);
     Sort sortByPrice = bookSort.and(Sort.by(Sort.Order.asc("price"))); 
     ```
-
-##### Sort 클래스
-- 여러 개의 Order 객체를 가진 클래스로, 각 속성에 대한 정렬 방향과 null 처리 방식에 대한 정보를 가지고 있음
-- by(): 정렬 조건 지정
-- reverse(): 역정렬
-- ascending(): 현재 Order들에 대한 오름차순 정렬 수행
-- descending(): 현재 Order들에 대한 내림차순 정렬 지정
 
 #### Example
 
@@ -497,16 +494,13 @@ QBE 유즈케이스
 
 QBE 한계
 - `firstname = ?0 or (firstname = ?1 and lastname = ?2)`와 같이 중첩되거나 그룹화된 속성 제약 조건 지원 X
-  - 단일 레벨의 조건만 사용할 수 있음
-  - 복잡한 논리 연산(AND, OR, NOT 조합 등)을 지원하지 않음
-- 데이터베이스에 의존적인 문자열 매칭 지원함 
-  - QBE의 문자열 매칭 기능은 데이터베이스의 구현에 따라 다를 수 있음
-  - 특정 기능이 모든 데이터베이스에서 지원되지 않을 수 있음
+    - 단일 레벨의 조건만 사용할 수 있음
+    - 복잡한 논리 연산(AND, OR, NOT 조합 등)을 지원하지 않음
+- 데이터베이스에 의존적인 문자열 매칭 지원함
+    - QBE의 문자열 매칭 기능은 데이터베이스의 구현에 따라 다를 수 있음
+    - 특정 기능이 모든 데이터베이스에서 지원되지 않을 수 있음
 - 다른 데이터 타입에 대한 정확한 일치만 지원함
-  - 문자열 외의 다른 데이터 타입에 대해서는 정확한 일치만 가능함
-  - 범위 조건과 같은 복잡한 검색 조건을 지원하지 않음
+    - 문자열 외의 다른 데이터 타입에 대해서는 정확한 일치만 가능함
+    - 범위 조건과 같은 복잡한 검색 조건을 지원하지 않음
 
 ### Querydsl
-
-
-## Spring Data JPA
