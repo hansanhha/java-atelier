@@ -1,6 +1,6 @@
 [versions]
-spring-boot = "3.3.2"
-spring-management = "1.1.5"
+spring-boot = "3.3.3"
+spring-management = "1.1.6"
 spring-modulith = "1.1.2"
 hibernate-orm = "6.6.0.Final"
 hibernate-validator = "8.0.0.Final"

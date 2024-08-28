@@ -186,7 +186,7 @@ public class OAuth2Config {
                         .loginPage("/oauth2/authorization/custom-login-page")
                 )
                 .logout(logout -> logout
-                        .logoutUrl("/user/logout")
+                        .logoutUrl("/simpleUser/logout")
                         .logoutSuccessUrl("/")
                         .invalidateHttpSession(true)
                         .clearAuthentication(true)
@@ -240,7 +240,7 @@ OAuth2LoginConfigurer (oauth2Login())
   - AuthorizationEndpointConfig : authorization grant 관련 설정 (authorization code 등)
   - TokenEndpointConfig : access token 관련 설정
   - RedirectionEndpointConfig : auth -> client redirect 관련 설정
-  - UserInfoEndpointConfig : user info 관련 설정
+  - UserInfoEndpointConfig : simpleUser info 관련 설정
 
 리다이렉트 기본 로그인 페이지, 기본 경로
 - 기본 페이지 : DefaultLoginPageGeneratingFilter가 base uri를 기반으로 provider(clientName)별 링크 생성

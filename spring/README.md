@@ -1,6 +1,6 @@
 ### core(ioc, psa, aop)
 
-### [data](data)
+### [data](data/README.md)
 
 ### boot(auto configuration, environment abstraction, embedded web server)
 

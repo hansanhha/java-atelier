@@ -47,9 +47,9 @@ public interface MessageCodesResolver {
 DefaultMessageCodesResolver : 특정 필드에 대한 오류 코드를 바탕으로 메시지 코드 생성
 
 DefaultMessageCodesResolver 동작 방식(아래의 순서로 메시지 코드 변환)
-- 객체 이름과 필드 이름을 포함한 코드(user.email.required)
+- 객체 이름과 필드 이름을 포함한 코드(simpleUser.email.required)
 - 필드 이름만 포함한 코드(email.required)
-- 객체 이름만 포함한 코드(user.required)
+- 객체 이름만 포함한 코드(simpleUser.required)
 - 글로벌 코드(required)
 
 BindingResult 또는 Errors 인터페이스와 함께 동작

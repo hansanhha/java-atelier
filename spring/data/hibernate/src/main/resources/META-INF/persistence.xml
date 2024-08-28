@@ -14,7 +14,7 @@
                       value="jdbc:h2:mem:db1"/>
 
             <!-- Credentials -->
-            <property name="jakarta.persistence.jdbc.user"
+            <property name="jakarta.persistence.jdbc.simpleUser"
                       value="sa"/>
             <property name="jakarta.persistence.jdbc.password"
                       value=""/>
