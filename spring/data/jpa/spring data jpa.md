@@ -150,19 +150,25 @@ public class SimpleJpaRepository<T, ID> implements JpaRepositoryImplementation<T
   }
   ```
 
-애플리케이션 컨텍스트 초기화
+애플리케이션 컨텍스트 초기화 및 리포지토리 인터페이스 스캔과 프록시 생성
 
 - 스프링 애플리케이션이 시작될 때, 애플리케이션 컨텍스트가 초기화되면서 스프링 데이터 JPA가 리포지토리 인터페이스들을 스캔함
-- 스캔 과정에서 `@EnableJpaRepositories` 어노테이션이 설정된 패키지 내의 모든 리포지토리 인터페이스를 찾아서, 빈으로 등록함
+- 스캔 과정에서 `@EnableJpaRepositories` 어노테이션이 설정된 패키지 내의 모든 리포지토리 인터페이스를 찾음
+- 각 리포지토리 인터페이스에 대해 스프링 데이터 JPA는 프록시 객체를 생성함(해당 프록시 객체가 스프링 빈으로 등록됨)
+- 이 프록시는 인터페이스를 구현한 동적 프록시로, 실제 구현체로 호출을 위임함
 
-리포지토리 인터페이스의 구현체 생성 및 사용
+SimpleJpaRepository 생성
 
-- 스프링 데이터
-  JPA는 [JpaRepositoryFactory](https://docs.spring.io/spring-data/jpa/docs/current/api/org/springframework/data/jpa/repository/support/JpaRepositoryFactory.html)
-  를 사용하여 각 리포지토리 인터페이스의 구현체를 생성함
-- 구현체를 생성할 때 리포지토리 인터페이스에 대한 프록시 객체를 생성함
-- 해당 프록시 객체의 실제 구현체가 SimpleJPaRepository임
-- 사용자가 `UserRepository`와 같은 리포지토리를 주입받을 때 프록시 객체를 주입하고, 프록시 객체가 실행할 메서드를 가로채서 SimpleJpaRepository의 메서드를 호출함
+- 스프링 데이터 JPA는 [JpaRepositoryFactory](https://docs.spring.io/spring-data/jpa/docs/current/api/org/springframework/data/jpa/repository/support/JpaRepositoryFactory.html)를 사용하여 각 리포지토리 인터페이스의 구현체를 생성함
+- JpaRepositoryFactory는 기본적으로 SimpleJpaRepository를 생성함
+
+프록시 객체와 SimpleJpaRepository
+- 생성된 프록시 객체는 SimpleJpaRepository의 인스턴스를 호출하도록 구성됨
+- 개발자가 사용자 정의 리포지토리 메서드를 호출할 때, 이 호출은 프록시 객체에 의해 가로채어지며 SimpleJpaRepository의 해당 메서드로 위임됨
+
+의존성 주입
+- `@Autowired`같은 의존성 주입 방식으로 리포지토리 인터페이스를 주입받을 때, 실제로 주입되는 건 이 리포지토리의 프록시 객체임
+- 메서드를 호출하면, 프록시 객체가 받아서 SimpleJpaRepository의 인스턴스로 위임함
 
 ### 코드 분석
 
