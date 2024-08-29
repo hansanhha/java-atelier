@@ -8,18 +8,20 @@ import org.springframework.stereotype.Service;
 @Transactional
 public class SimpleUserService {
 
-    private final SimpleUserRepository simpleUserRepository;
+    private final SimpleUserJpaRepository simpleUserJpaRepository;
+    private final SimpleUserCrudRepository simpleUserCrudRepository;
 
-    public SimpleUserService(SimpleUserRepository simpleUserRepository) {
-        this.simpleUserRepository = simpleUserRepository;
+    public SimpleUserService(SimpleUserJpaRepository simpleUserJpaRepository, SimpleUserCrudRepository simpleUserCrudRepository) {
+        this.simpleUserJpaRepository = simpleUserJpaRepository;
+        this.simpleUserCrudRepository = simpleUserCrudRepository;
     }
 
     public SimpleUser save(String firstName, String lastName, String phoneNumber) {
-        return simpleUserRepository.save(new SimpleUser(firstName, lastName, phoneNumber));
+        return simpleUserJpaRepository.save(new SimpleUser(firstName, lastName, phoneNumber));
     }
 
     public SimpleUser find(Long id) {
-        return simpleUserRepository.findById(id)
+        return simpleUserJpaRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("not found user"));
     }
 }

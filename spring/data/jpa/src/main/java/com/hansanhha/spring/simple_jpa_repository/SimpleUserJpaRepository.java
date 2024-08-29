@@ -4,7 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface SimpleUserRepository extends JpaRepository<SimpleUser, Long> {
+public interface SimpleUserJpaRepository extends JpaRepository<SimpleUser, Long> {
 
     List<SimpleUser> findByLastName(String lastName);
 }
