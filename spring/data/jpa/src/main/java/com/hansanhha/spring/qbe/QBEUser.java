@@ -7,7 +7,7 @@ import jakarta.persistence.Table;
 
 @Table(name = "users")
 @Entity
-public class User {
+public class QBEUser {
 
     @Id
     @GeneratedValue
@@ -15,10 +15,10 @@ public class User {
     private String firstname;
     private String lastname;
 
-    public User() {
+    public QBEUser() {
     }
 
-    public User(String firstname, String lastname) {
+    public QBEUser(String firstname, String lastname) {
         this.firstname = firstname;
         this.lastname = lastname;
     }

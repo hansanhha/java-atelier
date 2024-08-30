@@ -1,6 +1,5 @@
 package com.hansanhha.spring.qbe;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,33 +15,33 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class QBETest {
 
     @Autowired
-    private UserRepository userRepository;
+    private QBEUserRepository QBEUserRepository;
 
     @BeforeEach
     void init() {
-        userRepository.save(new User("the", "weeknd"));
+        QBEUserRepository.save(new QBEUser("the", "weeknd"));
     }
 
     @Test
     void qbe() {
         // given
-        User userProbe = new User();
-        userProbe.setFirstname("the");
-        userProbe.setLastname("weeknd");
+        QBEUser QBEUserProbe = new QBEUser();
+        QBEUserProbe.setFirstname("the");
+        QBEUserProbe.setLastname("weeknd");
 
         ExampleMatcher matcher = ExampleMatcher.matching()
                 .withIgnorePaths("id")
                 .withMatcher("first_name", ExampleMatcher.GenericPropertyMatchers.exact())
                 .withMatcher("last_name", ExampleMatcher.GenericPropertyMatchers.exact());
 
-        Example<User> example = Example.of(userProbe, matcher);
+        Example<QBEUser> example = Example.of(QBEUserProbe, matcher);
 
         // when
-        List<User> users = userRepository.findAll(example);
+        List<QBEUser> QBEUsers = QBEUserRepository.findAll(example);
 
         // then
-        assertThat(users.size()).isEqualTo(1);
-        assertThat(users.getFirst().getFirstname()).isEqualTo(userProbe.getFirstname());
-        assertThat(users.getFirst().getLastname()).isEqualTo(userProbe.getLastname());
+        assertThat(QBEUsers.size()).isEqualTo(1);
+        assertThat(QBEUsers.getFirst().getFirstname()).isEqualTo(QBEUserProbe.getFirstname());
+        assertThat(QBEUsers.getFirst().getLastname()).isEqualTo(QBEUserProbe.getLastname());
     }
 }

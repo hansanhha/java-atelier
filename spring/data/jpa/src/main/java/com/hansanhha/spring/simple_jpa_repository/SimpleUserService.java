@@ -16,7 +16,7 @@ public class SimpleUserService {
         this.simpleUserCrudRepository = simpleUserCrudRepository;
     }
 
-    public SimpleUser save(String firstName, String lastName, String phoneNumber) {
+    public SimpleUser create(String firstName, String lastName, String phoneNumber) {
         return simpleUserJpaRepository.save(new SimpleUser(firstName, lastName, phoneNumber));
     }
 

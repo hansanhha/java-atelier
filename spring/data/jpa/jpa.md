@@ -88,9 +88,9 @@ JPA는 SQL이 아닌, 객체 지향적으로 데이터를 질의할 수 있는 J
 
 ### JPA 아키텍처
 
-<img src="./images/jpa-architecture.png" alt="jpa architecture">
+<img src="../images/jpa-architecture.png" alt="jpa architecture">
 
-<img src="./images/jpa-architecture-2.png" alt="jpa architecture2">
+<img src="../images/jpa-architecture-2.png" alt="jpa architecture2">
 
 엔티티 매니저는 개발자가 직접 상호작용하는 API로 영속성 컨텍스트를 관리하는 객체임
 
@@ -118,7 +118,7 @@ JPA는 SQL이 아닌, 객체 지향적으로 데이터를 질의할 수 있는 J
 
 엔티티의 상태를 크게 네 가지로 구분해서 관리함
 
-<img src="./images/entity-state.png" alt="entity state">
+<img src="../images/entity-state.png" alt="entity state">
 
 ##### 비영속(new/transient)
 

@@ -386,7 +386,7 @@ Query String Parameters
 
 Path Parameters
 - URL로 파라미터를 전송하는 방법
-- http://localhost:8080/users/2
+- http://localhost:8080/QBEUsers/2
     - 각 데이터가 URL 경로에 직접 포함됨
     - RESTful API에서 소스를 지정하기 위해 사용
 - @PathVaraible
