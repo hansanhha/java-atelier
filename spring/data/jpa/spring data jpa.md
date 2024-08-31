@@ -20,6 +20,11 @@
     - [공통](#공통)
     - [조회](#조회)
 
+[쿼리](#쿼리)
+- [QBE vs Specification vs @Query vs QueryDSL](#qbe-vs-specification-vs-query-vs-querydsl)
+
+[Specification](#specification)
+
 [Specification](#specification)
 
 
@@ -478,7 +483,7 @@ ProjectionFactory는 CrudMethodMetadata와 마찬가지로 `@Nullable`이 적용
 
 EscapeCharacter는 JPA 쿼리 중 와일드카드 문자나 특수 문자를 처리할 때 사용하는 이스케이프 문자를 나타냄
 
-LIKE 쿼리의 '%', '_' 같은 특수문자 처리가 필요한 경우 사용됨
+LIKE 쿼리의 `%`, `_` 같은 특수문자 처리가 필요한 경우 사용됨
 
 #### 메서드
 
@@ -496,7 +501,7 @@ protected Class<T> getDomainClass() {
 
 ###### getQuery(Specification<T>, Sort) 
 
-
+현재 엔티티 객체의 타입 정보를 추출하여 [getQuery(Specification<T>, Class<S>, Sort)](#getqueryspecificationt-classs-sort) 메서드에게 위임함
 
 ```java
 protected TypedQuery<T> getQuery(@Nullable Specification<T> spec, Sort sort) {
@@ -506,20 +511,39 @@ protected TypedQuery<T> getQuery(@Nullable Specification<T> spec, Sort sort) {
 
 ###### getQuery(Specification<T>, Class<S>, Sort)
 
+JPA Criteria API를 사용하여 동적 쿼리(TypedQuery)를 생성하는 메서드임
+
+[Specification](#specification)으로 쿼리 조건을 동적으로 적용하고, Sort로 결과를 정렬함
+
 ```java
 protected <S extends T> TypedQuery<S> getQuery(@Nullable Specification<S> spec, Class<S> domainClass, Sort sort) {
-
-  CriteriaBuilder builder = entityManager.getCriteriaBuilder();
-  CriteriaQuery<S> query = builder.createQuery(domainClass);
-
-  Root<S> root = applySpecificationToCriteria(spec, domainClass, query);
-  query.select(root);
-
-  if (sort.isSorted()) {
-    query.orderBy(toOrders(sort, root, builder));
-  }
-
-  return applyRepositoryMethodMetadata(entityManager.createQuery(query));
+    
+    // 엔티티 매니저로부터 Criteria 쿼리 빌더 획득 
+    CriteriaBuilder builder = entityManager.getCriteriaBuilder();
+    // 쿼리를 표현하는 객체 생성, 반환 타입이 <S>인 쿼리를 생성함
+    CriteriaQuery<S> query = builder.createQuery(domainClass);
+  
+    /*
+        생성된 쿼리에 주어진 Specification (조건) 할당
+        쿼리의 루트 엔티티를 나타내는 Root<S> 객체 반환 (엔티티의 필드/속성에 접근할 수 있는 쿼리의 루트)
+     */
+    Root<S> root = applySpecificationToCriteria(spec, domainClass, query);
+    /*
+        쿼리의 SELECT절 설정, 쿼리의 결과로 전체 엔티티(root)를 선택하도록 설정함
+        applySpecificationToCriteria는 WHERE절 조건/조인만 설정하고, 쿼리의 SELECT절은 정의하지 않기 때문에 명시적으로 해줘야됨 
+     */
+    query.select(root);
+  
+    // 주어진 정렬 조건이 있는 정렬 적용
+    if (sort.isSorted()) {
+      query.orderBy(toOrders(sort, root, builder));
+    }
+  
+    /*
+        entityManager.createQuery(query): 엔티티 매니저를 통해 TypedQuery 생성
+        applyRepositoryMethodMetadata(TypedQuery): 리포지토리 메서드에 정의된 추가 메타데이터(쿼리 힌트, 잠금 모드) 적용
+     */
+    return applyRepositoryMethodMetadata(entityManager.createQuery(query));
 }
 ```
 
@@ -594,23 +618,114 @@ public List<T> findAllById(Iterable<ID> ids) {
      */
     Collection<ID> idCollection = toCollection(ids);
 
-    // 동적 쿼리 생성
+    // 여러 아이디에 대한 IN절 쿼리 조건 생성 
     ByIdsSpecification<T> specification = new ByIdsSpecification<>(entityInformation);
+    // 동적 쿼리 생성
     TypedQuery<T> query = getQuery(specification, Sort.unsorted());
 
-    // setParameter 메서드를 통해 idCollection 바인딩 후 쿼리 실행 및 결과 반환
+    // 쿼리에 idCollection 바인딩 후 실행 및 결과 반환
     return query.setParameter(specification.parameter, idCollection).getResultList();
 }
 ```
 
 ###### findAll()
 
+쿼리 조건, 정렬을 지정하지 않고 모든 엔티티 조회
+
 ```java
 @Override
 public List<T> findAll() {
+    // Specification 전달 X
     return getQuery(null, Sort.unsorted()).getResultList();
 }
 ```
+
+## 쿼리
+
+동적 쿼리는 애플리케이션 실행 시점에 조건이나 파라미터에 따라 **쿼리의 구조가 동적으로 생성**되는 쿼리를 말함
+
+미리 정의된 쿼리가 아니라 사용자 입력, 비즈니스 로직, 애플리케이션 상태 등과 같은 요소에 따라 **쿼리의 구조와 내용을 동적으로 변경**할 수 있음
+- 조건에 따른 쿼리 변경
+  - 쿼리 조건이 동적으로 변경됨
+  - 검색 조건으로 전달된 값이 존재할 때만 특정 필드를 쿼리에 포함시키거나, 여러 필터 조건을 결합시킴
+- 동적 조합
+  - 여러 조건이 AND, OR 같은 논리 연산자로 결합되거나 조건이 생략될 수 있음
+  - 사용자가 선택한 여러 필터 조건을 조합하여 하나의 SQL 쿼리를 동적으로 생성
+- 실행 시점에 생성
+  - 컴파일 타임이 아닌 런타임에 쿼리가 생성됨
+
+일반 쿼리와의 비교
+
+| 특징            | 동적 쿼리                          | 일반 쿼리                 |
+|---------------|--------------------------------|-----------------------|
+| 구조 및 쿼리 생성 시점 | 실행 시점에 따라 동적으로 변경 및 생성         | 고정된 쿼리 구조, 컴파일 시점에 생성 |
+|유연성| 조건에 따라 여러 쿼리를 조합               | 조건 변경 불가              |
+|용도| 조건이 동적으로 변경되거나 다중 조건 조합이 필요할 때 | 단순한 조건 처리             |
+
+### QBE vs Specification vs @Query vs QueryDSL
+
+#### QBE
+
+엔티티 인스턴스를 기반으로 동적 쿼리를 생성하는 방식
+
+장점
+- 단순 필드 기반 검색, 일치 여부 검색 같이 간단한 조건을 필요로 하는 동적 쿼리를 생성할 때 유용함
+
+단점
+- 조인, 집계 함수, 그룹핑 같이 복잡한 쿼리를 작성하는 데 적합하지 않음
+- 직관적인 쿼리 표현이 아님 (엔티티 인스턴스를 사용하여 조건을 작성하기 때문에 가독성이 떨어짐)
+
+#### Specification
+
+JPA Criteria API를 사용하여 동적으로 쿼리를 생성하는 방식
+
+장점
+- 복잡한 검색 조건이 필요한 경우에 QBE보다 적합함
+- 타입 안전성을 보장하므로 컴파일 시점에 오류를 잡을 수 있고, 쿼리 로직을 재사용할 수 있음
+
+단점
+- 사용법이 복잡하고, 코드가 장황함
+- 복잡한 쿼리일수록 코드가 난해해져서 유지보수가 어려움
+- 다수의 조건이 결합되는 경우 JPA가 비효율적인 SQL을 생성할 수 있음
+
+#### @Query
+
+JPA 리포지토리 메서드에 직접 JPQL이나 네이티브 SQL을 정의하는 방식
+
+쿼리의 구조가 고정되어 있으며 컴파일 시점에 결정됨
+
+장점
+- 쿼리를 직접 작성하므로 직관적이고, 명확함
+- 성능을 최적화한 SQL을 작성할 수 있음
+- 복잡한 쿼리(조인, 집계 함수, 그룹핑 등)를 쉽게 작성함
+
+단점
+- 리포지토리 메서드에 하드코딩됨 (재사용성이 떨어짐)
+- 쿼리가 길수록 코드가 장황해짐
+
+#### QueryDSL
+
+타입 안전한 쿼리를 작성할 수 있는 DSL(Domain-Specific Language)로 자바 코드로 SQL과 비슷한 구문을 사용해서 동적 쿼리를 작성할 수 있음
+
+장점
+- 다양한 데이터 소스(JPA, SQL, MongoDB 등)에서 사용할 수 있음
+- 타입 안전성을 보장하므로 컴파일 시점에 쿼리 오류를 감지할 수 있음
+- 복잡한 쿼리, 동적 조건, 다중 조인 등을 쉽게 작성할 수 있음
+- 자바 코드로 쿼리를 작성하므로, 쿼리와 비즈니스 로직이 동일한 언어로 통합되어 유지보수가 쉬워짐
+
+단점
+- 초기 설정 필요 (빌드툴 플러그인 설정, Q클래스 생성기 추가)
+- 복잡성 증가 (간단한 CRUD 작업에는 과한 기술스택임)
+
+#### 선택 가이드
+
+단순한 CRUD: @Query 또는 스프링 데이터 JPA의 기본 메서드(findById, findAll 등)
+
+복잡한 검색 조건 또는 동적 쿼리 및 타입 안전성: QueryDSL
+
+성능 최적화: @Query, QueryDSL
+
+재사용 가능한 동적 쿼리가 필요한 경우: Specification
 
 ## PlatformTransactionManager
 
