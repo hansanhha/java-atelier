@@ -19,6 +19,8 @@
   - [메서드](#메서드)
     - [공통](#공통)
     - [조회](#조회)
+    - [저장](#저장)
+      - [엔티티 ID 생성 전략과 save 메서드 동작 관계](#엔티티-id-생성-전략과-save-메서드-동작-관계)
 
 [쿼리](#쿼리)
 - [QBE vs Specification vs @Query vs QueryDSL](#qbe-vs-specification-vs-query-vs-querydsl)
@@ -236,7 +238,8 @@ SimpleJpaRepository의 필드에 주입되는 실제 구현체는 `JpaMetaModelE
 - JPA의 Metamodel API를 통해 엔티티의 메타데이터를 동적으로 분석하여 제공
 - 복합 키를 지원하며, 복합 키의 각 속성에 대한 정보 관리
 
-isNew(): 새로 생성된 엔티티인지 판단하는 메서드
+###### JpaEntityInformation.isNew()
+- 새로 생성된 엔티티인지 판단하는 메서드
 
 isNew 메서드는 JPA 엔티티가 새로 생성된 엔티티인지 (아직 데이터베이스에 저장되지 않은 상태인지) 결정하는 역할을 함
 
@@ -489,7 +492,7 @@ LIKE 쿼리의 `%`, `_` 같은 특수문자 처리가 필요한 경우 사용됨
 
 ##### 공통
 
-###### getDomainClass()
+###### `Class<T> getDomainClass()`
 
 JpaEntityInformation(AbstractEntityInformation)을 통해 엔티티 객체의 클래스 타입을 반환함
 
@@ -499,9 +502,9 @@ protected Class<T> getDomainClass() {
 }
 ```
 
-###### getQuery(Specification<T>, Sort) 
+###### `TypedQuery<T> getQuery(Specification<T>, Sort)`
 
-현재 엔티티 객체의 타입 정보를 추출하여 [getQuery(Specification<T>, Class<S>, Sort)](#getqueryspecificationt-classs-sort) 메서드에게 위임함
+현재 엔티티 객체의 타입 정보를 추출하여 `getQuery(Specification<T>, Class<S>, Sort)` 메서드에게 위임함
 
 ```java
 protected TypedQuery<T> getQuery(@Nullable Specification<T> spec, Sort sort) {
@@ -509,7 +512,7 @@ protected TypedQuery<T> getQuery(@Nullable Specification<T> spec, Sort sort) {
 }
 ```
 
-###### getQuery(Specification<T>, Class<S>, Sort)
+###### `<S extends T> TypedQuery<S> getQuery(Specification<T>, Class<S>, Sort)`
 
 JPA Criteria API를 사용하여 동적 쿼리(TypedQuery)를 생성하는 메서드임
 
@@ -549,7 +552,7 @@ protected <S extends T> TypedQuery<S> getQuery(@Nullable Specification<S> spec, 
 
 ##### 조회
 
-###### findById(ID)
+###### `Optional<T> findById(ID)`
 
 리포지토리 인터페이스에 지정한 ID를 기반으로 한 개의 엔티티를 조회하는 메서드
 
@@ -577,7 +580,7 @@ public Optional<T> findById(ID id) {
 }
 ```
 
-###### findAllById(Iterable<ID>)
+###### `List<T> findAllById(Iterable<ID>)`
 
 리포지토리 인터페이스에 지정한 ID를 기반으로 여러 개의 엔티티를 조회하는 메서드
 
@@ -628,7 +631,7 @@ public List<T> findAllById(Iterable<ID> ids) {
 }
 ```
 
-###### findAll()
+###### `List<T> findAll()`
 
 쿼리 조건, 정렬을 지정하지 않고 모든 엔티티 조회
 
@@ -639,6 +642,97 @@ public List<T> findAll() {
     return getQuery(null, Sort.unsorted()).getResultList();
 }
 ```
+
+##### 저장
+
+###### `<S extends T> S save(T entity)`
+
+엔티티 객체를 영속(persist, 데이터베이스에 저장) 또는 병합(merge, 데이터베이스에 업데이트)하는 메서드
+
+새 엔티티 판단 로직 참고 [entityInformation.isNew(entity)](#jpaentityinformationisnew)
+
+persist 시 기본 키 생성 전략에 따라 INSERT 쿼리 실행 시점이 다름 [참고](#엔티티-id-생성-전략과-save-메서드-동작-관계)
+
+```java
+@Override
+// 스프링 프레임워크의 @Transactional 적용
+@Transactional
+public <S extends T> S save(S entity) {
+
+    Assert.notNull(entity, "Entity must not be null");
+
+    /*
+        아직 데이터베이스에 저장되지 않은 새로운 엔티티인 경우
+        영속성 컨텍스트에 추가하고, 트랜잭션이 커밋될 때 INSERT 쿼리 실행 후 엔티티 반환
+     */
+    if (entityInformation.isNew(entity)) {
+        entityManager.persist(entity);
+        return entity;
+        /*
+            이미 존재하는 엔티티인 경우 병합 수행 
+            엔티티의 상태를 영속성 컨텍스트와 동기화하고 트랜잭션이 커밋될 때 UPDATE 쿼리를 실행하여 엔티티 변경 사항 반영
+         */
+    } else { 
+        return entityManager.merge(entity);
+    }
+}
+```
+
+###### 엔티티 ID 생성 전략과 save 메서드 동작 관계
+
+새로운 엔티티를 저장하려고 save() 메서드를 호출하면 엔티티는 영속성 컨텍스트에 추가됨
+
+엔티티의 ID 생성 전략에 따라 ID 값 결정과 쿼리 실행이 다름 
+
+JPA의 ID 생성 전략
+- GenerationType.IDENTITY
+  - 기본 키 생성을 DB에게 위임하는 전략 (특정 벤더에 의존)
+  - 엔티티를 영속성 컨텍스트에 추가한 후 INSERT 쿼리가 실제로 실행되기 전까지 ID가 설정되지 않음
+  - 영속성 컨텍스트는 무조건 ID 속성이 있어야 하므로, 이 전략을 사용하면 `persist()` 호출 시 트랜잭션 커밋과 상관없이 곧바로 INSERT 쿼리를 수행함 
+- GenerationType.SEQUENCE
+  - 데이터베이스 시퀀스를 사용하여 ID를 생성하는 전략 (특정 벤더에 의존)
+  - `persist()` 메서드 호출 시점에 JPA에서 데이터베이스 시퀀스 값을 조회하여 ID 값을 먼저 생성함
+  - ID가 INSERT 쿼리 실행전에 결정되며, INSERT 쿼리는 트랜잭션이 커밋될 때 수행됨
+  - 시퀀스를 생성하는 어노테이션이 필요함
+  - ```java
+    @Table(name="users")
+    @Entity
+    @SequenceGenerator (
+        name="USERS_SEQ_GENERATOR",
+        sequenceName="USERS_SEQ"
+    )
+    public class User {
+        
+        @Id
+        @GeneratedValue(strategy = GenerationType.SEQUENCE)
+        private Long id;
+    }
+    ```
+- GenerationType.UUID
+  - 기본 키로 UUID를 사용하는 전략
+- GenerationType.TABLE
+  - 시퀀스 테이블 흉내내서 ID를 관리하는 전략 (특정 벤더에 독립적)
+  - 특정 벤더에 의존적이지 않은 방식이지만 별도의 시퀀스 테이블을 만들고 관리해야 함
+  - INSERT 쿼리 실행 전에 ID 값이 결정될 수 있음
+  - ```java
+    @Entity
+    public class User {
+        @GeneratedValue(strategy = GenerationType.TABLE, generator = "USERS_SEQ_GENERATOR")
+        @TableGenerator(
+            name = "USERS_SEQ_GENERATOR",
+            table = "USERS_SEQUENCE",
+            pkColumnName = "sequence_name",
+            pckColumnValue = "USERS_SEQ"
+        )
+        private Long id;
+    }
+    ```
+- GenerationType.AUTO (엔티티 ID 생성 기본 전략)
+  - JPA 구현체가 자동으로 선택하도록 하는 전략(데이터베이스 벤더에 따라 결정됨)
+  - MySQL: GenerationType.AUTO (AUTO_INCREMENT)
+  - PostgreSQL: GenerationType.SEQUENCE
+  - Oracle: GenerationType. SEQUENCE
+
 
 ## 쿼리
 
