@@ -3,10 +3,25 @@ spring boot 3.3.2 기준
 [Spring Data Project](#spring-data-project)
 - [주요 기능](#주요-기능)
 - [메인 모듈](#메인-모듈)
-- [Common 모듈 분석](#common-모듈-분석)
-    - [Repository 추상화](#repository-abstraction)
-    - [Domain](#domain)
-    - [Querydsl](#querydsl)
+
+[Common 모듈 분석](#common-모듈-분석)
+- [Annotation](#annotation)
+- [Repository 추상화](#repository-abstraction)
+  - [Repository](#repositoryt-id)
+  - [CrudRepository](#crudrepositoryt-id)
+  - [ListCrudRepository](#listcrudrepositoryt-id)
+  - [PagingAndSortingRepository](#pagingandsortingrepositoryt-id)
+  - [ListPagingAndSortingRepository](#listpagingandsortingrepositoryt-id)
+  - [@RepositoryDefinition](#repositorydefinition)
+- [Domain](#domain)
+  - [Slice](#slice)
+  - [Page](#page)
+  - [Pageable](#pageable)
+  - [Limit](#limit)
+  - [ScrollPosition](#scrollposition)
+  - [Sort](#sort)
+  - [Example](#example)
+- [Querydsl](#querydsl)
 
 ## Spring Data Project
 
@@ -295,7 +310,7 @@ org.springframework.data.domain 패키지
 
 #### Slice
 
-데이터의 일부분을 페이지네이션하기 위한 용도로 사용되는 인터페이스
+페이징된 데이터 결과를 추상화한 인터페이스
 
 Page 인터페이스와 유사하지만 Page와 달리 총 데이터 개수나 전체 페이지 수에 대한 정보를 제공하지 않음
 
@@ -382,6 +397,329 @@ public interface Page<T> extends Slice<T> {
     <U> Page<U> map(Function<? super T, ? extends U> converter);
 }
 ```
+
+#### Pageable
+
+페이징과 정렬을 위한 요청 정보를 추상화한 인터페이스
+
+클라이언트가 요청하는 페이지 번호, 페이지 크기, 정렬 옵션 등을 포함함
+
+데이터베이스 페이징 쿼리를 생성할 때 특정 페이지의 데이터를 가져오는 데 필요한 limit와 offset 절을 지정하는 데 정보를 Pageable 객체가 제공함 
+
+limit와 offset
+- `LIMIT`
+  - 조회할 데이터의 최대 개수 (한 페이지에 표시할 데이터 개수)
+  - Pageable의 pageSize 값이 쿼리에서 LIMIT 값으로 사용됨
+  - pageSize가 10인 경우 한 페이지에서 최대 10개의 데이터를 가져옴
+- `OFFSET`
+  - 조회할 데이터의 시작 위치 (가져올 데이터의 시작 위치)
+  - Pageable의 pageNumber는 0부터 시작함 (0이 첫 번째 페이지)
+  - OFFSET값은 pageNumber * pageSize로 결정됨
+  - pageNumber가 1이고 (두 번째 페이지), pageSize가 10이면 OFFSET은 10이 됨 (11번째 데이터부터 시작해서 10개의 데이터를 가져옴)
+  
+```java
+public interface Pageable {
+
+    /* ======== Pageable 생성 메서드 ========= */
+  
+    static Pageable unpaged() {
+        return unpaged(Sort.unsorted());
+    }
+
+    static Pageable unpaged(Sort sort) {
+        return Unpaged.sorted(sort);
+    }
+    
+    static Pageable ofSize(int pageSize) {
+        return PageRequest.of(0, pageSize);
+    }
+    
+    /* ============= 상태 확인 메서드 ============ */
+    
+    boolean hasPrevious();
+    
+    default boolean isPaged() {
+        return true;
+    }
+    
+    default boolean isUnpaged() {
+        return !isPaged();
+    }
+    
+    /* 값 조회 메서드  */
+    
+    int getPageNumber();
+    
+    int getPageSize();
+    
+    long getOffset();
+    
+    Sort getSort();
+    
+    /* 페이지 이동 메서드  */
+    
+    Pageable next();
+    
+    Pageable previousOrFirst();
+    
+    Pageable first();
+    
+    Pageable withPage(int pageNumber);
+    
+    /* default 메서드  */
+    
+    default Optional<Pageable> toOptional() {
+        return isUnpaged() ? Optional.empty() : Optional.of(this);
+    }
+    
+    default Limit toLimit() {
+        
+        if (isUnpaged()) {
+            return Limit.unlimited();
+        }
+        
+        return Limit.of(getPageSize());
+    }
+    
+    default OffsetScrollPosition toScrollPosition() {
+        
+        if (isUnpaged()) {
+          throw new IllegalStateException("Cannot create OffsetScrollPosition from an unpaged instance");
+        }
+        
+        return getOffset() > 0 ? ScrollPosition.offset(getOffset() - 1) : ScrollPosition.offset();
+    }
+}
+```
+
+Pageable 구현체로 추상 클래스인 AbstractPageRequest와 일반적으로 사용되는 PageRequest, Querydsl용 QPageaRequest가 있음
+
+구현체의 동작 방식은 Pageable의 메서드명에서 기대할 수 있는 그대로 동작함
+
+#### Limit
+
+쿼리의 결과 개수를 제한할 수 있는 기능을 제공하는 sealed 인터페이스임
+
+기존의 Pageable 인터페이스와 달리 Limit는 페이지네이션을 위해 사용되지 않고, 단순히 데이터베이스 쿼리 결과의 최대 개수(행)를 설정하는 데 초점을 맞춤
+
+즉, 페이지 번호와 무관하게 특정 쿼리의 제한된 레코드 수의 결과만을 반환함
+
+```java
+public sealed interface Limit permits Limited, UnLimited {
+    
+    // 최대 개수가 지정되지 않은 경우
+    static Limit unlimited() {
+        return UnLimited.INSTANCE;
+    }
+    
+    // 최대 개수를 지정한 경우
+    static Limit limit(int max) {
+        return new Limited(max);
+    }
+    
+    int max();
+    
+    boolean isLimited();
+    
+    final class Limited implements Limit {
+
+        private final int max;
+
+        Limited(int max) {
+            this.max = max;
+          }
+        
+        @Override
+        public int max() {
+          return max;
+        }
+  
+        @Override
+        public boolean isLimited() {
+          return true;
+        }
+    }
+
+    // 싱글톤 패턴 사용
+    final class Unlimited implements Limit {
+
+        static final Limit INSTANCE = new Unlimited();
+    
+        Unlimited() {}
+    
+        @Override
+        public int max() {
+          throw new IllegalStateException(
+                  "Unlimited does not define 'max'. Please check 'isLimited' before attempting to read 'max'");
+        }
+    
+        @Override
+        public boolean isLimited() {
+          return false;
+        }
+    }
+}
+```
+
+### ScrollPosition
+
+스크롤 방식의 페이징 처리를 지원하는 인터페이스
+
+스크롤 방식은 두 가지로 나뉨
+
+#### offset
+
+데이터베이스에서 조회할 데이터의 시작 지점을 정하는 방식임 
+
+시작 지점까지 N개의 데이터를 모두 순서대로 읽는 과정을 거침 -> DB 부하
+
+N개의 결과를 조회하다가 새로운 행이 추가될 시 이전 페이지와 중복 데이터 발생 가능성 -> 사이드 이펙트 발생
+
+```mysql
+SELECT *
+FROM product
+LIMIT 1000000, 1000;
+```
+    
+#### keyset
+
+특정 id를 기준으로 WHERE 절을 사용하여 데이터를 조회하는 방법임
+
+키셋 방식은 오프셋이 가진 DB 부하와 사이드 이펙트 발생 문제점을 해결할 수 있음
+
+```mysql
+SELECT *
+FROM product
+WHERE id > 1000000
+LIMIT 1000
+ORDER BY id;
+```
+
+ScrollPosition은 전체 쿼리 결과 내에서 위치를 지정하는 인터페이스로, 스크롤 위치는 쿼리 결과의 시작 부분부터 스크롤을 시작하거나 쿼리 결과 내의 지정된 위치에서 스크롤을 재개하는 데 사용됨 
+
+```java
+public interface ScrollPosition {
+
+    
+    /* ============= 상태 확인 메서드 ========== */
+    boolean isInitial();
+
+    /* KeysetScrollPosition, OffsetScrollPosition 생성 static 메서드*/
+    static KeysetScrollPosition keyset() {
+      return KeysetScrollPosition.initial();
+    }
+
+    static KeysetScrollPosition of(Map<String, ?> keys, Direction direction) {
+      return KeysetScrollPosition.of(keys, direction);
+    }
+  
+    static OffsetScrollPosition offset() {
+      return OffsetScrollPosition.initial();
+    }
+  
+    static OffsetScrollPosition offset(long offset) {
+      return OffsetScrollPosition.of(offset);
+    }
+
+    /* ========== 이동 static 메서드 ========== */
+    static KeysetScrollPosition forward(Map<String, ?> keys) {
+        return of(keys, Direction.FORWARD);
+    }
+
+    static KeysetScrollPosition backward(Map<String, ?> keys) {
+      return of(keys, Direction.BACKWARD);
+    }
+
+    /* ========= 스크롤 방향 ======== */
+    enum Direction {
+
+        FORWARD,
+        
+        BACKWARD;
+    
+        Direction reverse() {
+          return this == FORWARD ? BACKWARD : FORWARD;
+        }
+    }
+}
+```
+
+오프셋을 
+
+초기 OffsetScrollPosition은 특정 요소나 위치를 가리키지 않음
+
+```java
+public final class OffsetScrollPosition implements ScrollPosition {
+    
+    // 초기 OffsetScrollPosition의 값으로 -1 지정
+    private static final OffsetScrollPosition INITIAL = new OffsetScrollPosition(-1);
+    
+    private final long offset;
+    
+    private OffsetScrollPosition(long offset) {
+        this.offset = offset;
+    }
+    
+    static OffsetScrollPosition initial() {
+        return INITIAL;
+    }
+    
+    static OffsetScrollPosition of(long position) {
+        Assert.isTrue(offset >= 0, "Offset must not be negative");
+        return new OffsetScrollPosition(offset);
+    }
+    
+    // 주어진 시작 오프셋을 기반으로 IntFunction<OffsetPositionFunction>을 반환하는 메서드
+    public static IntFunction<OffsetScrollPosition> positionFunction(long startOffset) {
+        Assert.isTrue(startOffset >= 0, "Start offset must not be negative");
+        return startOffset == 0 ? OffsetPositionFunction.ZERO : new OffsetPositionFunction(startOffset); 
+    }
+
+
+    public IntFunction<OffsetScrollPosition> positionFunction() {
+      return positionFunction(offset + 1);
+    }
+
+    // offset getter
+    public long getOffset() {
+  
+      Assert.state(offset >= 0, "Initial state does not have an offset. Make sure to check #isInitial()");
+      return offset;
+    }
+
+    // 주어진 delta 값과 현재 오프셋 값을 더한 새로운 OffsetScrollPosition 반환
+    public OffsetScrollPosition advanceBy(long delta) {
+  
+      long value = isInitial() ? delta : offset + delta;
+      return new OffsetScrollPosition(value < 0 ? 0 : value);
+    }
+
+    @Override
+    public boolean isInitial() {
+      return offset == -1;
+    }
+
+    /*
+        시작 오프셋을 필드로 가지고, apply(int) 호출 시 시작 오프셋과 주어진 오프셋을 더한 새로운 OffsetScrollPosition 반환
+     */
+    private record OffsetPositionFunction(long startOffset) implements IntFunction<OffsetScrollPosition> {
+  
+      static final OffsetPositionFunction ZERO = new OffsetPositionFunction(0);
+  
+      @Override
+      public OffsetScrollPosition apply(int offset) {
+  
+        if (offset < 0) {
+          throw new IndexOutOfBoundsException(offset);
+        }
+  
+        return of(startOffset + offset);
+      }
+    }
+    
+} 
+```
+
 
 #### Sort
 

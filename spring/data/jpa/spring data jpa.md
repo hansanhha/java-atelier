@@ -492,6 +492,23 @@ LIKE 쿼리의 `%`, `_` 같은 특수문자 처리가 필요한 경우 사용됨
 
 ##### 공통
 
+###### `T getReferenceById(ID)` 
+
+`EntityManager.getReference(Class<T> entityClass, Object primaryKey)` 메서드를 호출하여 지정된 ID에 대한 엔티티의 레퍼런스(프록시)를 반환하는 JpaRepository 인터페이스 구현 메서드임
+
+성능을 최적화하기 위해 엔티티를 즉시 로딩하지 않고, 데이터베이스 조회를 연기시키는 **지연 로딩 방식(프록시 반환)**으로 가져옴
+
+반환된 프록시 객체는 실제로 해당 엔티티 필드가 접근되기 전까지 데이터베이스에서 엔티티 데이터를 로드하지 않음
+
+```java
+@Override
+public T getReferenceById(ID id) {
+
+    Assert.notNull(id, ID_MUST_NOT_BE_NULL);
+    return entityManager.getReference(getDomainClass(), id);
+}
+```
+
 ###### `Class<T> getDomainClass()`
 
 JpaEntityInformation(AbstractEntityInformation)을 통해 엔티티 객체의 클래스 타입을 반환함
@@ -550,11 +567,25 @@ protected <S extends T> TypedQuery<S> getQuery(@Nullable Specification<S> spec, 
 }
 ```
 
+###### `void flush()`
+
+본래 영속성 컨텍스트는 트랜잭션 커밋 후 데이터베이스에 내용을 반영하지만,
+
+엔티티 매니저의 flush()는 **트랜잭션을 종료하지 않고** 현재 영속성 컨텍스트의 내용을 데이터베이스에 즉시 반영함(동기화)
+
+```java
+@Override
+@Transactional
+public void flush() {
+    entityManager.flush();
+}
+```
+
 ##### 조회
 
 ###### `Optional<T> findById(ID)`
 
-리포지토리 인터페이스에 지정한 ID를 기반으로 한 개의 엔티티를 조회하는 메서드
+리포지토리 인터페이스에 지정한 ID를 기반으로 한 개의 엔티티를 조회하는 CrudRepository 인터페이스 구현 메서드
 
 ```java
 @Override
@@ -582,7 +613,7 @@ public Optional<T> findById(ID id) {
 
 ###### `List<T> findAllById(Iterable<ID>)`
 
-리포지토리 인터페이스에 지정한 ID를 기반으로 여러 개의 엔티티를 조회하는 메서드
+리포지토리 인터페이스에 지정한 ID를 기반으로 여러 개의 엔티티를 조회하는 ListCrudRepository 인터페이스 구현 메서드
 
 엔티티의 기본 키 유형(복합 키, 단일 키)에 따라 동작 방식이 다름
 - 복합 키인 경우: 주어진 ID 값들로 개별 조회 수행
@@ -633,7 +664,7 @@ public List<T> findAllById(Iterable<ID> ids) {
 
 ###### `List<T> findAll()`
 
-쿼리 조건, 정렬을 지정하지 않고 모든 엔티티 조회
+쿼리 조건, 정렬을 지정하지 않고 모든 엔티티 조회하는 ListCrudRepository 인터페이스 구현 메서드
 
 ```java
 @Override
@@ -643,11 +674,31 @@ public List<T> findAll() {
 }
 ```
 
+###### `List<T> findAll(Pageable)`
+
+페이징과 정렬을 지원하는 방식으로 엔티티를 조회하는 PagingAndSortingRepository 인터페이스 구현 메서드임
+
+데이터베이스에서 특정 페이지의 데이터만 조회함 - 메모리 사용량을 줄임
+
+
+
+```java
+@Override
+public Page<T> findAll(Pageable pageable) {
+
+    if (pageable.isUnpaged()) {
+        return new PageImpl<>(findAll());
+    }
+
+    return findAll((Specification<T>) null, pageable);
+}
+```
+
 ##### 저장
 
 ###### `<S extends T> S save(T entity)`
 
-엔티티 객체를 영속(persist, 데이터베이스에 저장) 또는 병합(merge, 데이터베이스에 업데이트)하는 메서드
+엔티티 객체를 영속(persist, 데이터베이스에 저장) 또는 병합(merge, 데이터베이스에 업데이트)하는 CrudRepository 인터페이스 구현 메서드
 
 새 엔티티 판단 로직 참고 [entityInformation.isNew(entity)](#jpaentityinformationisnew)
 
@@ -675,6 +726,46 @@ public <S extends T> S save(S entity) {
     } else { 
         return entityManager.merge(entity);
     }
+}
+```
+
+###### `<S extends T> List<S> saveAll(Iterable<S> entities)`
+
+여러 개의 엔티티 객체를 받아서 영속 또는 병합하는 ListCrudRepository 인터페이스 구현 메서드
+
+```java
+@Override
+@Transactional
+public <S extends T> List<S> saveAll(Iterable<S> entities) {
+
+    Assert.notNull(entities, "Entities must not be null");
+
+    List<S> result = new ArrayList<>();
+
+    // 루프문을 돌면서 save(T) 메서드 위임
+    for (S entity : entities) {
+        result.add(save(entity));
+    }
+
+    return result;
+}
+````
+
+###### `<S extends T> S saveAndFlush(S entity)`
+
+엔티티 객체를 저장하는 save() 호출 후, 바로 데이터베이스에 변경사항을 반영하는 [flush()](#flush) 메서드를 호출하는 JpaRepository 인터페이스 구현 메서드
+
+saveAllAndFlush() 메서드도 마찬가지로, saveAll() 호출 후 flush 메서드를 호출함
+
+```java
+@Override
+@Transactional
+public <S extends T> S saveAndFlush(S entity) {
+
+    S result = save(entity);
+    flush();
+
+    return result;
 }
 ```
 
@@ -733,6 +824,179 @@ JPA의 ID 생성 전략
   - PostgreSQL: GenerationType.SEQUENCE
   - Oracle: GenerationType. SEQUENCE
 
+##### 삭제
+
+###### `void delete(T)`
+
+엔티티 객체를 영속성 컨텍스트에서 삭제하는 CrudRepository 인터페이스 구현 메서드
+
+영속성 컨텍스트의 엔티티 존재 여부에 따른 처리 방식
+- 새 엔티티인 경우: 삭제 X
+- 영속성 컨텍스트에 포함된 경우(영속 상태인 경우): 삭제
+- 영속성 컨텍스트에 포함되지 않은 경우(영속 상태가 아닌 경우): `entityManager.find()`를 사용하여 DB에서 엔티티 조회하여 영속 상태로 만든 후 삭제 
+
+```java
+@Override
+@Transactional
+@SuppressWarnings("unchecked")
+public void delete(T entity) {
+
+    Assert.notNull(entity, "Entity must not be null");
+
+    // 새 엔티티인 경우 삭제 X
+    if (entityInformation.isNew(entity)) {
+        return;
+    }
+
+    // 영속성 컨텍스트에 포함된 엔티티인 경우 삭제
+    if (entityManager.contains(entity)) {
+        entityManager.remove(entity);
+        return;
+    }
+
+    Class<?> type = ProxyUtils.getUserClass(entity);
+
+    /*
+        데이터베이스에서 조회하여 영속 상태로 만듦
+        해당 엔티티를 찾은 경우에 삭제 
+     */
+    T existing = (T) entityManager.find(type, entityInformation.getId(entity));
+    if (existing != null) {
+        entityManager.remove(entityManager.merge(entity));
+    }
+}
+```
+
+###### `void deleteAll()`
+
+[findAll()](#listt-findall) 메서드를 통해 모든 엔티티를 영속성 컨텍스트에 올린 다음 루프문을 돌면서 전부 전부 삭제하는 메서드
+
+```java
+@Override
+@Transactional
+public void deleteAll() {
+
+    for (T element : findAll()) {
+        delete(element);
+    }
+}
+```
+
+###### `void deleteById(ID)`
+
+findById()로 엔티티 조회 후, 존재하면 삭제하는 CrudRepository 인터페이스 구현 메서드
+
+```java
+@Override
+@Transactional
+public void deleteById(ID id) {
+
+    Assert.notNull(id, ID_MUST_NOT_BE_NULL);
+
+    findById(id).ifPresent(this::delete);
+}
+```
+
+###### `deleteAllById(Iterable<? extends ID>` 
+
+루프문을 돌아 `deleteById(ID)` 호출하는 CrudRepository 인터페이스 구현 메서드
+
+```java
+@Override
+@Transactional
+public void deleteAllById(Iterable<? extends ID> ids) {
+
+    Assert.notNull(ids, "Ids must not be null");
+
+    for (ID id : ids) {
+        deleteById(id);
+    }
+}
+```
+
+###### `void deleteAllInBatch()`
+
+영속성 컨텍스트를 사용하지 않고 즉시 한 번의 배치 쿼리로 데이터베이스에서 직접 삭제하는 JpaRepository 인터페이스 구현 메서드
+
+[deleteAll()](#void-deleteall) 메서드와 달리 영속성 컨텍스트와 엔티티 상태와 관계없이 작동함
+
+영속성 컨텍스트를 사용하지 않기 때문에 메모리 사용량이 적어서 대량 데이터 삭제에 적합함
+
+또한 삭제된 엔티티들은 영속성 컨텍스트에 반영되지 않기 때문에, 이후 영속성 컨텍스트가 새로 생성되기 전까지 엔티티의 상태와 데이터베이스의 상태가 일치하지 않을 수 있음
+
+```java
+@Override
+@Transactional
+public void deleteAllInBatch() {
+
+    // DELETE FROM '엔티티명' 쿼리 생성
+    Query query = entityManager.createQuery(getDeleteAllQueryString());
+
+    applyQueryHints(query);
+
+    query.executeUpdate();
+}
+```
+
+###### `deleteAllByIdInBatch(Iterable<ID>)`
+
+[deleteAllInBatch](#void-deleteallinbatch)와 마찬가지로 영속성 컨텍스트나 엔티티의 상태와 상관없이, 주어진 ID값에 해당하는 엔티티를 데이터베이스에서 직접 삭제하는 JpaRepository 인터페이스 구현 메서드
+
+```java
+@Override
+@Transactional
+public void deleteAllByIdInBatch(Iterable<ID> ids) {
+
+    Assert.notNull(ids, "Ids must not be null");
+
+    if (!ids.iterator().hasNext()) {
+        return;
+    }
+
+    if (entityInformation.hasCompositeId()) {
+
+        List<T> entities = new ArrayList<>();
+        // 주어진 id값에 대한 엔티티 객체(프록시)들을 담아서 deleteAllByIdInBatch(Iterable<ID> ids) 호출
+        ids.forEach(id -> entities.add(getReferenceById(id)));
+        deleteAllInBatch(entities);
+    } else {
+
+        // DELETE FROM '엔티티명' WHERE '엔티티 ID명' IN 'ID 값' 쿼리 생성
+        String queryString = String.format(DELETE_ALL_QUERY_BY_ID_STRING, entityInformation.getEntityName(),
+                entityInformation.getIdAttribute().getName());
+
+        Query query = entityManager.createQuery(queryString);
+
+        // 주어진 ids 값에 대한 쿼리 파라미터 설정 
+        Collection<ID> idCollection = toCollection(ids);
+        query.setParameter("ids", idCollection);
+
+        applyQueryHints(query);
+
+        query.executeUpdate();
+    }
+}
+```
+
+###### `void deleteAllInBatch(Iterable<T>)`
+
+주어진 엔티티에 대해 영속성 컨텍스트를 무시하고 데이터베이스에서 직접 엔티티들을 삭제하는 JpaRepository 인터페이스 구현 메서드
+
+```java
+@Override
+@Transactional
+public void deleteAllInBatch(Iterable<T> entities) {
+
+    Assert.notNull(entities, "Entities must not be null");
+
+    if (!entities.iterator().hasNext()) {
+        return;
+    }
+    
+    applyAndBind(getQueryString(DELETE_ALL_QUERY_STRING, entityInformation.getEntityName()), entities, entityManager)
+            .executeUpdate();
+}
+```
 
 ## 쿼리
 
