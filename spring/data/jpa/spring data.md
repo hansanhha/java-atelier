@@ -7,20 +7,22 @@ spring boot 3.3.2 기준
 [Common 모듈 분석](#common-모듈-분석)
 - [Annotation](#annotation)
 - [Repository 추상화](#repository-abstraction)
-  - [Repository](#repositoryt-id)
-  - [CrudRepository](#crudrepositoryt-id)
-  - [ListCrudRepository](#listcrudrepositoryt-id)
-  - [PagingAndSortingRepository](#pagingandsortingrepositoryt-id)
-  - [ListPagingAndSortingRepository](#listpagingandsortingrepositoryt-id)
-  - [@RepositoryDefinition](#repositorydefinition)
+    - [Repository](#repositoryt-id)
+    - [CrudRepository](#crudrepositoryt-id)
+    - [ListCrudRepository](#listcrudrepositoryt-id)
+    - [PagingAndSortingRepository](#pagingandsortingrepositoryt-id)
+    - [ListPagingAndSortingRepository](#listpagingandsortingrepositoryt-id)
+    - [@RepositoryDefinition](#repositorydefinition)
 - [Domain](#domain)
-  - [Slice](#slice)
-  - [Page](#page)
-  - [Pageable](#pageable)
-  - [Limit](#limit)
-  - [ScrollPosition](#scrollposition)
-  - [Sort](#sort)
-  - [Example](#example)
+    - [Slice](#slice)
+    - [Page](#page)
+    - [Window](#window)
+    - [Slice vs Page vs Window](#slice-vs-page-vs-window)
+    - [Pageable](#pageable)
+    - [Limit](#limit)
+    - [ScrollPosition](#scrollposition)
+    - [Sort](#sort)
+    - [Example](#example)
 - [Querydsl](#querydsl)
 
 ## Spring Data Project
@@ -186,31 +188,31 @@ CrudRepository 인터페이스는 특정 타입에 대한 일반적인 CRUD 연�
 ```java
 @NoRepositoryBean
 public interface CrudRepository<T, ID> extends Repository<T, ID> {
-    
+
     // T의 하위 타입 허용
     <S extends T> S save(S entity);
 
     // T의 하위 타입 허용
     <S extends T> Iterable<S> saveAll(Iterable<S> entities);
-    
+
     Optional<T> findById(ID id);
-    
+
     boolean existsById(ID id);
-    
+
     Iterable<T> findAll();
-    
+
     Iterable<T> findAllById(Iterable<ID> ids);
-    
+
     long count();
-    
+
     void deleteById(ID id);
-    
+
     void delete(T entity);
-    
+
     void deleteAllById(Iterable<? extends ID> ids);
-    
+
     void deleteAll(Iterable<? extends T> entities);
-    
+
     void deleteAll();
 }
 ```
@@ -229,7 +231,7 @@ ListCrudRepository는 CrudRepository를 확장한 인터페이스로, Iterable �
 ```java
 @NoRepositoryBean
 public interface ListCrudRepository<T, ID> extends CrudRepository<T, ID> {
-    
+
     <S extends T> List<S> saveAll(Iterable<S> entities);
 
     List<T> findAll();
@@ -251,12 +253,12 @@ PagingAndSortingRepository 인터페이스는 Repository를 확장하므로 기�
 ```java
 @NoRepositoryBean
 public interface PagingAndSortingRepository<T, ID> extends Repository<T, ID> {
-    
+
     // 주어진 정렬 조건에 따른 엔티티 반환
-	Iterable<T> findAll(Sort sort);
-    
+    Iterable<T> findAll(Sort sort);
+
     // 주어진 페이징 조건에 따른 엔티티 반환
-	Page<T> findAll(Pageable pageable);
+    Page<T> findAll(Pageable pageable);
 }
 ```
 
@@ -270,7 +272,7 @@ ListCrudRepository처럼 Iterable 대신 List를 반환하는 PagingAndSortingRe
 @NoRepositoryBean
 public interface ListPagingAndSortingRepository<T, ID> extends PagingAndSortingRepository<T, ID> {
 
-	List<T> findAll(Sort sort);
+    List<T> findAll(Sort sort);
 }
 ```
 
@@ -288,9 +290,9 @@ Repository처럼 @Indexed가 포함되어 있으며, T, ID를 어노테이션 �
 @Inherited
 public @interface RepositoryDefinition {
 
-	Class<?> domainClass();
+    Class<?> domainClass();
 
-	Class<?> idClass();
+    Class<?> idClass();
 }
 ```
 
@@ -312,54 +314,62 @@ org.springframework.data.domain 패키지
 
 페이징된 데이터 결과를 추상화한 인터페이스
 
-Page 인터페이스와 유사하지만 Page와 달리 총 데이터 개수나 전체 페이지 수에 대한 정보를 제공하지 않음
-
-데이터의 전체 목록을 메모리에 로드하지 않기 때문에 Page에 비해 효율적으로 메모리를 사용함
+현재 페이지에 해당하는 데이터만 포함하며, 전체 데이터의 개수나 총 페이지에 수에 대한 정보는 제공하지 않음
 
 주요 특징
 - 부분 데이터 제공
 - 다음 페이지 존재 여부
 
+현재 페이지의 데이터와 다음 페이지가 있는지 여부만을 제공하여 성능을 최적화하는 데 중점을 둠
+
+전체 데이터 개수를 알 필요가 없고 단순히 다음 페이지가 있는지 여부만 확인하는 경우에 Slice가 적합함
+
 ```java
 public interface Slice<T> extends Streamable<T> {
+
+    /* ======= getter =======  */
     
     // 현재 Slice의 번호
     int getNumber();
-    
+
     // Slice 크기
     int getSize();
-    
+
     // 현재 Slice의 요소 개수
     int getNumberOfElements();
-    
+
     // 현재 Slice에 포함된 데이터 반환
     List<T> getContent();
-    
-    boolean hasContent();
-    
+
     Sort getSort();
     
+    /* ======= 상태 확인 메서드 =======  */
+    
+    boolean hasContent();
+
     boolean isFirst();
-    
+
     boolean isLast();
-    
+
     boolean hasNext();
-    
+
     boolean hasPrevious();
+
+    // 다음 Slice를 요청하기 위한 Pageable  
+    Pageable nextPageable();
+
+    // 이전 Slice를 요청하기 위한 Pageable
+    Pageable previousPageable();
+    
+    <U> Slice<U> map(Function<? super T, ? extends U> converter);
+
+    /* ======= default 메서드 =======  */
     
     // 현재 Slice를 요청하는 데 사용된 Pageable 반환
     default Pageable getPageable() {
         return PageRequest.of(getNumber(), getSize(), getSort());
     }
     
-    // 다음 Slice를 요청하기 위한 Pageable  
-    Pageable nextPageable();
-    
-    // 이전 Slice를 요청하기 위한 Pageable
-    Pageable previousPageable();
-    
-    <U> Slice<U> map(Function<? super T, ? extends U> converter);
-
     // 현재 Slice가 마지막이라면 현재 Pageable, 아니라면 nextPageable() 반환
     default Pageable nextOrLastPageable() {
         return hasNext() ? nextPageable() : getPageable();
@@ -373,24 +383,28 @@ public interface Slice<T> extends Streamable<T> {
 
 #### Page
 
-다음 페이지나 이전 페이지의 존재의 정보만을 제공하는 Slice와 달리, 전체 페이지 수와 전체 데이터 개수를 제공하는 Slice 확장 인터페이스
+전체 페이지 수와 전체 데이터 개수 정보를 제공하는 Slice 확장 인터페이스
 
 ```java
 public interface Page<T> extends Slice<T> {
+
+    /* ======= Page 생성 static 메서드 ======= */
     
     // 빈 Page 생성
     static <T> Page<T> empty() {
         return empty(Pageable.unpaged());
     }
-    
+
     // 주어진 pageable에 따른 빈 Page 생성
     static <T> Page<T> empty(Pageable pageable) {
         return new PageImpl<>(Collections.emptyList(), pageable, 0);
     }
+
+    /* ======= getter =======*/
     
     // 전체 페이지 개수
     int getTotalPage();
-    
+
     // 전체 데이터 개수
     long getTotalElements();
 
@@ -398,30 +412,109 @@ public interface Page<T> extends Slice<T> {
 }
 ```
 
+#### Window
+
+스크롤링을 처리하는 데 중점을 둔 페이징 처리 인터페이스 
+
+`Window<T>`는 특정 크기의 데이터 조각(슬라이스)를 나타냄
+
+슬라이싱된 데이터를 페이지처럼 취급하면서 각각의 데이터에 대해 위치를 제공하고 다음 페이지가 있는지 여부를 확인하는 기능을 제공함
+
+```java
+public interface Window<T> extends Streamable<T> {
+
+    int size();
+    
+    boolean isEmpty();
+    
+    List<T> getContent();
+    
+    boolean hasNext();
+    
+    ScrollPosition positionAt(int index);
+    
+    /* ====== default 메서드 ====== */
+    
+    default boolean isLast() {
+        return !hasNext();
+    }
+    
+    default boolean hasPosition(int index) {
+        try {
+            return positionAt(index) != null;
+        } catch (IllegalStateException e) {
+            return false;
+        }
+    }
+    
+    default ScrollPosition positionAt(T object) {
+        
+        int index = getContent().indexOf(object);
+        
+        if (index == -1) {
+            throw new NoSuchElementException();
+        }
+        
+        return positionAt(index);
+    }
+
+    /* ===== Window 생성 static 메서드 ===== */
+    
+    static <T> Window<T> from(List<T> items, IntFunction<? extends ScrollPosition> positionFunction) {
+        return new WindowImpl<>(items, positionFunction, false);
+    }
+
+    static <T> Window<T> from(List<T> items, IntFunction<? extends ScrollPosition> positionFunction, boolean hasNext) {
+        return new WindowImpl<>(items, positionFunction, hasNext);
+    }
+    
+    <U> Window<U> map(Function<? super T, ? extends U> converter);
+}
+```
+
+#### Slice vs Page vs Window
+
+Slice
+- 현재 슬라이스의 데이터와 더 많은 데이터가 존재하는 지만 알려줌
+- 전체 데이터, 전체 페이지 수 정보 제공 X
+- 용도: 무한 스크롤
+
+Page
+- 전체 데이터를 기반으로 페이징을 수행함
+- 전체 데이터, 전체 페이지 수를 포함한 페이징 결과를 제공함
+- 용도: 페이지 번호 기반 페이지네이션
+
+Window
+- 스크롤링 기반 페이징 지원
+- 전체 데이터, 전체 페이지 수 정보 제공 X
+- 윈도우 내에서 데이터 위치(ScrollPosition)를 관리함
+- 다음 페이지(윈도우)의 존재 여부와 현재 윈도우 내에서의 상대적 데이터 위치를 관리함
+- 용도: 스크롤링 기반 데이터 로딩(무한 스크롤, 데이터 피드 구현 등), 대용량 데이터 스트리밍
+
 #### Pageable
 
 페이징과 정렬을 위한 요청 정보를 추상화한 인터페이스
 
 클라이언트가 요청하는 페이지 번호, 페이지 크기, 정렬 옵션 등을 포함함
 
-데이터베이스 페이징 쿼리를 생성할 때 특정 페이지의 데이터를 가져오는 데 필요한 limit와 offset 절을 지정하는 데 정보를 Pageable 객체가 제공함 
+데이터베이스 페이징 쿼리를 생성할 때 특정 페이지의 데이터를 가져오는 데 필요한 limit와 offset 절을 지정하는 데 정보를 Pageable 객체가 제공함
 
 limit와 offset
 - `LIMIT`
-  - 조회할 데이터의 최대 개수 (한 페이지에 표시할 데이터 개수)
-  - Pageable의 pageSize 값이 쿼리에서 LIMIT 값으로 사용됨
-  - pageSize가 10인 경우 한 페이지에서 최대 10개의 데이터를 가져옴
+    - 조회할 데이터의 최대 개수 (한 페이지에 표시할 데이터 개수)
+    - Pageable의 pageSize 값이 쿼리에서 LIMIT 값으로 사용됨
+    - pageSize가 10인 경우 한 페이지에서 최대 10개의 데이터를 가져옴
 - `OFFSET`
-  - 조회할 데이터의 시작 위치 (가져올 데이터의 시작 위치)
-  - Pageable의 pageNumber는 0부터 시작함 (0이 첫 번째 페이지)
-  - OFFSET값은 pageNumber * pageSize로 결정됨
-  - pageNumber가 1이고 (두 번째 페이지), pageSize가 10이면 OFFSET은 10이 됨 (11번째 데이터부터 시작해서 10개의 데이터를 가져옴)
-  
+    - 조회할 데이터의 시작 위치 (가져올 데이터의 시작 위치)
+    - Pageable의 pageNumber는 0부터 시작함 (0이 첫 번째 페이지)
+    - OFFSET값은 pageNumber * pageSize로 결정됨
+    - pageNumber가 1이고 (두 번째 페이지), pageSize가 10이면 OFFSET은 10이 됨 (11번째 데이터부터 시작해서 10개의 데이터를 가져옴)
+
 ```java
 public interface Pageable {
 
     /* ======== Pageable 생성 메서드 ========= */
-  
+
     static Pageable unpaged() {
         return unpaged(Sort.unsorted());
     }
@@ -429,64 +522,64 @@ public interface Pageable {
     static Pageable unpaged(Sort sort) {
         return Unpaged.sorted(sort);
     }
-    
+
     static Pageable ofSize(int pageSize) {
         return PageRequest.of(0, pageSize);
     }
-    
+
     /* ============= 상태 확인 메서드 ============ */
-    
+
     boolean hasPrevious();
-    
+
     default boolean isPaged() {
         return true;
     }
-    
+
     default boolean isUnpaged() {
         return !isPaged();
     }
-    
+
     /* 값 조회 메서드  */
-    
+
     int getPageNumber();
-    
+
     int getPageSize();
-    
+
     long getOffset();
-    
+
     Sort getSort();
-    
+
     /* 페이지 이동 메서드  */
-    
+
     Pageable next();
-    
+
     Pageable previousOrFirst();
-    
+
     Pageable first();
-    
+
     Pageable withPage(int pageNumber);
-    
+
     /* default 메서드  */
-    
+
     default Optional<Pageable> toOptional() {
         return isUnpaged() ? Optional.empty() : Optional.of(this);
     }
-    
+
     default Limit toLimit() {
-        
+
         if (isUnpaged()) {
             return Limit.unlimited();
         }
-        
+
         return Limit.of(getPageSize());
     }
-    
+
     default OffsetScrollPosition toScrollPosition() {
-        
+
         if (isUnpaged()) {
-          throw new IllegalStateException("Cannot create OffsetScrollPosition from an unpaged instance");
+            throw new IllegalStateException("Cannot create OffsetScrollPosition from an unpaged instance");
         }
-        
+
         return getOffset() > 0 ? ScrollPosition.offset(getOffset() - 1) : ScrollPosition.offset();
     }
 }
@@ -506,37 +599,37 @@ Pageable 구현체로 추상 클래스인 AbstractPageRequest와 일반적으로
 
 ```java
 public sealed interface Limit permits Limited, UnLimited {
-    
+
     // 최대 개수가 지정되지 않은 경우
     static Limit unlimited() {
         return UnLimited.INSTANCE;
     }
-    
+
     // 최대 개수를 지정한 경우
     static Limit limit(int max) {
         return new Limited(max);
     }
-    
+
     int max();
-    
+
     boolean isLimited();
-    
+
     final class Limited implements Limit {
 
         private final int max;
 
         Limited(int max) {
             this.max = max;
-          }
-        
+        }
+
         @Override
         public int max() {
-          return max;
+            return max;
         }
-  
+
         @Override
         public boolean isLimited() {
-          return true;
+            return true;
         }
     }
 
@@ -544,18 +637,18 @@ public sealed interface Limit permits Limited, UnLimited {
     final class Unlimited implements Limit {
 
         static final Limit INSTANCE = new Unlimited();
-    
+
         Unlimited() {}
-    
+
         @Override
         public int max() {
-          throw new IllegalStateException(
-                  "Unlimited does not define 'max'. Please check 'isLimited' before attempting to read 'max'");
+            throw new IllegalStateException(
+                    "Unlimited does not define 'max'. Please check 'isLimited' before attempting to read 'max'");
         }
-    
+
         @Override
         public boolean isLimited() {
-          return false;
+            return false;
         }
     }
 }
@@ -567,9 +660,9 @@ public sealed interface Limit permits Limited, UnLimited {
 
 스크롤 방식은 두 가지로 나뉨
 
-#### offset
+#### offset 방식
 
-데이터베이스에서 조회할 데이터의 시작 지점을 정하는 방식임 
+데이터베이스에서 조회할 데이터의 시작 지점을 정하는 방식임
 
 시작 지점까지 N개의 데이터를 모두 순서대로 읽는 과정을 거침 -> DB 부하
 
@@ -580,8 +673,8 @@ SELECT *
 FROM product
 LIMIT 1000000, 1000;
 ```
-    
-#### keyset
+
+#### keyset 방식
 
 특정 id를 기준으로 WHERE 절을 사용하여 데이터를 조회하는 방법임
 
@@ -595,30 +688,30 @@ LIMIT 1000
 ORDER BY id;
 ```
 
-ScrollPosition은 전체 쿼리 결과 내에서 위치를 지정하는 인터페이스로, 스크롤 위치는 쿼리 결과의 시작 부분부터 스크롤을 시작하거나 쿼리 결과 내의 지정된 위치에서 스크롤을 재개하는 데 사용됨 
+ScrollPosition은 전체 쿼리 결과 내에서 위치를 지정하는 인터페이스로, 스크롤 위치는 쿼리 결과의 시작 부분부터 스크롤을 시작하거나 쿼리 결과 내의 지정된 위치에서 스크롤을 재개하는 데 사용됨
 
 ```java
 public interface ScrollPosition {
 
-    
+
     /* ============= 상태 확인 메서드 ========== */
     boolean isInitial();
 
     /* KeysetScrollPosition, OffsetScrollPosition 생성 static 메서드*/
     static KeysetScrollPosition keyset() {
-      return KeysetScrollPosition.initial();
+        return KeysetScrollPosition.initial();
     }
 
     static KeysetScrollPosition of(Map<String, ?> keys, Direction direction) {
-      return KeysetScrollPosition.of(keys, direction);
+        return KeysetScrollPosition.of(keys, direction);
     }
-  
+
     static OffsetScrollPosition offset() {
-      return OffsetScrollPosition.initial();
+        return OffsetScrollPosition.initial();
     }
-  
+
     static OffsetScrollPosition offset(long offset) {
-      return OffsetScrollPosition.of(offset);
+        return OffsetScrollPosition.of(offset);
     }
 
     /* ========== 이동 static 메서드 ========== */
@@ -627,96 +720,96 @@ public interface ScrollPosition {
     }
 
     static KeysetScrollPosition backward(Map<String, ?> keys) {
-      return of(keys, Direction.BACKWARD);
+        return of(keys, Direction.BACKWARD);
     }
 
     /* ========= 스크롤 방향 ======== */
     enum Direction {
 
         FORWARD,
-        
+
         BACKWARD;
-    
+
         Direction reverse() {
-          return this == FORWARD ? BACKWARD : FORWARD;
+            return this == FORWARD ? BACKWARD : FORWARD;
         }
     }
 }
 ```
 
-오프셋을 
+#### OffsetScrollPosition
 
 초기 OffsetScrollPosition은 특정 요소나 위치를 가리키지 않음
 
 ```java
 public final class OffsetScrollPosition implements ScrollPosition {
-    
+
     // 초기 OffsetScrollPosition의 값으로 -1 지정
     private static final OffsetScrollPosition INITIAL = new OffsetScrollPosition(-1);
-    
+
     private final long offset;
-    
+
     private OffsetScrollPosition(long offset) {
         this.offset = offset;
     }
-    
+
     static OffsetScrollPosition initial() {
         return INITIAL;
     }
-    
+
     static OffsetScrollPosition of(long position) {
         Assert.isTrue(offset >= 0, "Offset must not be negative");
         return new OffsetScrollPosition(offset);
     }
-    
+
     // 주어진 시작 오프셋을 기반으로 IntFunction<OffsetPositionFunction>을 반환하는 메서드
     public static IntFunction<OffsetScrollPosition> positionFunction(long startOffset) {
         Assert.isTrue(startOffset >= 0, "Start offset must not be negative");
-        return startOffset == 0 ? OffsetPositionFunction.ZERO : new OffsetPositionFunction(startOffset); 
+        return startOffset == 0 ? OffsetPositionFunction.ZERO : new OffsetPositionFunction(startOffset);
     }
 
 
     public IntFunction<OffsetScrollPosition> positionFunction() {
-      return positionFunction(offset + 1);
+        return positionFunction(offset + 1);
     }
 
     // offset getter
     public long getOffset() {
-  
-      Assert.state(offset >= 0, "Initial state does not have an offset. Make sure to check #isInitial()");
-      return offset;
+
+        Assert.state(offset >= 0, "Initial state does not have an offset. Make sure to check #isInitial()");
+        return offset;
     }
 
     // 주어진 delta 값과 현재 오프셋 값을 더한 새로운 OffsetScrollPosition 반환
     public OffsetScrollPosition advanceBy(long delta) {
-  
-      long value = isInitial() ? delta : offset + delta;
-      return new OffsetScrollPosition(value < 0 ? 0 : value);
+
+        long value = isInitial() ? delta : offset + delta;
+        return new OffsetScrollPosition(value < 0 ? 0 : value);
     }
 
     @Override
     public boolean isInitial() {
-      return offset == -1;
+        return offset == -1;
     }
 
     /*
         시작 오프셋을 필드로 가지고, apply(int) 호출 시 시작 오프셋과 주어진 오프셋을 더한 새로운 OffsetScrollPosition 반환
      */
     private record OffsetPositionFunction(long startOffset) implements IntFunction<OffsetScrollPosition> {
-  
-      static final OffsetPositionFunction ZERO = new OffsetPositionFunction(0);
-  
-      @Override
-      public OffsetScrollPosition apply(int offset) {
-  
-        if (offset < 0) {
-          throw new IndexOutOfBoundsException(offset);
+
+        static final OffsetPositionFunction ZERO = new OffsetPositionFunction(0);
+
+        @Override
+        public OffsetScrollPosition apply(int offset) {
+
+            if (offset < 0) {
+                throw new IndexOutOfBoundsException(offset);
+            }
+
+            return of(startOffset + offset);
         }
-  
-        return of(startOffset + offset);
-      }
     }
-    
+
 } 
 ```
 
@@ -737,41 +830,41 @@ public final class OffsetScrollPosition implements ScrollPosition {
 - Direction
     - 정렬 방향을 나타내는 enum
     - ```java
-    public enum Direction {
-        ASC, DESC;
-    }
+  public enum Direction {
+  ASC, DESC;
+  }
     ```
 - NullHandling
     - 정렬 시 null 값을 어떻게 처리할 지 정의하는 enum
     - ```java
-    public enum NullHandling {
-        /*
-            DataSource의 기본 null 처리 방식을 따름
-            대부분의 데이터베이스에서 null 값은 마지막에 정렬됨
-        */
-        NATIVE,
-        // null 값을 가장 먼저 정렬
-        NULLS_FIRST,
-        // null 값을 가장 나중에 정렬
-        NULLS_LAST;
-    }
+  public enum NullHandling {
+  /*
+  DataSource의 기본 null 처리 방식을 따름
+  대부분의 데이터베이스에서 null 값은 마지막에 정렬됨
+  */
+  NATIVE,
+  // null 값을 가장 먼저 정렬
+  NULLS_FIRST,
+  // null 값을 가장 나중에 정렬
+  NULLS_LAST;
+  }
     ``` 
 - Order
     - 특정 필드에 대해 정렬 방향(Direction)과 null 처리 방식(NullHandling)을 포함한 정렬 정보를 정의하는 클래스
     - Sort 객체는 여러 개의 Order 객체를 포함할 수 있음
     - ```java
-    public static class Order implements Serializable {
-    
+  public static class Order implements Serializable {
+
         private static final boolean DEFAULT_IGNORE_CASE = false;
-		private static final NullHandling DEFAULT_NULL_HANDLING = NullHandling.NATIVE;
+  	private static final NullHandling DEFAULT_NULL_HANDLING = NullHandling.NATIVE;
     
         private final Direction direction;
         // 정렬 대상 속성
-		private final String property;
+  	private final String property;
         // 대소문자 구분(기본값: 대소문자 구분 안함)
-		private final boolean ignoreCase;
+  	private final boolean ignoreCase;
         // null처리(기본값: 데이터베이스 처리 방식을 따름)
-		private final NullHandling nullHandling;
+  	private final NullHandling nullHandling;
     
         // 특정 속성을 ASC 정렬
         public static Order by(String property) {
@@ -790,23 +883,23 @@ public final class OffsetScrollPosition implements ScrollPosition {
     
         // 기존 속성의 정렬 방향 수정
         public Order with(Direction direction) {
-			return new Order(direction, this.property, this.ignoreCase, this.nullHandling);
-		}
+  		return new Order(direction, this.property, this.ignoreCase, this.nullHandling);
+  	}
     
         // 기존 속성의 정렬 방향 반대로 수정
         public Order reverse() {
-			return with(this.direction == Direction.ASC ? Direction.DESC : Direction.ASC);
-		}
+  		return with(this.direction == Direction.ASC ? Direction.DESC : Direction.ASC);
+  	}
             
         // null 처리 수정 등의 메서드 ...
-    }
+  }
     ```
 - TypedSort
     - 정렬이 적용된 특정 타입의 속성을 정의하는 데 사용되는 클래스로, Sort 클래스로부터 상속받음
     - 타입 안전성을 보장함
     - ```java
-    Sort.TypedSort<Book> bookSort = Sort.by(Book.class);
-    Sort sortByPrice = bookSort.and(Sort.by(Sort.Order.asc("price"))); 
+  Sort.TypedSort<Book> bookSort = Sort.by(Book.class);
+  Sort sortByPrice = bookSort.and(Sort.by(Sort.Order.asc("price")));
     ```
 
 #### Example

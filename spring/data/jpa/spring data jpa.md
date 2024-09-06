@@ -9,26 +9,26 @@
 - [상속 관계](#상속-관계)
 - [생성 과정](#생성-과정)
 - [코드 분석](#코드-분석)
-  - [필드](#필드)
-    - [JpaEntityInformation](#jpaentityinformationt--entityinformation)
-    - [EntityManager](#entitymanager-entitymanager)
-    - [PersistenceProvider](#persistenceprovider-provider)
-    - [CrudMethodMetadata](#crudmethodmetadata-metadata)
-    - [ProjectionFactory](#projectionfactory-projectionfactory)
-    - [EscapeCharacter](#escapecharacter-escapecharacter--escapecharacterdefault)
-  - [메서드](#메서드)
-    - [공통](#공통)
-    - [조회](#조회)
-    - [저장](#저장)
-      - [엔티티 ID 생성 전략과 save 메서드 동작 관계](#엔티티-id-생성-전략과-save-메서드-동작-관계)
+    - [필드](#필드)
+        - [JpaEntityInformation](#jpaentityinformationt--entityinformation)
+        - [EntityManager](#entitymanager-entitymanager)
+        - [PersistenceProvider](#persistenceprovider-provider)
+        - [CrudMethodMetadata](#crudmethodmetadata-metadata)
+        - [ProjectionFactory](#projectionfactory-projectionfactory)
+        - [EscapeCharacter](#escapecharacter-escapecharacter--escapecharacterdefault)
+    - [메서드](#메서드)
+        - [공통](#공통)
+        - [조회](#조회)
+        - [저장](#저장)
+            - [엔티티 ID 생성 전략과 save 메서드 동작 관계](#엔티티-id-생성-전략과-save-메서드-동작-관계)
 
-[쿼리](#쿼리)
-- [QBE vs Specification vs @Query vs QueryDSL](#qbe-vs-specification-vs-query-vs-querydsl)
+[Queries](#queries)
+- [Query Method](#query-method)
+- [@Query](#query)
+- [Specification](#specification)
+- [QBE vs Specification vs @Query vs QueryDSL 비교](#qbe-vs-specification-vs-query-vs-querydsl-비교)
 
-[Specification](#specification)
-
-[Specification](#specification)
-
+[Transactions](#transactions)
 
 ## Spring Data JPA
 
@@ -306,7 +306,7 @@ public abstract class AbstractEntityInformation<T, ID> implements EntityInformat
 
 SimpleJpaRepository에서의 사용
 - JPA 연산(save, delete) 등을 수행할 때 JpaEntityInformation을 사용하여 엔티티의 상태와 메타데이터를 확인함
-  - ```java
+    - ```java
     @Override
     @Transactional
     public <S extends T> S save(S entity) {
@@ -341,10 +341,10 @@ SimpleJpaRepository에서 이 엔티티 매니저를 주입받아서 사용하�
 - JPA 설정 파일(persistence.xml) 또는 스프링 JPA 설정(Java Config, application.properties)에서 JPA 구현체와 데이터베이스 연결 정보가 설정됨
 - 스프링 데이터 JPA는 `LocalContainerEntityManagerFactoryBean`을 사용하여 JPA의 `EntityManagerFactory` (`SessionFactory`)를 설정하고 관리함
 - 스프링 부트는 JPA 자동 구성을 담당하는 HibernateJpaAutoConfiguration(JpaBaseConfiguration)을 통해`LocalContainerEntityManagerFactoryBean`을 빈으로 등록
-  - `LocalContainerEntityManagerFactoryBean`이 생성된 EntityManagerFactory에 프록시를 적용하여, 여러 트랜잭션과 스레드 간에 엔티티 매니저 팩토리가 안전하게 공유될 수 있도록 함
+    - `LocalContainerEntityManagerFactoryBean`이 생성된 EntityManagerFactory에 프록시를 적용하여, 여러 트랜잭션과 스레드 간에 엔티티 매니저 팩토리가 안전하게 공유될 수 있도록 함
 - 이외에도 JPA 관련 빈(DataSource, JpaVendorAdapter)들을 등록함
 
-프록시 
+프록시
 - SimpleJpaRepository는 특정 리포지토리 인터페이스의 구현체이지만, 여러 트랜잭션에 대응해서 엔티티 매니저를 다룰 수 있어야 함
 - 스프링은 프록시 패턴을 사용해서 엔티티 매니저를 감싸서 관리하는데, 프록시가 실제 인스턴스를 대신하고 트랜잭션의 시작과 종료 시점에 맞춰 실제 인스턴스를 제공하거나 해제함
 - 따라서 SimpleJpaRepository의 EntityManager 필드엔 EntityManager를 가지고 있는 프록시가 주입되서 트랜잭션 단위로 EntityManager를 사용할 수 있도록 함
@@ -458,16 +458,16 @@ ProjectionFactory는 스프링 데이터 JPA에서 프로젝션(projection) 인�
 
 두 가지 유형으로 나뉨
 - 클로즈드 프로젝션 (Closed Projection)
-  - 프로젝션 인터페이스에 정의된 getter를 통해 쿼리 결과 매핑
-  - ```java
+    - 프로젝션 인터페이스에 정의된 getter를 통해 쿼리 결과 매핑
+    - ```java
     // name 필드만 조회하는 프로젝션
     public interface UserNameProjection {
         String getName();
     }
     ```
 - 오픈 프로젝션 (Open Projection)
-  - 복잡한 표현식을 포함한 프로젝션
-  - ```java
+    - 복잡한 표현식을 포함한 프로젝션
+    - ```java
     public interface UserSummary {
         String getName();
     
@@ -492,7 +492,7 @@ LIKE 쿼리의 `%`, `_` 같은 특수문자 처리가 필요한 경우 사용됨
 
 ##### 공통
 
-###### `T getReferenceById(ID)` 
+###### `T getReferenceById(ID)`
 
 `EntityManager.getReference(Class<T> entityClass, Object primaryKey)` 메서드를 호출하여 지정된 ID에 대한 엔티티의 레퍼런스(프록시)를 반환하는 JpaRepository 인터페이스 구현 메서드임
 
@@ -537,7 +537,7 @@ JPA Criteria API를 사용하여 동적 쿼리(TypedQuery)를 생성하는 메�
 
 ```java
 protected <S extends T> TypedQuery<S> getQuery(@Nullable Specification<S> spec, Class<S> domainClass, Sort sort) {
-    
+
     // 엔티티 매니저로부터 Criteria 쿼리 빌더 획득 
     CriteriaBuilder builder = entityManager.getCriteriaBuilder();
     // 쿼리를 표현하는 객체 생성, 반환 타입이 <S>인 쿼리를 생성함
@@ -553,10 +553,10 @@ protected <S extends T> TypedQuery<S> getQuery(@Nullable Specification<S> spec, 
         applySpecificationToCriteria는 WHERE절 조건/조인만 설정하고, 쿼리의 SELECT절은 정의하지 않기 때문에 명시적으로 해줘야됨 
      */
     query.select(root);
-  
+
     // 주어진 정렬 조건이 있는 정렬 적용
     if (sort.isSorted()) {
-      query.orderBy(toOrders(sort, root, builder));
+        query.orderBy(toOrders(sort, root, builder));
     }
   
     /*
@@ -680,7 +680,7 @@ public List<T> findAll() {
 
 데이터베이스에서 특정 페이지의 데이터만 조회함 - 메모리 사용량을 줄임
 
-
+주어진 pageable이 Unpaged가 아닌 경우 `findAll(Specification<T>, Pageable)` 메서드에 위임함
 
 ```java
 @Override
@@ -690,7 +690,60 @@ public Page<T> findAll(Pageable pageable) {
         return new PageImpl<>(findAll());
     }
 
+    // findAll(Specification<T>, Pageable) 위임
     return findAll((Specification<T>) null, pageable);
+}
+```
+
+`findAll(Specification<T>, Pageable)` 메서드는 주어진 specfication과 pageable을 토대로 TypedQuery를 생성하고
+
+Unpaged가 아닌 경우 `readPage(TypedQuery<S>, final Class<S>, Pageable, Specification<S>)` 메서드에 위임함
+
+```java
+@Override
+public Page<T> findAll(@Nullable Specification<T> spec, Pageable pageable) {
+
+    // 쿼리 생성
+    TypedQuery<T> query = getQuery(spec, pageable);
+    
+    // readPage(TypedQuery<S>, final Class<S>, Pageable, Specification<S>)
+    return pageable.isUnpaged() ? new PageImpl<>(query.getResultList())
+            : readPage(query, getDomainClass(), pageable, spec);
+}
+```
+
+readPage 메서드는 주어진 pageable로부터 쿼리의 limit와 offset을 설정하고
+
+조회 쿼리와 카운트 쿼리를 실행함
+
+```java
+protected <S extends T> Page<S> readPage(TypedQuery<S> query, final Class<S> domainClass, Pageable pageable,
+        @Nullable Specification<S> spec) {
+
+    // offset, limit 설정
+    if (pageable.isPaged()) {
+        query.setFirstResult(PageableUtils.getOffsetAsInteger(pageable));
+        query.setMaxResults(pageable.getPageSize());
+    }
+
+    // 조회 쿼리, 카운트 쿼리 실행
+    return PageableExecutionUtils.getPage(query.getResultList(), pageable,
+            () -> executeCountQuery(getCountQuery(spec, domainClass)));
+}
+
+// 카운트 쿼리
+private static long executeCountQuery(TypedQuery<Long> query) {
+
+    Assert.notNull(query, "TypedQuery must not be null");
+
+    List<Long> totals = query.getResultList();
+    long total = 0L;
+
+    for (Long element : totals) {
+        total += element == null ? 0 : element;
+    }
+
+    return total;
 }
 ```
 
@@ -723,7 +776,7 @@ public <S extends T> S save(S entity) {
             이미 존재하는 엔티티인 경우 병합 수행 
             엔티티의 상태를 영속성 컨텍스트와 동기화하고 트랜잭션이 커밋될 때 UPDATE 쿼리를 실행하여 엔티티 변경 사항 반영
          */
-    } else { 
+    } else {
         return entityManager.merge(entity);
     }
 }
@@ -773,19 +826,19 @@ public <S extends T> S saveAndFlush(S entity) {
 
 새로운 엔티티를 저장하려고 save() 메서드를 호출하면 엔티티는 영속성 컨텍스트에 추가됨
 
-엔티티의 ID 생성 전략에 따라 ID 값 결정과 쿼리 실행이 다름 
+엔티티의 ID 생성 전략에 따라 ID 값 결정과 쿼리 실행이 다름
 
 JPA의 ID 생성 전략
 - GenerationType.IDENTITY
-  - 기본 키 생성을 DB에게 위임하는 전략 (특정 벤더에 의존)
-  - 엔티티를 영속성 컨텍스트에 추가한 후 INSERT 쿼리가 실제로 실행되기 전까지 ID가 설정되지 않음
-  - 영속성 컨텍스트는 무조건 ID 속성이 있어야 하므로, 이 전략을 사용하면 `persist()` 호출 시 트랜잭션 커밋과 상관없이 곧바로 INSERT 쿼리를 수행함 
+    - 기본 키 생성을 DB에게 위임하는 전략 (특정 벤더에 의존)
+    - 엔티티를 영속성 컨텍스트에 추가한 후 INSERT 쿼리가 실제로 실행되기 전까지 ID가 설정되지 않음
+    - 영속성 컨텍스트는 무조건 ID 속성이 있어야 하므로, 이 전략을 사용하면 `persist()` 호출 시 트랜잭션 커밋과 상관없이 곧바로 INSERT 쿼리를 수행함
 - GenerationType.SEQUENCE
-  - 데이터베이스 시퀀스를 사용하여 ID를 생성하는 전략 (특정 벤더에 의존)
-  - `persist()` 메서드 호출 시점에 JPA에서 데이터베이스 시퀀스 값을 조회하여 ID 값을 먼저 생성함
-  - ID가 INSERT 쿼리 실행전에 결정되며, INSERT 쿼리는 트랜잭션이 커밋될 때 수행됨
-  - 시퀀스를 생성하는 어노테이션이 필요함
-  - ```java
+    - 데이터베이스 시퀀스를 사용하여 ID를 생성하는 전략 (특정 벤더에 의존)
+    - `persist()` 메서드 호출 시점에 JPA에서 데이터베이스 시퀀스 값을 조회하여 ID 값을 먼저 생성함
+    - ID가 INSERT 쿼리 실행전에 결정되며, INSERT 쿼리는 트랜잭션이 커밋될 때 수행됨
+    - 시퀀스를 생성하는 어노테이션이 필요함
+    - ```java
     @Table(name="users")
     @Entity
     @SequenceGenerator (
@@ -800,12 +853,12 @@ JPA의 ID 생성 전략
     }
     ```
 - GenerationType.UUID
-  - 기본 키로 UUID를 사용하는 전략
+    - 기본 키로 UUID를 사용하는 전략
 - GenerationType.TABLE
-  - 시퀀스 테이블 흉내내서 ID를 관리하는 전략 (특정 벤더에 독립적)
-  - 특정 벤더에 의존적이지 않은 방식이지만 별도의 시퀀스 테이블을 만들고 관리해야 함
-  - INSERT 쿼리 실행 전에 ID 값이 결정될 수 있음
-  - ```java
+    - 시퀀스 테이블 흉내내서 ID를 관리하는 전략 (특정 벤더에 독립적)
+    - 특정 벤더에 의존적이지 않은 방식이지만 별도의 시퀀스 테이블을 만들고 관리해야 함
+    - INSERT 쿼리 실행 전에 ID 값이 결정될 수 있음
+    - ```java
     @Entity
     public class User {
         @GeneratedValue(strategy = GenerationType.TABLE, generator = "USERS_SEQ_GENERATOR")
@@ -819,10 +872,10 @@ JPA의 ID 생성 전략
     }
     ```
 - GenerationType.AUTO (엔티티 ID 생성 기본 전략)
-  - JPA 구현체가 자동으로 선택하도록 하는 전략(데이터베이스 벤더에 따라 결정됨)
-  - MySQL: GenerationType.AUTO (AUTO_INCREMENT)
-  - PostgreSQL: GenerationType.SEQUENCE
-  - Oracle: GenerationType. SEQUENCE
+    - JPA 구현체가 자동으로 선택하도록 하는 전략(데이터베이스 벤더에 따라 결정됨)
+    - MySQL: GenerationType.AUTO (AUTO_INCREMENT)
+    - PostgreSQL: GenerationType.SEQUENCE
+    - Oracle: GenerationType. SEQUENCE
 
 ##### 삭제
 
@@ -833,7 +886,7 @@ JPA의 ID 생성 전략
 영속성 컨텍스트의 엔티티 존재 여부에 따른 처리 방식
 - 새 엔티티인 경우: 삭제 X
 - 영속성 컨텍스트에 포함된 경우(영속 상태인 경우): 삭제
-- 영속성 컨텍스트에 포함되지 않은 경우(영속 상태가 아닌 경우): `entityManager.find()`를 사용하여 DB에서 엔티티 조회하여 영속 상태로 만든 후 삭제 
+- 영속성 컨텍스트에 포함되지 않은 경우(영속 상태가 아닌 경우): `entityManager.find()`를 사용하여 DB에서 엔티티 조회하여 영속 상태로 만든 후 삭제
 
 ```java
 @Override
@@ -897,7 +950,7 @@ public void deleteById(ID id) {
 }
 ```
 
-###### `deleteAllById(Iterable<? extends ID>` 
+###### `deleteAllById(Iterable<? extends ID>`
 
 루프문을 돌아 `deleteById(ID)` 호출하는 CrudRepository 인터페이스 구현 메서드
 
@@ -992,128 +1045,33 @@ public void deleteAllInBatch(Iterable<T> entities) {
     if (!entities.iterator().hasNext()) {
         return;
     }
-    
+
     applyAndBind(getQueryString(DELETE_ALL_QUERY_STRING, entityInformation.getEntityName()), entities, entityManager)
             .executeUpdate();
 }
 ```
 
-## 쿼리
+## Queries
 
-동적 쿼리는 애플리케이션 실행 시점에 조건이나 파라미터에 따라 **쿼리의 구조가 동적으로 생성**되는 쿼리를 말함
+### Query Method
 
-미리 정의된 쿼리가 아니라 사용자 입력, 비즈니스 로직, 애플리케이션 상태 등과 같은 요소에 따라 **쿼리의 구조와 내용을 동적으로 변경**할 수 있음
-- 조건에 따른 쿼리 변경
-  - 쿼리 조건이 동적으로 변경됨
-  - 검색 조건으로 전달된 값이 존재할 때만 특정 필드를 쿼리에 포함시키거나, 여러 필터 조건을 결합시킴
-- 동적 조합
-  - 여러 조건이 AND, OR 같은 논리 연산자로 결합되거나 조건이 생략될 수 있음
-  - 사용자가 선택한 여러 필터 조건을 조합하여 하나의 SQL 쿼리를 동적으로 생성
-- 실행 시점에 생성
-  - 컴파일 타임이 아닌 런타임에 쿼리가 생성됨
+### @Query
 
-일반 쿼리와의 비교
+### Specification
 
-| 특징            | 동적 쿼리                          | 일반 쿼리                 |
-|---------------|--------------------------------|-----------------------|
-| 구조 및 쿼리 생성 시점 | 실행 시점에 따라 동적으로 변경 및 생성         | 고정된 쿼리 구조, 컴파일 시점에 생성 |
-|유연성| 조건에 따라 여러 쿼리를 조합               | 조건 변경 불가              |
-|용도| 조건이 동적으로 변경되거나 다중 조건 조합이 필요할 때 | 단순한 조건 처리             |
+Specification은 복잡한 쿼리나 런타임에 쿼리 조건이 결정되는 동적 쿼리를 JPA의 Criteria API를 활용하여 생성할 수 있도록 도와주는 인터페이스임
 
-### QBE vs Specification vs @Query vs QueryDSL
-
-#### QBE
-
-엔티티 인스턴스를 기반으로 동적 쿼리를 생성하는 방식
-
-장점
-- 단순 필드 기반 검색, 일치 여부 검색 같이 간단한 조건을 필요로 하는 동적 쿼리를 생성할 때 유용함
-
-단점
-- 조인, 집계 함수, 그룹핑 같이 복잡한 쿼리를 작성하는 데 적합하지 않음
-- 직관적인 쿼리 표현이 아님 (엔티티 인스턴스를 사용하여 조건을 작성하기 때문에 가독성이 떨어짐)
-
-#### Specification
-
-JPA Criteria API를 사용하여 동적으로 쿼리를 생성하는 방식
-
-장점
-- 복잡한 검색 조건이 필요한 경우에 QBE보다 적합함
-- 타입 안전성을 보장하므로 컴파일 시점에 오류를 잡을 수 있고, 쿼리 로직을 재사용할 수 있음
-
-단점
-- 사용법이 복잡하고, 코드가 장황함
-- 복잡한 쿼리일수록 코드가 난해해져서 유지보수가 어려움
-- 다수의 조건이 결합되는 경우 JPA가 비효율적인 SQL을 생성할 수 있음
-
-#### @Query
-
-JPA 리포지토리 메서드에 직접 JPQL이나 네이티브 SQL을 정의하는 방식
-
-쿼리의 구조가 고정되어 있으며 컴파일 시점에 결정됨
-
-장점
-- 쿼리를 직접 작성하므로 직관적이고, 명확함
-- 성능을 최적화한 SQL을 작성할 수 있음
-- 복잡한 쿼리(조인, 집계 함수, 그룹핑 등)를 쉽게 작성함
-
-단점
-- 리포지토리 메서드에 하드코딩됨 (재사용성이 떨어짐)
-- 쿼리가 길수록 코드가 장황해짐
-
-#### QueryDSL
-
-타입 안전한 쿼리를 작성할 수 있는 DSL(Domain-Specific Language)로 자바 코드로 SQL과 비슷한 구문을 사용해서 동적 쿼리를 작성할 수 있음
-
-장점
-- 다양한 데이터 소스(JPA, SQL, MongoDB 등)에서 사용할 수 있음
-- 타입 안전성을 보장하므로 컴파일 시점에 쿼리 오류를 감지할 수 있음
-- 복잡한 쿼리, 동적 조건, 다중 조인 등을 쉽게 작성할 수 있음
-- 자바 코드로 쿼리를 작성하므로, 쿼리와 비즈니스 로직이 동일한 언어로 통합되어 유지보수가 쉬워짐
-
-단점
-- 초기 설정 필요 (빌드툴 플러그인 설정, Q클래스 생성기 추가)
-- 복잡성 증가 (간단한 CRUD 작업에는 과한 기술스택임)
-
-#### 선택 가이드
-
-단순한 CRUD: @Query 또는 스프링 데이터 JPA의 기본 메서드(findById, findAll 등)
-
-복잡한 검색 조건 또는 동적 쿼리 및 타입 안전성: QueryDSL
-
-성능 최적화: @Query, QueryDSL
-
-재사용 가능한 동적 쿼리가 필요한 경우: Specification
-
-## PlatformTransactionManager
-
-## JpaTransactionManager
-
-## TransactionSynchronizationManager
-
-## @Transaction
-
-## @Transactional
-
-## Query Method
-
-## Projections
-
-## Specification
-
-Specification은 복잡한 쿼리나 런타임에 쿼리 조건이 결정되는 동적 쿼리를 JPA의 Criteria API를 활용하여 생성할 수 있도록 도와주는 인터페이스임  
-
-### 특징
+#### 특징
 
 동적 쿼리 생성
-- 애플리케이션 런타임에 조건을 추가하거나 제거할 수 있음 
+- 애플리케이션 런타임에 조건을 추가하거나 제거할 수 있음
 - NOT, WHERE, AND, OR 같은 조건 연산자 결합
 
 타입 세이프
 - JPA Criteria API를 사용하므로, 쿼리 작성 시 타입 안전성 보장
 - 쿼리의 각 부분이 메타모델을 사용하여 정의됨 - 컴파일 시점에 오류 감지 가능
 
-### 추상 메서드
+#### 추상 메서드
 
 주어진 root(기본 엔티티 타입)와 CriteriaQuery에 대해 Predicate 형식으로 엔티티 쿼리의 WHERE 절을 만드는 메서드임
 
@@ -1122,9 +1080,9 @@ Specification은 복잡한 쿼리나 런타임에 쿼리 조건이 결정되는 
 Predicate toPredicate(Root<T> root, @Nullable CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder);
 ```
 
-### 예시
+#### 예시
 
-#### 엔티티 정의 
+##### 엔티티 정의
 
 ```java
 @Entity
@@ -1140,25 +1098,25 @@ public class User {
 }
 ```
 
-#### Specification 정의 및 사용
+##### Specification 정의 및 사용
 
 동적 쿼리 조건 정의
 
 hasLastName 메서드는 주어진 string 값을 가진 엔티티가 있는지 확인하는 동적 쿼리를 반환하고
 
-hasAgeGreaterThan 메서드는 주어진 int 값보다 큰 값을 가진 엔티티가 있는지 필터링하는 동적 쿼리를 반환함 
+hasAgeGreaterThan 메서드는 주어진 int 값보다 큰 값을 가진 엔티티가 있는지 필터링하는 동적 쿼리를 반환함
 
 ```java
 public class UserSpecification {
-    
+
     public static Specification<User> hasLastName(String lastName) {
-        return (root, query, builder) -> 
+        return (root, query, builder) ->
                 builder.equal(root.get("lastName"), lastName);
     }
 
     public static Specification<User> hasAgeGreaterThan(int age) {
-      return (root, query, builder) ->
-              builder.greaterThan(root.get("age"), age);
+        return (root, query, builder) ->
+                builder.greaterThan(root.get("age"), age);
     }
 } 
 ```
@@ -1184,6 +1142,109 @@ public List<SpecUser> findUsers(String lastName, int age) {
 }
 ```
 
+### QBE vs Specification vs @Query vs QueryDSL 비교
+
+QBE, Specification, QueryDSL: 동적 쿼리 생성
+
+@Query: 정적 쿼리
+
+동적 쿼리는 애플리케이션 실행 시점에 조건이나 파라미터에 따라 **쿼리의 구조가 동적으로 생성**되는 쿼리를 말함
+
+미리 정의된 쿼리가 아니라 사용자 입력, 비즈니스 로직, 애플리케이션 상태 등과 같은 요소에 따라 **쿼리의 구조와 내용을 동적으로 변경**할 수 있음
+- 조건에 따른 쿼리 변경
+    - 쿼리 조건이 동적으로 변경됨
+    - 검색 조건으로 전달된 값이 존재할 때만 특정 필드를 쿼리에 포함시키거나, 여러 필터 조건을 결합시킴
+- 동적 조합
+    - 여러 조건이 AND, OR 같은 논리 연산자로 결합되거나 조건이 생략될 수 있음
+    - 사용자가 선택한 여러 필터 조건을 조합하여 하나의 SQL 쿼리를 동적으로 생성
+- 실행 시점에 생성
+    - 컴파일 타임이 아닌 런타임에 쿼리가 생성됨
+
+일반 쿼리와의 비교
+
+| 특징            | 동적 쿼리                          | 일반 쿼리                 |
+|---------------|--------------------------------|-----------------------|
+| 구조 및 쿼리 생성 시점 | 실행 시점에 따라 동적으로 변경 및 생성         | 고정된 쿼리 구조, 컴파일 시점에 생성 |
+|유연성| 조건에 따라 여러 쿼리를 조합               | 조건 변경 불가              |
+|용도| 조건이 동적으로 변경되거나 다중 조건 조합이 필요할 때 | 단순한 조건 처리             |
+
+#### 1. QBE
+
+엔티티 인스턴스를 기반으로 동적 쿼리를 생성하는 방식
+
+장점
+- 단순 필드 기반 검색, 일치 여부 검색 같이 간단한 조건을 필요로 하는 동적 쿼리를 생성할 때 유용함
+
+단점
+- 조인, 집계 함수, 그룹핑 같이 복잡한 쿼리를 작성하는 데 적합하지 않음
+- 직관적인 쿼리 표현이 아님 (엔티티 인스턴스를 사용하여 조건을 작성하기 때문에 가독성이 떨어짐)
+
+#### 2. Specification
+
+JPA Criteria API를 사용하여 동적으로 쿼리를 생성하는 방식
+
+장점
+- 복잡한 검색 조건이 필요한 경우에 QBE보다 적합함
+- 타입 안전성을 보장하므로 컴파일 시점에 오류를 잡을 수 있고, 쿼리 로직을 재사용할 수 있음
+
+단점
+- 사용법이 복잡하고, 코드가 장황함
+- 복잡한 쿼리일수록 코드가 난해해져서 유지보수가 어려움
+- 다수의 조건이 결합되는 경우 JPA가 비효율적인 SQL을 생성할 수 있음
+
+#### 3. @Query
+
+JPA 리포지토리 메서드에 직접 JPQL이나 네이티브 SQL을 정의하는 방식
+
+쿼리의 구조가 고정되어 있으며 컴파일 시점에 결정됨
+
+장점
+- 쿼리를 직접 작성하므로 직관적이고, 명확함
+- 성능을 최적화한 SQL을 작성할 수 있음
+- 복잡한 쿼리(조인, 집계 함수, 그룹핑 등)를 쉽게 작성함
+
+단점
+- 리포지토리 메서드에 하드코딩됨 (재사용성이 떨어짐)
+- 쿼리가 길수록 코드가 장황해짐
+
+#### 4. QueryDSL
+
+타입 안전한 쿼리를 작성할 수 있는 DSL(Domain-Specific Language)로 자바 코드로 SQL과 비슷한 구문을 사용해서 동적 쿼리를 작성할 수 있음
+
+장점
+- 다양한 데이터 소스(JPA, SQL, MongoDB 등)에서 사용할 수 있음
+- 타입 안전성을 보장하므로 컴파일 시점에 쿼리 오류를 감지할 수 있음
+- 복잡한 쿼리, 동적 조건, 다중 조인 등을 쉽게 작성할 수 있음
+- 자바 코드로 쿼리를 작성하므로, 쿼리와 비즈니스 로직이 동일한 언어로 통합되어 유지보수가 쉬워짐
+
+단점
+- 초기 설정 필요 (빌드툴 플러그인 설정, Q클래스 생성기 추가)
+- 복잡성 증가 (간단한 CRUD 작업에는 과한 기술스택임)
+
+#### 선택 가이드
+
+단순한 CRUD: @Query 또는 스프링 데이터 JPA의 기본 메서드(findById, findAll 등)
+
+복잡한 검색 조건 또는 동적 쿼리 및 타입 안전성: QueryDSL
+
+성능 최적화: @Query, QueryDSL
+
+재사용 가능한 동적 쿼리가 필요한 경우: Specification
+
+#### Repository Query Keyword
+
+## Transactions
+
+### PlatformTransactionManager
+
+### JpaTransactionManager
+
+### TransactionSynchronizationManager
+
+### @Transactional
+
+## Projections
+
 ## Locking
 
 ## Auditing
@@ -1191,7 +1252,5 @@ public List<SpecUser> findUsers(String lastName, int age) {
 ## Custom Repository
 
 ## Publishing Domain Events
-
-## Repository Query Keyword
 
 ## Repository Return type
