@@ -24,7 +24,8 @@
 
 [Queries](#queries)
 - [Query Method](#query-method)
-- [@Query](#query)
+  - [Method Name](#method-name)
+  - [@Query](#query)
 - [Specification](#specification)
 - [QBE vs Specification vs @Query vs QueryDSL 비교](#qbe-vs-specification-vs-query-vs-querydsl-비교)
 
@@ -1055,7 +1056,59 @@ public void deleteAllInBatch(Iterable<T> entities) {
 
 ### Query Method
 
-### @Query
+리포지토리 프록시는 메서드 이름에서 쿼리를 생성하는 두 가지 방법이 있음
+1. 메서드 이름으로부터 직접 쿼리 생성
+2. 수동으로 정의한 쿼리 사용
+
+스프링 데이터의 **기본 쿼리 생성 전략**은 애플리케이션 로드 시 선언된 쿼리를 조회하고, 선언된 쿼리가 없다면 메서드 이름을 기반으로 쿼리를 생성함
+
+#### Method Name
+
+리포지토리 인터페이스 메서드 이름으로부터 쿼리를 생성하는 기능
+
+스프링 데이터 리포지토리 계층에 내장된 쿼리 빌더는 쿼리 메서드 이름을 각각 subject와 predicate로 파싱하여 쿼리를 생성함
+- subject: 쿼리가 수행하는 작업, 메서드명의 첫부분 (`find...By` 등)에 해당됨
+- predicate: 작업 상세 사항(where 절 등), `By` 이후의 부분에 해당됨
+
+참고로 `find`와 `by` 사이의 string 값은 고유 플래그를 명시하지 않는 이상 쿼리를 설명하는 것으로 간주되어 쿼리 생성에 영향을 끼치지 않음
+
+[쿼리 subject 키워드 목록](https://docs.spring.io/spring-data/jpa/reference/repositories/query-keywords-reference.html#appendix.query.method.subject)
+- `find...By` `read...By` `get...By` `query...By` `search...By` `stream...By`: 조회 연산 (엔티티, 컬렉션, Streamable 하위 타입 등으로 반환 가능)
+- `exist...By`: 존재 여부 확인 (boolean 반환)
+- `count...By`: 카운트 쿼리 (숫자형 반환)
+- `delete...By` `remove...By`: 삭제 연산 (void 또는 삭제 개수 반환)
+- `...First<number>...` `...Top<number>`: `find`와 `By` 사이에 명시하면 쿼리 개수를 제한할 수 있음
+- `...Distinct...`: `find`와 `By`사이에 명시하면 중복을 제거할 수 있음
+
+[쿼리 predicate 키워드 목록](https://docs.spring.io/spring-data/jpa/reference/repositories/query-keywords-reference.html#appendix.query.method.predicate)
+
+```java
+public interface UserRepository extends Repository<User, Long> {
+
+    /*
+        아래의 메서드는 
+        SELECT u FROM User u WHERE u.emailAddress = ?1 and u.lastname = ?2 쿼리로 변환됨 
+    */
+    List<User> findEmailAddressAndLastname(String emailAddress, String lastname);
+
+    List<Person> findByEmailAddressAndLastname(EmailAddress emailAddress, String lastname);
+
+    // Enables the distinct flag for the query
+    List<Person> findDistinctPeopleByLastnameOrFirstname(String lastname, String firstname);
+    List<Person> findPeopleDistinctByLastnameOrFirstname(String lastname, String firstname);
+
+    // Enabling ignoring case for an individual property
+    List<Person> findByLastnameIgnoreCase(String lastname);
+    // Enabling ignoring case for all suitable properties
+    List<Person> findByLastnameAndFirstnameAllIgnoreCase(String lastname, String firstname);
+
+    // Enabling static ORDER BY for a query
+    List<Person> findByLastnameOrderByFirstnameAsc(String lastname);
+    List<Person> findByLastnameOrderByFirstnameDesc(String lastname);
+}
+```
+
+#### @Query
 
 ### Specification
 
