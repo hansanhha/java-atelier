@@ -21,6 +21,7 @@
         - [조회](#조회)
         - [저장](#저장)
             - [엔티티 ID 생성 전략과 save 메서드 동작 관계](#엔티티-id-생성-전략과-save-메서드-동작-관계)
+        - [삭제](#삭제)
 
 [Queries](#queries)
 - [Query Method](#query-method)
@@ -307,22 +308,22 @@ public abstract class AbstractEntityInformation<T, ID> implements EntityInformat
 
 SimpleJpaRepository에서의 사용
 - JPA 연산(save, delete) 등을 수행할 때 JpaEntityInformation을 사용하여 엔티티의 상태와 메타데이터를 확인함
-    - ```java
-    @Override
-    @Transactional
-    public <S extends T> S save(S entity) {
+- ```java
+  @Override
+  @Transactional
+  public <S extends T> S save(S entity) {
 
-        Assert.notNull(entity, "Entity must not be null");
+      Assert.notNull(entity, "Entity must not be null");
 
-        // 새로 생성된 엔티티 경우 persist를 호출하여 데이터베이스에 저장
-        if (entityInformation.isNew(entity)) {
-            entityManager.persist(entity);
-            return entity;
-        } else { // 기존 엔티티인 경우 merge를 호출하여 병합
-            return entityManager.merge(entity);
-        }
-    }
-    ```
+      // 새로 생성된 엔티티 경우 persist를 호출하여 데이터베이스에 저장
+      if (entityInformation.isNew(entity)) {
+          entityManager.persist(entity);
+          return entity;
+      } else { // 기존 엔티티인 경우 merge를 호출하여 병합
+          return entityManager.merge(entity);
+      }
+  }
+  ```
 - 복합 키를 가진 엔티티의 경우에도 JpaEntityInformation을 통해 올바르게 ID를 추출하고 관련 작업 수행함
 
 ##### EntityManager entityManager
