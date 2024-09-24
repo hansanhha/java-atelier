@@ -18,9 +18,11 @@
         - [삭제](#삭제)
 
 [NamedQuery](#namedquery)
+
 [Query Method](#query-method)
   - [메서드 이름 기반 JPQL 쿼리](#메서드-이름-기반-jpql-쿼리query-derivation-query-creation)
   - [@Query](#query)
+
 [동적 쿼리](#동적-쿼리)
 - [Specification](#specification)
 - [Criteria API](#criteria-api)
