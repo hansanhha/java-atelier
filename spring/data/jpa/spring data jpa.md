@@ -10,12 +10,6 @@
 - [생성 과정](#생성-과정)
 - [코드 분석](#코드-분석)
     - [필드](#필드)
-        - [JpaEntityInformation](#jpaentityinformationt--entityinformation)
-        - [EntityManager](#entitymanager-entitymanager)
-        - [PersistenceProvider](#persistenceprovider-provider)
-        - [CrudMethodMetadata](#crudmethodmetadata-metadata)
-        - [ProjectionFactory](#projectionfactory-projectionfactory)
-        - [EscapeCharacter](#escapecharacter-escapecharacter--escapecharacterdefault)
     - [메서드](#메서드)
         - [공통](#공통)
         - [조회](#조회)
@@ -214,7 +208,7 @@ public class SimpleJpaRepository<T, ID> implements JpaRepositoryImplementation<T
 }
 ```
 
-##### JpaEntityInformation<T, ?> entityInformation
+##### `JpaEntityInformation<T, ?> entityInformation` 필드
 
 <img src="../images/JpaEntityInformation-hierarchy.png" alt="JpaEntityInformation hierarchy">
 
@@ -233,30 +227,29 @@ JPA 엔티티에 대한 메타데이터 정보를 관리하는 역할을 하는 
 - 엔티티 상태 정보 제공
     - 특정 엔티티 인스턴스가 새로 생성된 건지, 이미 존재하는 건지 확인할 수 있는 메서드 제공
 
-SimpleJpaRepository의 필드에 주입되는 실제 구현체는 `JpaMetaModelEntityInformation` 클래스임
+JpaEntityInformation 타입으로 주입되는 실제 구현체는 `JpaMetaModelEntityInformation` 클래스임
 
 <img src="../images/SimpleJpaRepository-JpaEntityInformation.png" alt="JpaMetaModelEntityInformation">
 
 - JPA의 Metamodel API를 통해 엔티티의 메타데이터를 동적으로 분석하여 제공
 - 복합 키를 지원하며, 복합 키의 각 속성에 대한 정보 관리
 
-###### JpaEntityInformation.isNew()
-- 새로 생성된 엔티티인지 판단하는 메서드
+엔티티가 새로 생성된 엔티티(데이터베이스에 저장되지 않은 상태)인지 판단할 때 JpaEntityInformation의 `isNew` 메서드를 사용함
 
-isNew 메서드는 JPA 엔티티가 새로 생성된 엔티티인지 (아직 데이터베이스에 저장되지 않은 상태인지) 결정하는 역할을 함
+###### JpaEntityInformation.isNew()
 
 ```java
 @Override
 public boolean isNew(T entity) {
 
     /*
-            1. 버전 속성 존재 여부와 원시 타입 검사(결과에 따라 부모 클래스의 iwNew 호출)
+        1. 버전 속성 존재 여부와 원시 타입 검사
+    
+        versionAttribute는 JPA 엔티티의 버전 속성을 나타내는 Optional 객체임
+        버전 속성은 엔티티의 상태 관리를 위해 사용됨 (엔티티 병합 충돌 감지용)
+        만약 엔티티에 버전 속성이 없어서 versionAttribute 비어있다면 부모 클래스(AbstractEntityInformation)의 isNew 호출
         
-            versionAttribute는 JPA 엔티티의 버전 속성을 나타내는 Optional 객체임
-            버전 속성은 엔티티의 상태 관리를 위해 사용됨 (엔티티 병합 충돌 감지용)
-            만약 엔티티에 버전 속성이 없어서 versionAttribute 비어있다면 부모 클래스(AbstractEntityInformation)의 isNew 호출
-            
-            버전 속성이 존재하지만, 해당 데이터 타입이 원시 타입(primitive type)인 경우에도 호출
+        버전 속성이 존재하지만, 해당 데이터 타입이 원시 타입(primitive type)인 경우에도 호출
      */
     if (versionAttribute.isEmpty()
             || versionAttribute.map(Attribute::getJavaType).map(Class::isPrimitive).orElse(false)) {
@@ -264,23 +257,23 @@ public boolean isNew(T entity) {
     }
 
     /*
-            2. 버전 속성 존재 시 null 검사
-            
-            DirectFieldAccessFallbackBeanWrapper는 Spring의 BeanWrapper 인터페이스 구현체로
-            객체의 필드에 직접 접근하여 값을 읽고 쓸 수 있게 함
-            엔티티 객체의 속성 값을 읽어오기 위해 사용함
+        2. 버전 속성 존재 시 null 검사
+        
+        DirectFieldAccessFallbackBeanWrapper는 Spring의 BeanWrapper 인터페이스 구현체로
+        객체의 필드에 직접 접근하여 값을 읽고 쓸 수 있게 함
+        엔티티 객체의 속성 값을 읽어오기 위해 사용함
      */
     BeanWrapper wrapper = new DirectFieldAccessFallbackBeanWrapper(entity);
 
     /*
-            엔티티의 버전 속성 값이 null이면 엔티티가 데이터베이스에 저장되지 않는 것으로 판단
-            null이 아니면 이미 데이터베이스에 저장된 것으로 판단하고 false를 반환
+        엔티티의 버전 속성 값이 null이면 엔티티가 데이터베이스에 저장되지 않는 것으로 판단
+        null이 아니면 이미 데이터베이스에 저장된 것으로 판단하고 false를 반환
      */
     return versionAttribute.map(it -> wrapper.getPropertyValue(it.getName()) == null).orElse(true);
 }
 ```
 
-JpaMetamodelEntityInformation 부모 클래스의 isNew 메서드 로직
+###### AbstractEntityInformation.isNew()
 
 ```java
 public abstract class AbstractEntityInformation<T, ID> implements EntityInformation<T, ID> {
@@ -306,8 +299,8 @@ public abstract class AbstractEntityInformation<T, ID> implements EntityInformat
 }
 ```
 
-SimpleJpaRepository에서의 사용
-- JPA 연산(save, delete) 등을 수행할 때 JpaEntityInformation을 사용하여 엔티티의 상태와 메타데이터를 확인함
+SimpleJpaRepository의 JpaEntityInformation 필드 사용
+- JPA 연산(save, delete) 등을 수행할 때 엔티티 상태와 메타데이터를 확인하기 위해 사용함
 - ```java
   @Override
   @Transactional
@@ -328,33 +321,27 @@ SimpleJpaRepository에서의 사용
 
 ##### EntityManager entityManager
 
-JPA는 자바 진영의 표준 퍼시스턴스 API 명세이고 스프링 데이터 JPA는 스프링 환경에서 JPA를 보다 쉽게 사용할 수 있도록 추상화한 프로젝트임
+JPA는 자바 진영의 표준 퍼시스턴스 API 명세이고 스프링 데이터 JPA는 스프링 환경에서 JPA를 보다 쉽게 사용할 수 있도록 추상화한 스프링 데이터 하위 모듈임
 
 이런 추상화에 대한 실제 구현은 Hibernate나 EclipseLink 등과 같은 JPA 프로바이더가 담당함(스프링 데이터 JPA의 기본 JPA 프로바이더는 Hibernate)
 
-스프링 데이터 JPA는 JPA의 핵심 인터페이스인 [EntityManager](./jpa.md#entitymanager)를 통해
+SimpleJpaRepository는 [EntityManager](./jpa.md#entitymanager)(SessionImpl)를 주입받아서 엔티티 저장/업데이트, JPQL 쿼리 실행, 데이터베이스 트랜잭션 등 데이터베이스와의 상호작용을 수행함
 
-엔티티 저장/업데이트, JPQL 쿼리 실행, 데이터베이스 트랜잭션 등 데이터베이스와의 상호작용을 수행함
-
-SimpleJpaRepository에서 이 엔티티 매니저를 주입받아서 사용하고 있음
-- **EntityManager 하이버네이트 구현체**: SessionImpl 또는 SessionDelegatorBaseImpl
-
-스프링의 엔티티 매니저 및 엔티티 매니저 팩토리 생성 과정
+EntityManagerFactory 생성
 - JPA 설정 파일(persistence.xml) 또는 스프링 JPA 설정(Java Config, application.properties)에서 JPA 구현체와 데이터베이스 연결 정보가 설정됨
-- 스프링 데이터 JPA는 `LocalContainerEntityManagerFactoryBean`을 사용하여 JPA의 `EntityManagerFactory` (`SessionFactory`)를 설정하고 관리함
-- 스프링 부트는 JPA 자동 구성을 담당하는 HibernateJpaAutoConfiguration(JpaBaseConfiguration)을 통해`LocalContainerEntityManagerFactoryBean`을 빈으로 등록
-    - `LocalContainerEntityManagerFactoryBean`이 생성된 EntityManagerFactory에 프록시를 적용하여, 여러 트랜잭션과 스레드 간에 엔티티 매니저 팩토리가 안전하게 공유될 수 있도록 함
-- 이외에도 JPA 관련 빈(DataSource, JpaVendorAdapter)들을 등록함
+- 스프링 데이터 JPA는 엔티티 매니저를 생성하는 EntityManagerFactory(SessionFactory)의 값을 설정하고 관리하기 위해 LocalContainerEntityManagerFactoryBean 객체를 사용함
+  - 스프링 부트 환경에선 JPA 자동 구성을 담당하는 HibernateJpaAutoConfiguration(JpaBaseConfiguration) 객체가 자동으로 LocalContainerEntityManagerFactoryBean을 빈으로 등록함
+- 여러 트랜잭션과 스레드 간 엔티티 매니저 팩토리가 안전하게 공유될 수 있도록 LocalContainerEntityManagerFactoryBean은 EntityManagerFactory에 프록시를 적용함
 
-프록시
-- SimpleJpaRepository는 특정 리포지토리 인터페이스의 구현체이지만, 여러 트랜잭션에 대응해서 엔티티 매니저를 다룰 수 있어야 함
-- 스프링은 프록시 패턴을 사용해서 엔티티 매니저를 감싸서 관리하는데, 프록시가 실제 인스턴스를 대신하고 트랜잭션의 시작과 종료 시점에 맞춰 실제 인스턴스를 제공하거나 해제함
-- 따라서 SimpleJpaRepository의 EntityManager 필드엔 EntityManager를 가지고 있는 프록시가 주입되서 트랜잭션 단위로 EntityManager를 사용할 수 있도록 함
-- `SharedEntityManagerCreator`가 트랜잭션 범위 내에서 프록시로 감싸진 EntityManager를 동적으로 바인딩하고 해제하는 역할을 하는데, 트랜잭션이 시작될 때마다 새로운 EntityManager 인스턴스를 가져오거나, 현재 트랜잭션에 바인딩된 EntityManager를 반환함
+EntityManager 생성
+- EntityManagerFactory로부터 생성된 EntityManager는 SimpleJpaRepository에 주입되는데, SimpleJpaRepository는 특정 리포지토리 인터페이스의 구현체로 여러 스레드에서 사용됨
+- 스프링은 멀티 스레드 환경을 위해 리포지토리 인터페이스 프록시로 SimpleJpaRepository를 동작시키는 것처럼 EntityManager 역시 프록시 패턴을 사용하여 엔티티 매니저를 관리함  
+- 즉 EntityManager의 프록시가 실제 인스턴스를 대신하여 SimpleJpaRepository에 주입되고, 트랜잭션의 시작과 종료 시점에 맞춰 실제 EntityManager 인스턴스를 제공하거나 해제하여 트랜잭션 단위로 엔티티 매니저를 사용할 수 있도록 함
+- 트랜잭션 범위 내에서 프록시로 감싸진 EntityManager를 동적으로 바인딩하고 해제하는 역할을 `SharedEntityManagerCreator`가 하는데, 트랜잭션이 시작될 때마다 새로운 EntityManager 인스턴스를 가져오거나, 현재 트랜잭션에 바인딩된 EntityManager를 반환함
 
 <img src="../images/SimpleJpaRepository-EntityManager.png" alt="SimpleJpaRepository EntityManager">
 
-SimpleJpaRepository에서의 사용
+SimpleJpaRepository의 EntityManager 필드 사용
 - ```java
   @Override
   @Transactional
@@ -371,18 +358,10 @@ SimpleJpaRepository에서의 사용
     }
   }
   ```
-- SimpleJpaRepository에 주입되는 EntityManager는 SharedEntityManagerCreator에서 바인딩한 프록시 객체임
 - `entityManager.persist`를 호출하면 실제론 SharedEntityManagerCreator의 중첩 클래스인 SharedEntityManagerInvocationHandler에서 호출을 가로채서 현재 트랜잭션에 바인딩된 실제 엔티티 매니저의 구현체(SessionImpl)에게 위임함
-- 경우에 따라서 현재 엔티티 매니저가 없으면 생성해줌
+- 엔티티 매니저가 없는 경우 새로운 EntityManager를 생성해줌
 - <img src="../images/SharedEntityManagerInvocationHandler.png" alt="SharedEntityManagerInvocationHandler">
 - <img src="../images/SimpleJpaRepository-EntityManager-InvocationHandler.png" alt="SimpleJpaRepository-EntityManager-InvocationHandler">
-
-정리
-- SimpleJpaRepository는 EntityManager를 통해 데이터베이와 상호작용함
-- 하나의 리포지토리 인터페이스 구현체인 SimpleJpaRepository는 여러 스레드에서 수행되는 트랜잭션을 지원해야 됨
-- 스프링에선 SharedEntityManagerCreator를 통해 EntityManager를 프록시로 감싸고, 이걸 SimpleJpaRepository에 주입해줌
-- EntityManager를 생성하는 EntityManagerFactory는 스프링의 LocalContainerEntityManagerFactoryBean에 의해 관리됨
-- LocalContainerEntityManagerFactory는 스프링 부트의 HibernateJpaAutoConfiguration 같은 자동 설정에 의해 스프링 빈으로 등록됨
 
 ##### PersistenceProvider provider
 
@@ -462,21 +441,21 @@ ProjectionFactory는 스프링 데이터 JPA에서 프로젝션(projection) 인�
 - 클로즈드 프로젝션 (Closed Projection)
     - 프로젝션 인터페이스에 정의된 getter를 통해 쿼리 결과 매핑
     - ```java
-    // name 필드만 조회하는 프로젝션
-    public interface UserNameProjection {
-        String getName();
-    }
-    ```
+      // name 필드만 조회하는 프로젝션
+      public interface UserNameProjection {
+          String getName();
+      }
+      ```
 - 오픈 프로젝션 (Open Projection)
     - 복잡한 표현식을 포함한 프로젝션
     - ```java
-    public interface UserSummary {
-        String getName();
+      public interface UserSummary {
+          String getName();
     
-        @Value("#{target.name + ' ' + target.lastName}")
-        String getFullName();
-    }
-    ```
+          @Value("#{target.name + ' ' + target.lastName}")
+          String getFullName();
+      }
+      ```
 
 프로젝션 팩토리가 주어진 프로젝션 타입의 인스턴스를 생성하고
 
@@ -650,7 +629,7 @@ public List<T> findAllById(Iterable<ID> ids) {
     }
 
     /*
-        단일 기본 키인 경우 여러 ID에 대한 단일 쿼리를 동적으로 생성해서 엔티티들을 조회함
+        단일 기본 키인 경우 여러 ID에 대한 단일 쿼리(IN절)를 동적으로 생성해서 엔티티들을 조회함
      */
     Collection<ID> idCollection = toCollection(ids);
 
@@ -682,7 +661,7 @@ public List<T> findAll() {
 
 데이터베이스에서 특정 페이지의 데이터만 조회함 - 메모리 사용량을 줄임
 
-주어진 pageable이 Unpaged가 아닌 경우 `findAll(Specification<T>, Pageable)` 메서드에 위임함
+주어진 pageable이 페이징 조건이 지정된 경우 `findAll(Specification<T>, Pageable)` 메서드에 위임함
 
 ```java
 @Override
@@ -699,7 +678,7 @@ public Page<T> findAll(Pageable pageable) {
 
 `findAll(Specification<T>, Pageable)` 메서드는 주어진 specfication과 pageable을 토대로 TypedQuery를 생성하고
 
-Unpaged가 아닌 경우 `readPage(TypedQuery<S>, final Class<S>, Pageable, Specification<S>)` 메서드에 위임함
+페이징 조건이 지정되지 않은 경우 쿼리를 실행하여 결과를 반환하고, 지정된 경우 `readPage(TypedQuery<S>, final Class<S>, Pageable, Specification<S>)` 메서드에 위임함
 
 ```java
 @Override
@@ -824,55 +803,55 @@ public <S extends T> S saveAndFlush(S entity) {
 }
 ```
 
-###### 엔티티 ID 생성 전략과 save 메서드 동작 관계
+###### 엔티티 ID 생성 전략에 따른 ID 값과 SQL 실행 시점 결정 
 
-새로운 엔티티를 저장하려고 save() 메서드를 호출하면 엔티티는 영속성 컨텍스트에 추가됨
+새로운 엔티티를 저장하려고 entity.persit() 메서드를 호출하면 엔티티는 영속성 컨텍스트에 추가됨
 
-엔티티의 ID 생성 전략에 따라 ID 값 결정과 쿼리 실행이 다름
+이 때 엔티티의 ID 생성 전략에 따라 ID 값 결정과 쿼리 실행 시점이 다름
 
 JPA의 ID 생성 전략
-- GenerationType.IDENTITY
-    - 기본 키 생성을 DB에게 위임하는 전략 (특정 벤더에 의존)
+- GenerationType.IDENTITY (특정 벤더에 의존하는 방식)
+    - 기본 키 생성을 DB에게 위임하는 전략 
     - 엔티티를 영속성 컨텍스트에 추가한 후 INSERT 쿼리가 실제로 실행되기 전까지 ID가 설정되지 않음
     - 영속성 컨텍스트는 무조건 ID 속성이 있어야 하므로, 이 전략을 사용하면 `persist()` 호출 시 트랜잭션 커밋과 상관없이 곧바로 INSERT 쿼리를 수행함
-- GenerationType.SEQUENCE
-    - 데이터베이스 시퀀스를 사용하여 ID를 생성하는 전략 (특정 벤더에 의존)
-    - `persist()` 메서드 호출 시점에 JPA에서 데이터베이스 시퀀스 값을 조회하여 ID 값을 먼저 생성함
+- GenerationType.SEQUENCE (특정 벤더에 의존하는 방식)
+    - 데이터베이스 시퀀스를 사용하여 ID를 생성하는 전략 
+    - `persist()` 메서드 호출 시점에 JPA에서 데이터베이스 시퀀스 값을 먼저 조회하여 ID 값을 설정함
     - ID가 INSERT 쿼리 실행전에 결정되며, INSERT 쿼리는 트랜잭션이 커밋될 때 수행됨
     - 시퀀스를 생성하는 어노테이션이 필요함
     - ```java
-    @Table(name="users")
-    @Entity
-    @SequenceGenerator (
-        name="USERS_SEQ_GENERATOR",
-        sequenceName="USERS_SEQ"
-    )
-    public class User {
-        
-        @Id
-        @GeneratedValue(strategy = GenerationType.SEQUENCE)
-        private Long id;
-    }
-    ```
+      @Table(name="users")
+      @Entity
+      @SequenceGenerator ( // 시퀀스 생성
+          name="USERS_SEQ_GENERATOR",
+          sequenceName="USERS_SEQ"
+      )
+      public class User {
+          
+          @Id
+          @GeneratedValue(strategy = GenerationType.SEQUENCE)
+          private Long id;
+      }
+      ```
 - GenerationType.UUID
     - 기본 키로 UUID를 사용하는 전략
-- GenerationType.TABLE
-    - 시퀀스 테이블 흉내내서 ID를 관리하는 전략 (특정 벤더에 독립적)
+- GenerationType.TABLE (특정 벤더에 독립적인 방식)
+    - 시퀀스 테이블 흉내내서 ID를 관리하는 전략 
     - 특정 벤더에 의존적이지 않은 방식이지만 별도의 시퀀스 테이블을 만들고 관리해야 함
     - INSERT 쿼리 실행 전에 ID 값이 결정될 수 있음
     - ```java
-    @Entity
-    public class User {
-        @GeneratedValue(strategy = GenerationType.TABLE, generator = "USERS_SEQ_GENERATOR")
-        @TableGenerator(
-            name = "USERS_SEQ_GENERATOR",
-            table = "USERS_SEQUENCE",
-            pkColumnName = "sequence_name",
-            pckColumnValue = "USERS_SEQ"
-        )
-        private Long id;
-    }
-    ```
+      @Entity
+      public class User {
+          @GeneratedValue(strategy = GenerationType.TABLE, generator = "USERS_SEQ_GENERATOR")
+          @TableGenerator(
+              name = "USERS_SEQ_GENERATOR",
+              table = "USERS_SEQUENCE",
+              pkColumnName = "sequence_name",
+              pckColumnValue = "USERS_SEQ"
+          )
+          private Long id;
+      }
+      ```
 - GenerationType.AUTO (엔티티 ID 생성 기본 전략)
     - JPA 구현체가 자동으로 선택하도록 하는 전략(데이터베이스 벤더에 따라 결정됨)
     - MySQL: GenerationType.AUTO (AUTO_INCREMENT)
