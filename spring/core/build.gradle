@@ -1,7 +1,5 @@
 plugins {
     id("java")
-    alias libs.plugins.spring.boot
-    alias libs.plugins.spring.management
 }
 
 repositories {
@@ -9,8 +7,13 @@ repositories {
 }
 
 dependencies {
-    implementation libs.spring.boot
-    implementation libs.spring.boot.data.jpa
-    testImplementation libs.spring.boot.test
+
+    implementation(libs.springframework.core)
+    implementation(libs.springframework.context)
+    implementation(libs.springframework.context.support)
+    implementation(libs.springframework.context.indexer)
+    implementation(libs.springframework.aop)
+    implementation(libs.springframework.aspects)
+    implementation(libs.springframework.beans)
 
 }

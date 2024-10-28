@@ -1,7 +1,7 @@
 ## Environment
 
 Profile
-- 컨테이너에 등록할 bean definition 그룹 이름 
+- 컨테이너에 등록할 bean definition 그룹 이름
 - 지정된 profile이 active되어야만 컨테이너의 빈으로 등록됨
 - 테스트, 개발, 프로덕션 환경 구분 등으로 사용
 
@@ -23,85 +23,6 @@ Property
 - Properties
     - property source 구성
     - property 해결
-
-## Profile
-
-```
-@Configuration
-@Profile("development")
-public class DataConfig {
-    
-    @Bean
-    public DataSource dataSource() {
-        ...
-    }
-}
-
-@Component
-@Profile("development")
-public class ...
-```
-
-```
-@Configuration
-public class DataConfig {
-
-    @Bean("dataSource")
-    @Profile("development")
-    public DataSource EmbeddedDataSource() {
-        ...
-    }
-
-    @Bean("dataSource")
-    @Profile("production")
-    public DataSource MySqlDataSource() throws Exception{
-        ...
-    }
-}
-```
-@Bean 메서드를 오버로드 하는 경우 빈 이름을 통일시켜 @Profile을 적용해야 올바른 동작을 함
-
-### Profile Expression, Annotation
-
-표현식을 통해 다양하게 Profile을 활성화할 수 있음
-
-! : NOT, 해당 Profile이 아닐 때
-& : AND
-| : OR
-
-&와 |를 같이 사용하려면 괄호 사용 필요 
-
-```
-@Profile("production & us-east")
-@Profile("production & (us-east | eu-central)")
-@Profile({"{p1, p2}"}) - p1 | p2와 동일
-```
-
-Profile 별 메타 어노테이션
-```
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
-@Profile("production")
-public @interface Production {
-}
-```
-
-### Profile 활성화
-
-활성화 방법
-1. spring.profiles.active 프로퍼티 지정 
-    - -Dspring.profiles.active="p1,p2"
-2. ApplicationContext를 통해 Environment API 사용
-    - ApplicationContext.getEnvironment.setActiveProfiles("p1", "p2")
-
-### Default Profile
-
-Default Profile : Default
-
-Default Profile 이름 변경 방법
-1. spring.profiles.default 프로퍼티 지정
-2. ApplicationContext를 통해 Environment API 사용
-    - ApplicationContext.getEnvironment.setDefaultProfiles("development")
 
 ## Property
 
@@ -210,7 +131,7 @@ public class MovieRecommender {
 }
 ```
 
-**Property 값이 없는 경우** 
+**Property 값이 없는 경우**
 
 기본적으로 스프링이 Property 이름이 값을 주입함
 
@@ -236,9 +157,9 @@ public class AppConfig {
 
 ```
 
-### Type Conversion Service 
+### Type Conversion Service
 
-property - 필드 타입 변환 
+property - 필드 타입 변환
 - primitive type은 spring에서 지원
 - custom type의 경우 ConversionService 빈 등록 필요
 
@@ -256,67 +177,3 @@ public class AppConfig {
 ```
 
 [스프링부트 @ConfigurationProperties]()
-
-## Condition
-
-@Conditional과 함께 사용되는 함수형 인터페이스로 특정 조건에 따라 해당 Bean을 등록하거나 무시하기 위해 사용됨
-
-애플리케이션 로드 시점에 @Conditional이 적용된 클래스나 메서드에 대해서 Condition 구현체가 동작함
-
-```
-@FunctionalInterface
-public interface Condition {
-    boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata);
-}
-```
-
-ConditionContext : 현재 애플리케이션 컨텍스트와 관련된 정보(Environment, ResourceLoader, ClassLoader 등) 제공
-
-AnnotatedTypeMetadata : 평가할 클래스나 메서드에 대한 메타데이터 제공 
-
-ProfileCondition의 경우 해당 클래스나 메서드에 적용된 Profile을 가져온 뒤, 현재 Environment의 Profile에 포함되는 경우에만 true를 반환하고 빈으로 등록됨
-
-```
-class ProfileCondition implements Condition {
-    ProfileCondition() {
-    }
-
-    public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
-        MultiValueMap<String, Object> attrs = metadata.getAllAnnotationAttributes(Profile.class.getName());
-        if (attrs != null) {
-            Iterator var4 = ((List)attrs.get("value")).iterator();
-
-            Object value;
-            do {
-                if (!var4.hasNext()) {
-                    return false;
-                }
-
-                value = var4.next();
-            } while(!context.getEnvironment().matchesProfiles((String[])value));
-
-            return true;
-        } else {
-            return true;
-        }
-    }
-}
-```
-
-### Conditional
-
-Bean 등록과 관련된 @Bean, @Configuration, @Component에 선언하는 어노테이션
-
-@Profile 어노테이션에 @Conditional과 ProfileCondition이 선언되어 있음(메타 어노테이션)
-
-```
-@Target({ElementType.TYPE, ElementType.METHOD})
-@Retention(RetentionPolicy.RUNTIME)
-@Documented
-@Conditional({ProfileCondition.class})
-public @interface Profile {
-    String[] value();
-}
-```
-
-[스프링부트 Conditional]()
