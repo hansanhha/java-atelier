@@ -6,9 +6,9 @@
 
 [SimpleJpaRepository](#simplejparepository)
 
-- [상속 관계](#상속-관계)
-- [생성 과정](#생성-과정)
-- [코드 분석](#코드-분석)
+- [상속 관계](#simplejparepository-상속-관계)
+- [생성 과정](#simplejparepository-생성-과정)
+- [코드 분석](#simplejparepository-코드-분석)
     - [필드](#필드)
     - [메서드](#메서드)
         - [공통](#공통)
@@ -133,7 +133,7 @@ public interface JpaRepositoryImplementation<T, ID> extends JpaRepository<T, ID>
 
 개발자가 리포지토리 인터페이스를 정의할 때마다, 자동으로 인터페이스의 구현체를 생성해 주는데 이 때 기본적으로 사용되는 구현체가 SimpleJpaRepository임
 
-### 상속 관계
+### SimpleJpaRepository 상속 관계
 
 <img src="../images/SimpleJpaRepository-hierarchy.png" alt="simple jpa repository hierarchy" style="width:50%; height:50;">
 
@@ -159,9 +159,11 @@ public class SimpleJpaRepository<T, ID> implements JpaRepositoryImplementation<T
 
 `@Repository`와 `@Transacitonal`(readOnly) 어노테이션을 적용함
 
-### 생성 과정
+### SimpleJpaRepository 생성 과정
 
-리포지토리 인터페이스 정의
+#### 0. 리포지토리 인터페이스 정의
+
+개발자가 Repository 인터페이스를 확장한 임의의 인터페이스를 선언함
 
 - ```java
   public interface UserRepository extends JpaRepository<User, Long> {
@@ -169,27 +171,42 @@ public class SimpleJpaRepository<T, ID> implements JpaRepositoryImplementation<T
   }
   ```
 
-애플리케이션 컨텍스트 초기화 및 리포지토리 인터페이스 스캔과 프록시 생성
+#### 1. 스프링 부트의 autoconfiguration
 
-- 스프링 애플리케이션이 시작될 때, 애플리케이션 컨텍스트가 초기화되면서 스프링 데이터 JPA가 리포지토리 인터페이스들을 스캔함
-- 스캔 과정에서 `@EnableJpaRepositories` 어노테이션이 설정된 패키지 내의 모든 리포지토리 인터페이스를 찾음
-- 각 리포지토리 인터페이스에 대해 스프링 데이터 JPA는 프록시 객체를 생성함(해당 프록시 객체가 스프링 빈으로 등록됨)
-- 이 프록시는 인터페이스를 구현한 동적 프록시로, 실제 구현체로 호출을 위임함
+- 스프링 부트 애플리케이션이 시작되면서 spring.factories
 
-SimpleJpaRepository 생성
+#### 2. 애플리케이션 컨텍스트 초기화에 따른 리포지토리 인터페이스 스캔과 프록시 생성
+
+- 애플리케이션 컨텍스트가 초기화되면서 스프링 데이터 JPA는 `@EnableJpaRepositories` 어노테이션이 설정된 패키지 내의 모든 리포지토리 인터페이스(Repository 타입)들을 스캔함
+- 스캔된 각 리포지토리 인터페이스에 대한 프록시 객체를 생성하고 스프링 빈으로 등록함
+- 이 프록시는 리포지토리 인터페이스를 구현한 동적 프록시로 다음과 같은 작업을 수행함
+  - 기본 CRUD 메서드 -> SimpleJpaRepository에게 위임
+  - findByLastName() 같은 메서드명 파싱을 통해 자동 생성된 JPQL 실행
+  - 커스텀 구현체가 있는 경우 -> 해당 구현체에게 위임
+
+#### 3. SimpleJpaRepository 생성
 
 - 스프링 데이터 JPA는 [JpaRepositoryFactory](https://docs.spring.io/spring-data/jpa/docs/current/api/org/springframework/data/jpa/repository/support/JpaRepositoryFactory.html)를 사용하여 각 리포지토리 인터페이스의 구현체를 생성함
 - JpaRepositoryFactory는 기본적으로 SimpleJpaRepository를 생성함
 
-프록시 객체와 SimpleJpaRepository
-- 생성된 프록시 객체는 SimpleJpaRepository의 인스턴스를 호출하도록 구성됨
-- 개발자가 사용자 정의 리포지토리 메서드를 호출할 때, 이 호출은 프록시 객체에 의해 가로채어지며 SimpleJpaRepository의 해당 메서드로 위임됨
+#### 4. 의존성 주입과 프록시의 SimpleJpaRepository 호출 위임
 
-의존성 주입
-- `@Autowired`같은 의존성 주입 방식으로 리포지토리 인터페이스를 주입받을 때, 실제로 주입되는 건 이 리포지토리의 프록시 객체임
-- 메서드를 호출하면, 프록시 객체가 받아서 SimpleJpaRepository의 인스턴스로 위임함
+- ```java
+  @Service
+  @Transactional
+  public class UserService {
+    
+    private final UserRepository userRepository;
+    
+    public UserService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+  }
+  ```
+- 위의 UserRepository 타입의 객체를 스프링 IoC 컨테이너에게 주입받을 때 2단계에서 스프링 빈으로 등록된 UserRepository 타입의 프록시 객체가 주입됨
+- UserRepository의 메서드를 호출하면, 프록시 객체가 받아서 DB와의 상호작용을 수행함
 
-### 코드 분석
+### SimpleJpaRepository 코드 분석
 
 #### 필드
 
@@ -200,8 +217,11 @@ SimpleJpaRepository의 모든 필드
 @Transactional(readOnly = true)
 public class SimpleJpaRepository<T, ID> implements JpaRepositoryImplementation<T, ID> {
     private static final String ID_MUST_NOT_BE_NULL = "The given id must not be null";
-
-    private final JpaEntityInformation<T, ?> entityInformation;
+    
+    // 해당 SimpleJpaRepository가 취급하는 JPA 엔티티에 대한 메타데이터 정보를 관리함
+    private final JpaEntityInformation<T, ?> entityInformation ;
+    
+    // 
     private final EntityManager entityManager;
     private final PersistenceProvider provider;
 
@@ -224,8 +244,8 @@ JPA 엔티티에 대한 메타데이터 정보를 관리하는 역할을 하는 
 주요 기능
 
 - 엔티티 메타데이터 접근
-    - 엔티티의 클래스 타입, ID 속성, 버전 속성
-    - 이런 메타데이터는 데이터 접근 계층에서 엔티티와 상호작용할 때 필요함
+  - 데이터 접근 계층에서 엔티티와 상호작용할 때 사용하는 정보
+  - 엔티티의 클래스 타입, ID 속성, 버전 속성
 - 엔티티 ID 정보 제공
     - 엔티티의 식별자 필드(기본 키)에 대한 정보 제공
     - ID 필드 이름, 타입, 값 등
@@ -249,12 +269,11 @@ public boolean isNew(T entity) {
 
     /*
         1. 버전 속성 존재 여부와 원시 타입 검사
-    
-        versionAttribute는 JPA 엔티티의 버전 속성을 나타내는 Optional 객체임
-        버전 속성은 엔티티의 상태 관리를 위해 사용됨 (엔티티 병합 충돌 감지용)
-        만약 엔티티에 버전 속성이 없어서 versionAttribute 비어있다면 부모 클래스(AbstractEntityInformation)의 isNew 호출
         
-        버전 속성이 존재하지만, 해당 데이터 타입이 원시 타입(primitive type)인 경우에도 호출
+        JPA 엔티티의 버전 속성(versionAttribute)은 엔티티 병합(merge) 충돌 감지용으로 사용되는 Optional 객체임
+        
+        만약 엔티티에 버전 속성이 없거나(versionAttribute.isEmpty()) 
+        버전 속성이 존재하지만, 해당 데이터 타입이 원시 타입(primitive type)인 경우 부모 클래스(AbstractEntityInformation)의 isNew()를 호출함
      */
     if (versionAttribute.isEmpty()
             || versionAttribute.map(Attribute::getJavaType).map(Class::isPrimitive).orElse(false)) {
@@ -264,8 +283,7 @@ public boolean isNew(T entity) {
     /*
         2. 버전 속성 존재 시 null 검사
         
-        DirectFieldAccessFallbackBeanWrapper는 Spring의 BeanWrapper 인터페이스 구현체로
-        객체의 필드에 직접 접근하여 값을 읽고 쓸 수 있게 함
+        DirectFieldAccessFallbackBeanWrapper는 Spring의 BeanWrapper 인터페이스 구현체로 객체의 필드에 직접 접근하여 값을 읽고 쓸 수 있게 함
         엔티티 객체의 속성 값을 읽어오기 위해 사용함
      */
     BeanWrapper wrapper = new DirectFieldAccessFallbackBeanWrapper(entity);
@@ -285,16 +303,17 @@ public abstract class AbstractEntityInformation<T, ID> implements EntityInformat
 
     public boolean isNew(T entity) {
 
-        // 엔티티 객체의 식별자 필드(ID)와 필드 타입 추출
+        // 엔티티 객체의 식별자 필드(ID)와 식별자 필드의 타입을 추출함
         ID id = getId(entity);
         Class<ID> idType = getIdType();
 
-        // 해당 필드가 객체 타입인 경우 null 여부에 따라 새로 생성된 엔티티인지 판단
+        // 해당 필드가 객체 타입이라면 식별자 필드의 값이 null인 경우에 새 엔티티로 판단함
+        // getId(entity)에서 null이 아닌 값을 반환하면 실제로는 새 엔티티(아직 DB 저장 X)라고 하더라도 이미 존재하는 엔티티라고 판단함
         if (!idType.isPrimitive()) {
             return id == null;
         }
 
-        // Number 타입인 경우 값이 0인지에 따라 새소 생성된 엔티티인지 판단
+        // ID 필드가 Number 타입인 경우 값이 0인지에 따라 새소 생성된 엔티티인지 판단
         if (id instanceof Number) {
             return ((Number) id).longValue() == 0L;
         }
@@ -304,7 +323,8 @@ public abstract class AbstractEntityInformation<T, ID> implements EntityInformat
 }
 ```
 
-SimpleJpaRepository의 JpaEntityInformation 필드 사용
+###### SimpleJpaRepository의 JpaEntityInformation 필드 사용
+
 - JPA 연산(save, delete) 등을 수행할 때 엔티티 상태와 메타데이터를 확인하기 위해 사용함
 - ```java
   @Override
@@ -317,7 +337,13 @@ SimpleJpaRepository의 JpaEntityInformation 필드 사용
       if (entityInformation.isNew(entity)) {
           entityManager.persist(entity);
           return entity;
-      } else { // 기존 엔티티인 경우 merge를 호출하여 병합
+      } else { 
+          // 기존 엔티티인 경우 merge를 호출하여 병합
+          /* 
+            주의점
+          - JpaEntityInformation의 isNew는 엔티티의 식별자 필드가 객체 타입인 경우 null 여부로 새 엔티티인지 판단함
+          - 새 엔티티임에도 불구하고 getId(entity)에서 null을 반환하지 않는다면 merge(entity)를 호출함
+          */ 
           return entityManager.merge(entity);
       }
   }
@@ -326,11 +352,32 @@ SimpleJpaRepository의 JpaEntityInformation 필드 사용
 
 ##### EntityManager entityManager
 
-JPA는 자바 진영의 표준 퍼시스턴스 API 명세이고 스프링 데이터 JPA는 스프링 환경에서 JPA를 보다 쉽게 사용할 수 있도록 추상화한 스프링 데이터 하위 모듈임
+JPA는 자바 진영의 표준 퍼시스턴스 API 명세이고 실제 구현은  Hibernate ORM이나 EcliipseLink 등의 JPA 프로바이더가 제공함
 
-이런 추상화에 대한 실제 구현은 Hibernate나 EclipseLink 등과 같은 JPA 프로바이더가 담당함(스프링 데이터 JPA의 기본 JPA 프로바이더는 Hibernate)
+스프링 데이터 JPA는 스프링 환경에서 JPA를 보다 쉽게 사용할 수 있도록 추상화한 스프링 데이터 하위 모듈로, SimpleJpaRepository는 개발자가 인터페이스만 작성해도 DB와 기본적인 CRUD를 상호작용할 수 있도록 하는 객체임
 
-SimpleJpaRepository는 [EntityManager](./jpa.md#entitymanager)(SessionImpl)를 주입받아서 엔티티 저장/업데이트, JPQL 쿼리 실행, 데이터베이스 트랜잭션 등 데이터베이스와의 상호작용을 수행함
+[EntityManager](./jpa.md#entitymanager)(SessionImpl)는 SimpleJpaRepository 내에서 영속성 컨텍스트와 상호작용을 담당하는 핵심 객체로 엔티티 저장/업데이트, JPQL 쿼리 실행, 트랜잭션 관리 등의 작업을 수행함
+
+SimpleJpaRepository는 두 개의 생성자를 가지고 있는데, 모두 EntityManager를 외부에서 주입받음
+```java
+public SimpleJpaRepository(JpaEntityInformation<T, ?> entityInformation, EntityManager entityManager) {
+
+    Assert.notNull(entityInformation, "JpaEntityInformation must not be null");
+    Assert.notNull(entityManager, "EntityManager must not be null");
+
+    this.entityInformation = entityInformation;
+    this.entityManager = entityManager;
+    this.provider = PersistenceProvider.fromEntityManager(entityManager);
+}
+    
+public SimpleJpaRepository(Class<T> domainClass, EntityManager entityManager) {
+    this(JpaEntityInformationSupport.getEntityInformation(domainClass, entityManager), entityManager);
+}
+```
+
+###### SimpleJpaRepository에게 EntityManager를 주입하는 과정
+
+JpaRepositoryFactory는 
 
 EntityManagerFactory 생성
 - JPA 설정 파일(persistence.xml) 또는 스프링 JPA 설정(Java Config, application.properties)에서 JPA 구현체와 데이터베이스 연결 정보가 설정됨

@@ -1,4 +1,5 @@
 [versions]
+springframework="6.1.14"
 spring-boot = "3.3.5"
 spring-management = "1.1.6"
 spring-modulith = "1.1.2"
@@ -14,6 +15,13 @@ spring-management = { id="io.spring.dependency-management", version.ref= "spring
 
 [libraries]
 # Spring
+springframework-core = { module="org.springframework:spring-core", version.ref="springframework" }
+springframework-context = { module="org.springframework:spring-context", version.ref="springframework" }
+springframework-context-support = { module="org.springframework:spring-context-support", version.ref="springframework"}
+springframework-context-indexer = { module="org.springframework:spring-context-indexer", version.ref="springframework"}
+springframework-beans = { module="org.springframework:spring-beans", version.ref="springframework" }
+springframework-aop = { module="org.springframework:spring-aop", version.ref="springframework" }
+springframework-aspects = { module="org.springframework:spring-aspects", version.ref="springframework" }
 spring-boot = { module="org.springframework.boot:spring-boot-starter"}
 spring-boot-test = { module="org.springframework.boot:spring-boot-starter-test"}
 spring-boot-data-jpa = { module="org.springframework.boot:spring-boot-starter-data-jpa"}
