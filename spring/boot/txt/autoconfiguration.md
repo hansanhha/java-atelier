@@ -40,13 +40,13 @@ IDE나 [spring initializr](https://start.spring.io)를 통해 스프링 부트 �
 
 이 의존성은 단순한 jar 파일로 스프링 부트 자동 구성에 대한 모든 것을 담고 있는데
 
-`@AutoConfiguration` 빈들은 `org.springframework.boot:spring-boot-autoconfigure` jar 파일의 `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports` 파일에 명시되어 있음
+실질적으로 자동 구성을 담당하는 빈들은 `@AutoConfiguration` 적용된 클래스로, `org.springframework.boot:spring-boot-autoconfigure` jar 파일의 `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports` 파일에 명시되어 있음
 
-스프링 부트가 구동될 때 마다 이 파일을 읽고, 각 빈들의 조건들(@Conditional)을 평가하여 자동 구성을 이룸
+**스프링 부트가 구동될 때 마다 이 파일을 읽고, 각 빈들의 조건들(@Conditional)을 평가하여 자동 구성을 이룸**
 
 ### 3. 스프링 부트의 @Conditional
 
-`@Conditional`은 스프링 프레임워크에서 제공하는 로우 레벨 어노테이션임
+`@Conditional`은 스프링 프레임워크에서 제공하는 로우 레벨 어노테이션이고
 
 스프링 부트는 개발자가 다양한 조건문을 작성할 수 있도록 추가적인 `@Conditional` 어노테이션을 제공함
 
@@ -64,10 +64,152 @@ IDE나 [spring initializr](https://start.spring.io)를 통해 스프링 부트 �
 
 #### Property Conditions
 
-`@ConditionalOnProperty`
+`@ConditionalOnProperty`: ApplicationContext에 특정 속성이 설정된 경우 true 반환
 
 #### Resource Conditions
 
-`@ConditionalOnResource`
+`@ConditionalOnResource`: ApplicationContext에 특정 리소스가 존재하는 경우 true 반환
 
-## autoconfiguration workflow
+#### Other Conditions
+
+`@ConditionalOnSingleCandidate`: ApplicationContext에 특정 타입의 빈이 존재하거나, 여러 타입이 있더라도 해당 타입의 primary 빈이 설정된 경우 true 반환
+
+### @AutoConfiguration
+
+
+
+```java
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Configuration(proxyBeanMethods = false)
+@AutoConfigureBefore
+@AutoConfigureAfter
+public @interface AutoConfiguration {
+    
+	@AliasFor(annotation = Configuration.class)
+	String value() default "";
+
+    @AliasFor(annotation = AutoConfigureBefore.class, attribute = "value")
+    Class<?>[] before() default {};
+
+	@AliasFor(annotation = AutoConfigureBefore.class, attribute = "name")
+	String[] beforeName() default {};
+    
+	@AliasFor(annotation = AutoConfigureAfter.class, attribute = "value")
+	Class<?>[] after() default {};
+    
+	@AliasFor(annotation = AutoConfigureAfter.class, attribute = "name")
+	String[] afterName() default {};
+
+}
+```
+
+## 소스 코드 분석 (DataSourceAutoConfiguration)
+
+DataSourceAutoConfiguration 클래스는 JDBC의 DataSource 빈과 관련된 설정들을 자동으로 구성해줌
+
+```java
+package org.springframework.boot.autoconfigure.jdbc;
+
+@AutoConfiguration(before = SqlInitializationAutoConfiguration.class)
+@ConditionalOnClass({ DataSource.class, EmbeddedDatabaseType.class })
+@ConditionalOnMissingBean(type = "io.r2dbc.spi.ConnectionFactory")
+@EnableConfigurationProperties(DataSourceProperties.class)
+@Import({ DataSourcePoolMetadataProvidersConfiguration.class, DataSourceCheckpointRestoreConfiguration.class })
+public class DataSourceAutoConfiguration {
+
+	@Configuration(proxyBeanMethods = false)
+	@Conditional(EmbeddedDatabaseCondition.class)
+	@ConditionalOnMissingBean({ DataSource.class, XADataSource.class })
+	@Import(EmbeddedDataSourceConfiguration.class)
+	protected static class EmbeddedDatabaseConfiguration {
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	@Conditional(PooledDataSourceCondition.class)
+	@ConditionalOnMissingBean({ DataSource.class, XADataSource.class })
+	@Import({ DataSourceConfiguration.Hikari.class, DataSourceConfiguration.Tomcat.class,
+			DataSourceConfiguration.Dbcp2.class, DataSourceConfiguration.OracleUcp.class,
+			DataSourceConfiguration.Generic.class, DataSourceJmxConfiguration.class })
+	protected static class PooledDataSourceConfiguration {
+
+		@Bean
+		@ConditionalOnMissingBean(JdbcConnectionDetails.class)
+		PropertiesJdbcConnectionDetails jdbcConnectionDetails(DataSourceProperties properties) {
+			return new PropertiesJdbcConnectionDetails(properties);
+		}
+
+	}
+    
+	static class PooledDataSourceCondition extends AnyNestedCondition {
+
+		PooledDataSourceCondition() {
+			super(ConfigurationPhase.PARSE_CONFIGURATION);
+		}
+
+		@ConditionalOnProperty(prefix = "spring.datasource", name = "type")
+		static class ExplicitType {
+
+		}
+
+		@Conditional(PooledDataSourceAvailableCondition.class)
+		static class PooledDataSourceAvailable {
+
+		}
+
+	}
+    
+	static class PooledDataSourceAvailableCondition extends SpringBootCondition {
+
+		@Override
+		public ConditionOutcome getMatchOutcome(ConditionContext context, AnnotatedTypeMetadata metadata) {
+			ConditionMessage.Builder message = ConditionMessage.forCondition("PooledDataSource");
+			if (DataSourceBuilder.findType(context.getClassLoader()) != null) {
+				return ConditionOutcome.match(message.foundExactly("supported DataSource"));
+			}
+			return ConditionOutcome.noMatch(message.didNotFind("supported DataSource").atAll());
+		}
+
+	}
+    
+	static class EmbeddedDatabaseCondition extends SpringBootCondition {
+
+		private static final String DATASOURCE_URL_PROPERTY = "spring.datasource.url";
+
+		private final SpringBootCondition pooledCondition = new PooledDataSourceCondition();
+
+		@Override
+		public ConditionOutcome getMatchOutcome(ConditionContext context, AnnotatedTypeMetadata metadata) {
+			ConditionMessage.Builder message = ConditionMessage.forCondition("EmbeddedDataSource");
+			if (hasDataSourceUrlProperty(context)) {
+				return ConditionOutcome.noMatch(message.because(DATASOURCE_URL_PROPERTY + " is set"));
+			}
+			if (anyMatches(context, metadata, this.pooledCondition)) {
+				return ConditionOutcome.noMatch(message.foundExactly("supported pooled data source"));
+			}
+			EmbeddedDatabaseType type = EmbeddedDatabaseConnection.get(context.getClassLoader()).getType();
+			if (type == null) {
+				return ConditionOutcome.noMatch(message.didNotFind("embedded database").atAll());
+			}
+			return ConditionOutcome.match(message.found("embedded database").items(type));
+		}
+
+		private boolean hasDataSourceUrlProperty(ConditionContext context) {
+			Environment environment = context.getEnvironment();
+			if (environment.containsProperty(DATASOURCE_URL_PROPERTY)) {
+				try {
+					return StringUtils.hasText(environment.getProperty(DATASOURCE_URL_PROPERTY));
+				}
+				catch (IllegalArgumentException ex) {
+					// Ignore unresolvable placeholder errors
+				}
+			}
+			return false;
+		}
+
+	}
+
+}
+```
