@@ -1,12 +1,19 @@
-[autoconfiguration](#autoconfiguration)
+[autoconfiguration 개요](#autoconfiguration-개요)
 
-[autoconfiguration workflow](#autoconfiguration-workflow)
+[spring.factories](#springfactories)
 
-[참고](https://www.marcobehler.com/guides/spring-boot-autoconfiguration)
+[@AutoConfiguration](#autoconfiguration)
 
-[참고](https://docs.spring.io/spring-boot/reference/features/developing-auto-configuration.html)
+[AutoConfiguration Workflow](#autoconfiguration-workflow)
 
-## autoconfiguration
+[DataSourceAutoConfiguration 소스 코드 분석](#datasourceautoconfiguration-소스-코드-분석)
+
+참고
+- [1](https://www.marcobehler.com/guides/spring-boot-autoconfiguration)
+- [2](https://docs.spring.io/spring-boot/reference/features/developing-auto-configuration.html)
+- [3](https://openai.com/index/chatgpt/)
+
+## autoconfiguration 개요
 
 자동 구성은 스프링 부트의 강력한 장점 중 하나로, 스프링 애플리케이션을 구동하기 위해 개발자가 해야 할 스프링이나 외부 라이브러리 등의 설정을 스프링 부트 차원에서 자동적으로 구성해주는 기능임
 
@@ -74,9 +81,48 @@ IDE나 [spring initializr](https://start.spring.io)를 통해 스프링 부트 �
 
 `@ConditionalOnSingleCandidate`: ApplicationContext에 특정 타입의 빈이 존재하거나, 여러 타입이 있더라도 해당 타입의 primary 빈이 설정된 경우 true 반환
 
-### @AutoConfiguration
+## spring.factories
 
+스프링 프레임워크 내부에서 동적으로 특정 타입을 로딩할 때 이를 팩토리로 정의하고, META-INF/spring.factories 파일을 통해 필요한 클래스를 관리함
+- 팩토리: 특정 타입의 클래스를 생성하거나 제공할 수 있는 클래스를 의미함 (AutoConfiguration 클래스, 이벤트 리스너, 컨버터 등)
+- META-INF/spring.factories 파일은 동적 로딩이 필요한 스프링 jar 파일에 포함될 수 있음
 
+클래스패스의 여러 jar 파일에 있는 META-INF/spring.factories에 지정된 타입에 맞는 클래스를 로딩하는 역할은 `SpringFactoriesLoader` 클래스가 수행함
+
+```text
+# spring-boot-autoconfigure 3.3.5 jar META-INF/spring.factories 파일 일부분
+
+# ApplicationContext Initializers
+org.springframework.context.ApplicationContextInitializer=\
+org.springframework.boot.autoconfigure.SharedMetadataReaderFactoryContextInitializer,\
+org.springframework.boot.autoconfigure.logging.ConditionEvaluationReportLoggingListener
+```
+
+인터페이스나 추상 클래스 타입을 명시하고 인스턴스화할 특정 구현체를 컴마로 구분하여 나열함
+
+위의 경우 ApplicationContextInitializer 인터페이스에 대한 구현체로 SharedMetadataReaderFactoryContextInitializer와 ConditionEvaluationReportLoggingListener를 지정함 
+
+spring.factories를 통해 스프링은 직접적인 코드 참조없이도 동적으로 클래스를 인스턴스화할 수 있음
+
+스프링 팀에서는 유연한 자동 구성 및 로직 중앙화를 위해 @AutoConfiguration을 스프링 3.0부터 새롭게 도입함 
+
+META-INF/spring.factories, META-INF/spring-autoconfigure-metadata.properties, META-INF/spring/org.springframework.autoconfigure.AutoConfiguration.import 파일을 사용함
+
+[참고하면 좋을 내용](https://github.com/spring-projects/spring-boot/issues/29698)
+
+## @AutoConfiguration
+
+스프링 부트 3.0 이전에는 여러 스프링 jar 파일의 META-INF/spring.factories 파일에 자동 구성 클래스를 명시했음
+
+스프링 부트 3.0부터 여러 스프링 모듈에 나뉘어 있던 자동 구성 클래스에 대한 정보를 중앙화 하기 위해 spring autoconfigure 모듈의 META-INF/spring/org.springframework.autoconfigure.AutoConfiguration.import 파일에 모든 자동 구성 클래스 정보를 명시함
+
+@AutoConfiguration 어노테이션은 클래스가 스프링 부트에 의해 자동 구성으로 동작하도록 표시하는 데 사용됨
+
+proxyBeanMethods 속성 값을 false로 지정된 @AutoConfiguration을 메타 어노테이션으로 가지고 있어서  bean 메서드에 대한 프록시 처리를 하지 않음
+
+이 어노테이션이 붙어있으면 spring.factories에 명시하지 않아도 되며 @Conditional 조건문과 결합하여 특정 조건이 충족할 때 스프링 부트가 자동으로 빈 등록 및 초기화 작업을 수행할 수 있게 함
+
+또한 @AutoConfigureBefore과 @AutoConfigureAfter 어노테이션을 통해 구성 클래스의 적용 순서를 지정할 수도 있음
 
 ```java
 @Target(ElementType.TYPE)
@@ -105,16 +151,58 @@ public @interface AutoConfiguration {
 }
 ```
 
-## 소스 코드 분석 (DataSourceAutoConfiguration)
+## AutoConfiguration Workflow
+
+```text
+# spring-boot-autoconfigure 3.3.5 jar META-INF/spring/org.springframework.autoconfigure.AutoConfiguration.imports 파일 일부분
+
+org.springframework.boot.autoconfigure.data.jdbc.JdbcRepositoriesAutoConfiguration
+org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
+org.springframework.boot.autoconfigure.data.rest.RepositoryRestMvcAutoConfiguration
+org.springframework.boot.autoconfigure.data.web.SpringDataWebAutoConfiguration
+```
+
+```java
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Inherited
+@AutoConfigurationPackage
+@Import(AutoConfigurationImportSelector.class)
+public @interface EnableAutoConfiguration {
+    // ...
+}
+
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Inherited
+@Import(AutoConfigurationPackages.Registrar.class)
+public @interface AutoConfigurationPackage {
+    // ...
+}
+```
+
+1. 스프링 부트 애플리케이션 시작 (SpringApplication.run())
+2. @SpringBootApplication의 @EnableAutoConfiguration 어노테이션이 스프링 부트의 자동 구성 로직을 활성화함 (AutoConfigurationImportSelector import 및 @AutoConfigurationPackage)
+3. AutoConfigurationImportSelector 클래스는 AutoConfiguration.imports 파일을 읽어서 자동 구성 클래스를 스캔하고, 자동 구성 클래스마다 적용된 @Conditional 평가 결과에 따라 선택하여 애플리케이션 컨텍스트에 등록
+4. 등록된 자동 구성 클래스들의 @Bean 메서드 수행
+5. 필요한 모든 자동 구성 완료
+
+## DataSourceAutoConfiguration 소스 코드 분석
 
 DataSourceAutoConfiguration 클래스는 JDBC의 DataSource 빈과 관련된 설정들을 자동으로 구성해줌
 
 ```java
 package org.springframework.boot.autoconfigure.jdbc;
 
+// 자동 구성 클래스임을 나타내는 @AutoConfiguration 어노테이션, before 속성을 통해 이 구성 클래스 전에 SqlInitializationAutoConfiguration 클래스가 먼저 평가되어야 함을 나타냄
 @AutoConfiguration(before = SqlInitializationAutoConfiguration.class)
+// 클래스패스에 DataSource 타입과 EmbeddedDataSourceType 타입이 존재하는 경우 true 반환
 @ConditionalOnClass({ DataSource.class, EmbeddedDatabaseType.class })
+// 클래스패스에 지정한 타입의 빈이 없는 경우 true 반환
 @ConditionalOnMissingBean(type = "io.r2dbc.spi.ConnectionFactory")
+
 @EnableConfigurationProperties(DataSourceProperties.class)
 @Import({ DataSourcePoolMetadataProvidersConfiguration.class, DataSourceCheckpointRestoreConfiguration.class })
 public class DataSourceAutoConfiguration {
