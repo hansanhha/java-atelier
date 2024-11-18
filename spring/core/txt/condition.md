@@ -1,3 +1,5 @@
+[스프링 부트 condition](../../boot/txt/condition.md)
+
 특정 조건에 따라 빈을 등록하거나 무시하기 위해 사용되는 스프링에서 제공하는 메커니즘으로
 
 조건 로직을 구현한 Condition 객체와 해당 로직을 적용할 대상을 지정하는 @Conditional 어노테이션으로 구성됨
