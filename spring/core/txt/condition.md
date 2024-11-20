@@ -1,4 +1,11 @@
-[스프링 부트 condition](../../boot/txt/condition.md)
+[Spring Condition](#spring-condition)
+
+[Spring ConfigurationCondition](#spring-configurationcondition)
+
+[Spring Boot condition](../../boot/txt/condition.md)
+
+
+## Spring Condition
 
 특정 조건에 따라 빈을 등록하거나 무시하기 위해 사용되는 스프링에서 제공하는 메커니즘으로
 
@@ -93,3 +100,25 @@ class ProfileCondition implements Condition {
 ```
 
 [간단한 예제](../src/main/java/com/hansanhha/spring/core/condition/SimpleConfiguration.java)
+
+## Spring ConfigurationCondition
+
+스프링이 애플리케이션 컨텍스트를 설정하는 과정 중 특정 구성 단계(configuration phase)에서 condition을 적용하고자 할 때 사용하는 인터페이스임
+
+조건이 평가될 수 있는 시점은 다음과 같음
+- PARSE_CONFIGURATION: @Configuration 클래스가 파싱되는 시점에 조건 평가, 이 시점에 매치되지 않으면 컨텍스트에 추가되지 않음
+- REGISTER_BEAN: @Configuration 클래스를 제외한 다른 방법으로 빈이 추가되는 시점에 조건 평가, @Configuration 클래스가 스프링 빈으로 등록된 이후의 시점
+
+```java
+public interface ConfigurationCondition extends Condition {
+
+    ConfigurationPhase getConfigurationPhase();
+    
+    enum ConfigurationPhase {
+        
+        PARSE_CONFIGURATION,
+        
+        REGISTER_BEAN
+    }
+}
+```
