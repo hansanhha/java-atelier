@@ -4,7 +4,9 @@
 
 [@AutoConfiguration](#autoconfiguration)
 
-[AutoConfiguration Workflow](#autoconfiguration-workflow)
+[@EnableAutoConfiguration](#enableautoconfiguration)
+
+[Spring Boot AutoConfiguration Workflow](#spring-boot-autoconfiguration-workflow)
 
 [DataSourceAutoConfiguration 소스 코드 분석](#datasourceautoconfiguration-소스-코드-분석)
 
@@ -12,6 +14,7 @@
 - [1](https://www.marcobehler.com/guides/spring-boot-autoconfiguration)
 - [2](https://docs.spring.io/spring-boot/reference/features/developing-auto-configuration.html)
 - [3](https://openai.com/index/chatgpt/)
+- 주석
 
 ## autoconfiguration 개요
 
@@ -27,11 +30,13 @@ public class BootApplication {
 }
 ```
 
-IDE나 [spring initializr](https://start.spring.io)를 통해 스프링 부트 애플리케이션을 만들면 위와 같은 main 메서드가 자동으로 생성되는데, 
+IDE나 [spring initializr](https://start.spring.io)를 통해 스프링 부트 애플리케이션을 만들면 위와 같은 클래스와 main 메서드가 자동으로 생성되는데, 
 
-이를 실행하면 스프링 부트는 `@AucoConfiguration` 어노테이션이 붙은 빈들을 통해 자동 구성 기능을 실행함
+`@SpringBootApplication` 어노테이션은 `@EnableAutoConfiguration`을 메타 어노테이션을 가지고 있음
 
-또한 유연한 구성을 할 수 있도록 3가지 기능을 제공함
+`@EnableAutoConfiguration` 어노테이션이 스프링 부트의 자동 구성을 활성화하는 역할을 함   
+
+스프링 부트 애플리케이션을 실행하면 스프링 부트는 `@AucoConfiguration` 어노테이션이 붙은 클래스들을 통해 자동 구성 기능을 실행하는데, 사용자가 유연한 구성(Configuration)을 할 수 있도록 3가지 기능을 제공함
 
 ### 1. @PropertySource 자동 등록
 
@@ -53,33 +58,7 @@ IDE나 [spring initializr](https://start.spring.io)를 통해 스프링 부트 �
 
 ### 3. 스프링 부트의 @Conditional
 
-`@Conditional`은 스프링 프레임워크에서 제공하는 로우 레벨 어노테이션이고
-
-스프링 부트는 개발자가 다양한 조건문을 작성할 수 있도록 추가적인 `@Conditional` 어노테이션을 제공함
-
-#### Class Conditions
-
-`@ConditionalOnClass`: 클래스 패스에 지정한 클래스가 있는 경우 true 반환
-
-`@ConditionalOnMissingClass`: 클래스 패스에 지정한 클래스가 없는 경우 true 반환
-
-#### Bean Conditions
-
-`@ConditionalOnBean`: ApplicationContext에 지정한 타입의 빈이 이미 있는 경우 true 반환
-
-`@ConditionalOnMissingBean`ApplicationContext에 지정한 타입의 빈이 아직 없는 경우 true 반환
-
-#### Property Conditions
-
-`@ConditionalOnProperty`: ApplicationContext에 특정 속성이 설정된 경우 true 반환
-
-#### Resource Conditions
-
-`@ConditionalOnResource`: ApplicationContext에 특정 리소스가 존재하는 경우 true 반환
-
-#### Other Conditions
-
-`@ConditionalOnSingleCandidate`: ApplicationContext에 특정 타입의 빈이 존재하거나, 여러 타입이 있더라도 해당 타입의 primary 빈이 설정된 경우 true 반환
+[스프링 부트 condition](./condition.md)
 
 ## spring.factories
 
@@ -151,16 +130,7 @@ public @interface AutoConfiguration {
 }
 ```
 
-## AutoConfiguration Workflow
-
-```text
-# spring-boot-autoconfigure 3.3.5 jar META-INF/spring/org.springframework.autoconfigure.AutoConfiguration.imports 파일 일부분
-
-org.springframework.boot.autoconfigure.data.jdbc.JdbcRepositoriesAutoConfiguration
-org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
-org.springframework.boot.autoconfigure.data.rest.RepositoryRestMvcAutoConfiguration
-org.springframework.boot.autoconfigure.data.web.SpringDataWebAutoConfiguration
-```
+## @EnableAutoConfiguration
 
 ```java
 @Target(ElementType.TYPE)
@@ -183,10 +153,31 @@ public @interface AutoConfigurationPackage {
 }
 ```
 
-1. 스프링 부트 애플리케이션 시작 (SpringApplication.run())
-2. @SpringBootApplication의 @EnableAutoConfiguration 어노테이션이 스프링 부트의 자동 구성 로직을 활성화함 (AutoConfigurationImportSelector import 및 @AutoConfigurationPackage)
+`@EnableAutoConfiguration` 어노테이션은 @SpringBootApplication 어노테이션에 선언되어 있는 어노테이션으로 스프링 부트 자동 구성을 활성화 하기 위해 사용됨
+
+스프링 부트 애플리케이션이 실행되면 클래스패스 상의 라이브러리를 감지하여 적절한 스프링 빈 설정을 자동으로 적용함
+
+메타 어노테이션으로 선언된 `AutoConfigurationPackage` 어노테이션을 통해 애플리케이션의 기본 패키지(컴포넌트 스캔 대상)를 자동 구성의 스캔 대상에 포함시킴
+
+또한 AutoConfigurationImportSelector 클래스를 import해서 META-INF/spring/AutoConfiguration.imports 파일에 나열된 @AutoConfiguration 클래스들을 로드함
+
+자동 구성 클래스는 `@ConditionalOnClass`, `@ConditionalOnProperty` 같은 어노테이션을 통해 클래스패스나 애플리케이션 컨텍스트, 프로퍼티 등에 따라 활성화/비활성화됨
+
+## Spring Boot AutoConfiguration Workflow
+
+```text
+# spring-boot-autoconfigure 3.3.5 jar META-INF/spring/org.springframework.autoconfigure.AutoConfiguration.imports 파일 일부분
+
+org.springframework.boot.autoconfigure.data.jdbc.JdbcRepositoriesAutoConfiguration
+org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
+org.springframework.boot.autoconfigure.data.rest.RepositoryRestMvcAutoConfiguration
+org.springframework.boot.autoconfigure.data.web.SpringDataWebAutoConfiguration
+```
+
+1. 스프링 부트 애플리케이션 시작 `SpringApplication.run()`
+2. `@SpringBootApplication`의 `@EnableAutoConfiguration` 어노테이션이 스프링 부트의 자동 구성 로직을 활성화함 (AutoConfigurationImportSelector import 및 @AutoConfigurationPackage)
 3. AutoConfigurationImportSelector 클래스는 AutoConfiguration.imports 파일을 읽어서 자동 구성 클래스를 스캔하고, 자동 구성 클래스마다 적용된 @Conditional 평가 결과에 따라 선택하여 애플리케이션 컨텍스트에 등록
-4. 등록된 자동 구성 클래스들의 @Bean 메서드 수행
+4. 등록된 자동 구성 클래스들의 @Bean 메서드 수행 (마찬가지로 @Conditional 평가에 따라 애플리케이션 등록 여부 결정)
 5. 필요한 모든 자동 구성 완료
 
 ## DataSourceAutoConfiguration 소스 코드 분석
@@ -196,17 +187,31 @@ DataSourceAutoConfiguration 클래스는 JDBC의 DataSource 빈과 관련된 설
 ```java
 package org.springframework.boot.autoconfigure.jdbc;
 
-// 자동 구성 클래스임을 나타내는 @AutoConfiguration 어노테이션, before 속성을 통해 이 구성 클래스 전에 SqlInitializationAutoConfiguration 클래스가 먼저 평가되어야 함을 나타냄
+// 자동 구성 클래스임을 나타냄, before 속성을 통해 SqlInitializationAutoConfiguration 클래스가 먼저 자동 구성이 이뤄져야 함을 나타냄
 @AutoConfiguration(before = SqlInitializationAutoConfiguration.class)
-// 클래스패스에 DataSource 타입과 EmbeddedDataSourceType 타입이 존재하는 경우 true 반환
+// 클래스패스에 DataSource 타입과 EmbeddedDataSourceType 타입이 존재하는 경우
+// JDBC 관련 의존성 추가 시 DataSource와 EmbeddedDatabaseType(spring jdbc 모듈) 타입이 클래스패스에 추가됨
 @ConditionalOnClass({ DataSource.class, EmbeddedDatabaseType.class })
-// 클래스패스에 지정한 타입의 빈이 없는 경우 true 반환
+// 클래스패스에 지정한 타입의 빈이 없는 경우
+// ConnectionFactory가 있는 경우 R2DBC 환경으로 판단하므로 JDBC 자동 구성 설정을 하지 않음
 @ConditionalOnMissingBean(type = "io.r2dbc.spi.ConnectionFactory")
-
+// 데이터베이스 설정 값을 가진 DataSourceProperties 클래스 스프링 빈 등록
 @EnableConfigurationProperties(DataSourceProperties.class)
+// DataSourcePoolMetadataProvidersConfiguration: 데이터 소스 풀 메타데이터 관리 구성 클래스
+// DataSourceCheckpointRestoreConfiguration: 체크포인트 관리 구성 클래스(스냅샷 관리 등)
 @Import({ DataSourcePoolMetadataProvidersConfiguration.class, DataSourceCheckpointRestoreConfiguration.class })
 public class DataSourceAutoConfiguration {
 
+    /*
+        JDBC 관련 의존성을 추가했으나 개발자 데이터베이스 관련 설정을 별도로 하지 않은 경우
+        스프링 부트는 임베디드 데이터베이스 구성 클래스를 스프링 빈으로 등록하여 인메모리 데이터베이스를 임시로 사용할 수 있게 함
+        
+        다음의 조건들을 만족해야 인메모리 데이터베이스 구성 클래스가 로드됨
+        1. 내부 클래스인 EmbeddedDatabaseCondition 조건 부합
+        2. DataSource와 XADataSource 타입의 스프링 빈이 없는 경우 (개발자가 별도로 스프링 빈 등록을 하지 않은 경우)
+        
+        조건에 부합한다면 EmbeddedDataSourceConfiguration 클래스를 애플리케이션 컨텍스트에 로드함
+     */
 	@Configuration(proxyBeanMethods = false)
 	@Conditional(EmbeddedDatabaseCondition.class)
 	@ConditionalOnMissingBean({ DataSource.class, XADataSource.class })
@@ -230,6 +235,7 @@ public class DataSourceAutoConfiguration {
 		}
 
 	}
+    
     
 	static class PooledDataSourceCondition extends AnyNestedCondition {
 
@@ -262,6 +268,7 @@ public class DataSourceAutoConfiguration {
 
 	}
     
+    // 임베디드 데이터베이스가 필요한지 파악하는 Condition
 	static class EmbeddedDatabaseCondition extends SpringBootCondition {
 
 		private static final String DATASOURCE_URL_PROPERTY = "spring.datasource.url";
@@ -271,9 +278,12 @@ public class DataSourceAutoConfiguration {
 		@Override
 		public ConditionOutcome getMatchOutcome(ConditionContext context, AnnotatedTypeMetadata metadata) {
 			ConditionMessage.Builder message = ConditionMessage.forCondition("EmbeddedDataSource");
+            
+            // 데이터베이스 URL 프로퍼티를 설정한 경우 임베디드 데이터베이스가 필요없다고 판단 
 			if (hasDataSourceUrlProperty(context)) {
 				return ConditionOutcome.noMatch(message.because(DATASOURCE_URL_PROPERTY + " is set"));
 			}
+            // 
 			if (anyMatches(context, metadata, this.pooledCondition)) {
 				return ConditionOutcome.noMatch(message.foundExactly("supported pooled data source"));
 			}
@@ -284,6 +294,7 @@ public class DataSourceAutoConfiguration {
 			return ConditionOutcome.match(message.found("embedded database").items(type));
 		}
 
+        // 개발자가 데이터베이스 URL 프로퍼티를 설정한 경우 true 반환
 		private boolean hasDataSourceUrlProperty(ConditionContext context) {
 			Environment environment = context.getEnvironment();
 			if (environment.containsProperty(DATASOURCE_URL_PROPERTY)) {
