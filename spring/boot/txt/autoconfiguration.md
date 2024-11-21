@@ -4,7 +4,7 @@
 
 [@AutoConfiguration](#autoconfiguration)
 
-[@EnableAutoConfiguration](#enableautoconfiguration)
+[@EnableAutoConfiguration, AutoConfigurationPackage](#enableautoconfiguration-autoconfigurationpackage)
 
 [Spring Boot AutoConfiguration Workflow](#spring-boot-autoconfiguration-workflow)
 
@@ -130,7 +130,7 @@ public @interface AutoConfiguration {
 }
 ```
 
-## @EnableAutoConfiguration
+## @EnableAutoConfiguration, AutoConfigurationPackage
 
 ```java
 @Target(ElementType.TYPE)
@@ -189,29 +189,42 @@ package org.springframework.boot.autoconfigure.jdbc;
 
 // 자동 구성 클래스임을 나타냄, before 속성을 통해 SqlInitializationAutoConfiguration 클래스가 먼저 자동 구성이 이뤄져야 함을 나타냄
 @AutoConfiguration(before = SqlInitializationAutoConfiguration.class)
+
 // 클래스패스에 DataSource 타입과 EmbeddedDataSourceType 타입이 존재하는 경우
 // JDBC 관련 의존성 추가 시 DataSource와 EmbeddedDatabaseType(spring jdbc 모듈) 타입이 클래스패스에 추가됨
 @ConditionalOnClass({ DataSource.class, EmbeddedDatabaseType.class })
+
 // 클래스패스에 지정한 타입의 빈이 없는 경우
 // ConnectionFactory가 있는 경우 R2DBC 환경으로 판단하므로 JDBC 자동 구성 설정을 하지 않음
 @ConditionalOnMissingBean(type = "io.r2dbc.spi.ConnectionFactory")
+
 // 데이터베이스 설정 값을 가진 DataSourceProperties 클래스 스프링 빈 등록
 @EnableConfigurationProperties(DataSourceProperties.class)
+
 // DataSourcePoolMetadataProvidersConfiguration: 데이터 소스 풀 메타데이터 관리 구성 클래스
 // DataSourceCheckpointRestoreConfiguration: 체크포인트 관리 구성 클래스(스냅샷 관리 등)
 @Import({ DataSourcePoolMetadataProvidersConfiguration.class, DataSourceCheckpointRestoreConfiguration.class })
+
+
+// DataSourceAutoConfiguration 클래스는 프로퍼티 설정과 클래스패스의 라이브러리를 자동 탐지하여 
+// 임베디드 데이터베이스 또는 커넥션 풀 데이터소스를 구성함 
 public class DataSourceAutoConfiguration {
 
     /*
-        JDBC 관련 의존성을 추가했으나 개발자 데이터베이스 관련 설정을 별도로 하지 않은 경우
+        임베디드 데이터베이스 구성 클래스 
+        
+        JDBC 관련 의존성을 추가했으나 개발자가 데이터베이스 관련 설정을 별도로 하지 않은 경우
         스프링 부트는 임베디드 데이터베이스 구성 클래스를 스프링 빈으로 등록하여 인메모리 데이터베이스를 임시로 사용할 수 있게 함
         
-        다음의 조건들을 만족해야 인메모리 데이터베이스 구성 클래스가 로드됨
-        1. 내부 클래스인 EmbeddedDatabaseCondition 조건 부합
+        다음의 조건(@Conditional)들을 만족하면 인메모리 데이터베이스를 구성함
+        1. EmbeddedDatabaseCondition 조건 부합 (모두 만족하면 조건 부합)
+            - 데이터베이스 프로퍼티 설정 X
+            - 데이터소스 풀 관련 설정 및 라이브러리 X
+            - 임베디드 데이터베이스 라이브러리가 클래스패스에 있는 경우
         2. DataSource와 XADataSource 타입의 스프링 빈이 없는 경우 (개발자가 별도로 스프링 빈 등록을 하지 않은 경우)
         
         조건에 부합한다면 EmbeddedDataSourceConfiguration 클래스를 애플리케이션 컨텍스트에 로드함
-     */
+    */
 	@Configuration(proxyBeanMethods = false)
 	@Conditional(EmbeddedDatabaseCondition.class)
 	@ConditionalOnMissingBean({ DataSource.class, XADataSource.class })
@@ -220,6 +233,18 @@ public class DataSourceAutoConfiguration {
 
 	}
 
+    /*
+        커넥션 풀(HikaryCP, DBCP2 등) 데이터소스 구성 클래스
+        
+        다음의 조건(@Conditional)들을 만족하면 자동으로 커넥션 풀 데이터 소스를 구성함
+        1. PooledDataSourceCondition 조건 부합(둘 중 하나라도 만족하면 조건 부합)
+            - 명시적인 데이터 소스 타입(HikariCP 등) 지정
+            - 데이터소스 풀 라이브러리가 클래스패스에 있는 경우
+        2. DataSource와 XADataSource 타입의 스프링 빈이 없는 경우 (클래스패스에 라이브러리가 있으나, 개발자가 별도로 스프링 빈 등록을 하지 않은 경우)
+        
+        조건에 부합한다면 DataSourceConfiguration 하위 클래스들을 애플리케이션 컨텍스트에 로드함
+        @Import에 명시된 클래스들을 로드할 때 하위 클래스에 적용된 @Conditional 조건을 통해 필터링함
+     */
 	@Configuration(proxyBeanMethods = false)
 	@Conditional(PooledDataSourceCondition.class)
 	@ConditionalOnMissingBean({ DataSource.class, XADataSource.class })
@@ -228,6 +253,15 @@ public class DataSourceAutoConfiguration {
 			DataSourceConfiguration.Generic.class, DataSourceJmxConfiguration.class })
 	protected static class PooledDataSourceConfiguration {
 
+        /*
+            JdbcConnectionDetails 타입의 스프링 빈이 없는 경우  PropertiesJdbcConnectionDetails를 스프링 빈으로 등록함
+            
+            PropertiesJdbcConnectionDetails는 DataSourceProperties(데이터소스 관련 속성 - url, username 등)을 기반으로 한
+            데이터 소스 자동 구성을 위한 기본적인 연결(connection) 세부 사항을 설정하는 데 사용됨
+            
+            동적으로 연결 정보(환경 변수, 외부 시스템 API 등)를 구성해야 될 경우 JdbcConnectionDetails 빈을 정의하게 됨
+            사용자가 명시적으로 JdbcConnectionDetails 빈을 정의하지 않는 이상 스프링 부트가 데이터 소스 연결 정보를 자동 탐지함
+         */
 		@Bean
 		@ConditionalOnMissingBean(JdbcConnectionDetails.class)
 		PropertiesJdbcConnectionDetails jdbcConnectionDetails(DataSourceProperties properties) {
@@ -235,19 +269,76 @@ public class DataSourceAutoConfiguration {
 		}
 
 	}
+
+    // 임베디드 데이터베이스가 필요한지 결정하는 조건
+    static class EmbeddedDatabaseCondition extends SpringBootCondition {
+
+        private static final String DATASOURCE_URL_PROPERTY = "spring.datasource.url";
+
+        private final SpringBootCondition pooledCondition = new PooledDataSourceCondition();
+
+        @Override
+        public ConditionOutcome getMatchOutcome(ConditionContext context, AnnotatedTypeMetadata metadata) {
+            ConditionMessage.Builder message = ConditionMessage.forCondition("EmbeddedDataSource");
+
+            // 데이터베이스 URL 프로퍼티를 설정한 경우 임베디드 데이터베이스가 필요없다고 판단 (명시적 설정 확인)
+            if (hasDataSourceUrlProperty(context)) {
+                return ConditionOutcome.noMatch(message.because(DATASOURCE_URL_PROPERTY + " is set"));
+            }
+            
+            // PooledDataSourceCondition에 명시된 조건 중 매치되는 조건이 있는 경우 임베디드 데이터베이스가 필요없다고 판단
+            if (anyMatches(context, metadata, this.pooledCondition)) {
+                return ConditionOutcome.noMatch(message.foundExactly("supported pooled data source"));
+            }
+            
+            // 클래스 패스에 임베디드 데이터베이스 라이브러리(H2, HSQL, DERBY)를 가져옴 (자동 탐지)
+            
+            EmbeddedDatabaseType type = EmbeddedDatabaseConnection.get(context.getClassLoader()).getType();
+            
+            // 없는 경우 임베디드 데이터베이스가 필요없다고 판단
+            if (type == null) {
+                return ConditionOutcome.noMatch(message.didNotFind("embedded database").atAll());
+            }
+            
+            // 데이터베이스 프로퍼티 설정 X, 데이터소스 풀 관련 설정 및 라이브러리 X, 
+            // 임베디드 데이터베이스 라이브러리가 클래스패스에 있는 경우 임베디드 데이터베이스 구성이 필요하다고 판단
+            return ConditionOutcome.match(message.found("embedded database").items(type));
+        }
+
+        // 개발자가 데이터베이스 URL 프로퍼티를 설정한 경우 true 반환
+        private boolean hasDataSourceUrlProperty(ConditionContext context) {
+            Environment environment = context.getEnvironment();
+            if (environment.containsProperty(DATASOURCE_URL_PROPERTY)) {
+                try {
+                    return StringUtils.hasText(environment.getProperty(DATASOURCE_URL_PROPERTY));
+                }
+                catch (IllegalArgumentException ex) {
+                    // Ignore unresolvable placeholder errors
+                }
+            }
+            return false;
+        }
+
+    }
     
-    
+    // 커넥션 풀 데이터소스가 있는지 결정하는 조건
+    // AnyNestedCondition 구현체로, 멤버 클래스 중 하나라도 조건을 만족하면 조건에 충족되는 것으로 판단함
+    // 명시적인 데이터 소스 타입을 지정하거나, 데이터소스 풀 라이브러리가 클래스패스에 있는 경우
 	static class PooledDataSourceCondition extends AnyNestedCondition {
 
 		PooledDataSourceCondition() {
 			super(ConfigurationPhase.PARSE_CONFIGURATION);
 		}
 
+        // spring.datasource.type 프로퍼티가 설정되어 있는 경우 조건 충족 (명시적 설정 확인)
+        // type 속성은 데이터 소스 타입을 지정함(HikaryCP, Tomcap Pool 등)
 		@ConditionalOnProperty(prefix = "spring.datasource", name = "type")
 		static class ExplicitType {
 
 		}
 
+        // PooledDataSourceAvailableCondition 클래스에 정의된 조건을 기반으로 조건 충족 여부 결정 (자동 탐지)
+        // 데이터소스 풀 라이브러리가 클래스패스에 존재하는 경우 조건 충족
 		@Conditional(PooledDataSourceAvailableCondition.class)
 		static class PooledDataSourceAvailable {
 
@@ -255,57 +346,20 @@ public class DataSourceAutoConfiguration {
 
 	}
     
+    // 데이터소스 풀 라이브러리가 클래스패스에 존재하는 경우 조건 충족
 	static class PooledDataSourceAvailableCondition extends SpringBootCondition {
 
 		@Override
 		public ConditionOutcome getMatchOutcome(ConditionContext context, AnnotatedTypeMetadata metadata) {
 			ConditionMessage.Builder message = ConditionMessage.forCondition("PooledDataSource");
+            
+            // 데이터소스 풀 라이브러리가 있는 경우 충족되는 것으로 결과 반환
 			if (DataSourceBuilder.findType(context.getClassLoader()) != null) {
 				return ConditionOutcome.match(message.foundExactly("supported DataSource"));
 			}
-			return ConditionOutcome.noMatch(message.didNotFind("supported DataSource").atAll());
-		}
-
-	}
-    
-    // 임베디드 데이터베이스가 필요한지 파악하는 Condition
-	static class EmbeddedDatabaseCondition extends SpringBootCondition {
-
-		private static final String DATASOURCE_URL_PROPERTY = "spring.datasource.url";
-
-		private final SpringBootCondition pooledCondition = new PooledDataSourceCondition();
-
-		@Override
-		public ConditionOutcome getMatchOutcome(ConditionContext context, AnnotatedTypeMetadata metadata) {
-			ConditionMessage.Builder message = ConditionMessage.forCondition("EmbeddedDataSource");
             
-            // 데이터베이스 URL 프로퍼티를 설정한 경우 임베디드 데이터베이스가 필요없다고 판단 
-			if (hasDataSourceUrlProperty(context)) {
-				return ConditionOutcome.noMatch(message.because(DATASOURCE_URL_PROPERTY + " is set"));
-			}
-            // 
-			if (anyMatches(context, metadata, this.pooledCondition)) {
-				return ConditionOutcome.noMatch(message.foundExactly("supported pooled data source"));
-			}
-			EmbeddedDatabaseType type = EmbeddedDatabaseConnection.get(context.getClassLoader()).getType();
-			if (type == null) {
-				return ConditionOutcome.noMatch(message.didNotFind("embedded database").atAll());
-			}
-			return ConditionOutcome.match(message.found("embedded database").items(type));
-		}
-
-        // 개발자가 데이터베이스 URL 프로퍼티를 설정한 경우 true 반환
-		private boolean hasDataSourceUrlProperty(ConditionContext context) {
-			Environment environment = context.getEnvironment();
-			if (environment.containsProperty(DATASOURCE_URL_PROPERTY)) {
-				try {
-					return StringUtils.hasText(environment.getProperty(DATASOURCE_URL_PROPERTY));
-				}
-				catch (IllegalArgumentException ex) {
-					// Ignore unresolvable placeholder errors
-				}
-			}
-			return false;
+            // 없는 경우 충족되지 않는 것으로 결과 반환
+			return ConditionOutcome.noMatch(message.didNotFind("supported DataSource").atAll());
 		}
 
 	}
