@@ -17,7 +17,7 @@ Hibernate API는 세 가지 요소로 구성됨
 
 아래의 애플리케이션 코드와 JPA/하이버네이트 ORM 간의 구조를 보면 매핑 어노테이션으로 엔티티 클래스를 나타내고, API를 통해서 퍼시스턴스 작업을 수행함
 
-<img src="../images/hibernate-api-overview.png" alt="hibernate api overview" style="width: 40%; height:40%; border-radius: 10px" />
+<img src="./images/hibernate-api-overview.png" alt="hibernate api overview" style="width: 40%; height:40%; border-radius: 10px" />
 
 [출처](https://docs.jboss.org/hibernate/orm/6.6/introduction/html_single/Hibernate_Introduction.html)
 
@@ -29,7 +29,7 @@ Hibernate API는 세 가지 요소로 구성됨
 
 ## Hibernate Architecture
 
-<img src="../images/hiberate-architecture.png" alt="hibernate architecture" style="border-radius: 10px"/>
+<img src="./images/hiberate-architecture.png" alt="hibernate architecture" style="border-radius: 10px"/>
 
 [출처](https://medium.com/@himani.prasad016/hibernate-architecture-5f78e7e067fe)
 

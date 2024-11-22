@@ -173,7 +173,7 @@ public class SimpleJpaRepository<T, ID> implements JpaRepositoryImplementation<T
 
 #### 1. 스프링 부트의 autoconfiguration
 
-- 스프링 부트 애플리케이션이 시작되면서 spring.factories
+- 스프링 부트 애플리케이션이 구동되면서 
 
 #### 2. 애플리케이션 컨텍스트 초기화에 따른 리포지토리 인터페이스 스캔과 프록시 생성
 
