@@ -4,5 +4,6 @@ plugins {
 
 rootProject.name = "java"
 include("types")
+include("generics")
 include("collection_frameworks")
 include("jdk_tools")
