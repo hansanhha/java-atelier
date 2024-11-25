@@ -1,20 +1,18 @@
 [Generics](#generics)
 
-[Type Erasure](#type-erasure)
-
-[Type Bounds: Covariance, Contravariance, Invariance](#type-bounds-covariance-contravariance-invariance)
-
-[Type Inference](#type-inference)
-
 [Parameterized Types](#parameterized-types)
 
 [Type Variables](#type-variables)
 
 [Generic Method](#generic-method)
 
-[Type Arguments](#type-arguments)
+[Type Erasure](#type-erasure)
 
-[java.lang.reflect.Type](#javalangreflecttype)
+[Type Bounds: Covariance, Contravariance, Invariance](#type-bounds-covariance-contravariance-invariance)
+
+[Type Inference](#type-inference)
+
+[Java Reflection](#java-reflection)
 
 ## Generics
 
@@ -141,6 +139,37 @@ public class WithGenerics {
     }
 }
 ```
+
+## Parameterized Types
+
+#### Generics Type
+
+제네릭 선언된 타입(클래스, 인터페이스)을 **제네릭 타입(Generics Type)**이라고 함
+
+`Box<T>` `Function<T, R>` `BiFunction<T, U, R>` 등
+
+#### Parameterized Type
+
+제네릭 타입을 특정 타입으로 구체화한 것을 **매개변수화된 타입(ParameterizedType)**이라고 함
+
+`Box<String>` `Function<Integer, Boolean>` `BiFunction<String, String, Integer>` 등
+
+## Type Variables
+
+제네릭 타입의 타입 매개변수를 **타입 변수(Type Variables)**라고 함
+
+타입 매개변수는 클래스, 메서드, 인터페이스 정의에 사용되며 컴파일 시 구체적인 타입으로 대체되는 플레이스 홀더 역할을 함
+
+관용적인 기호 표현
+- `T`: Type
+- `S` `U` `V`: 2nd, 3rd, 4th types
+- `E`: Element
+- `K`: Key
+- `V`: Value
+- `N`: Number
+- `R`: Return
+
+## Generic Method
 
 ## Type Erasure
 
@@ -313,19 +342,97 @@ A가 B의 하위 타입이어도 `Foo<A>`는 `Foo<B>`는 서로 아무런 상속
 
 명시적으로 타입 매개변수를 지정하지 않아도 컴파일러가 적절한 타입을 유추하기 때문에 간결하고 가독성 높은 코드를 작성할 수 있음
 
-#### 타입 추론 동작 방식
+### 타입 추론 동작 방식
 
 메서드 호출 시 전달된 인자 값, 반환 타입, 변수 선언 등을 기반으로 제네릭 타입 매개변수 결정
 
 또한 다이아몬드 연산자와 타겟 타입을 이용하여 타입 추론을 수행함
 
-다이아몬드 연산자(Diamond Operator)
-- 
+#### 다이아몬드 연산자(Diamond Operator)
+- 객체 생성 시 제네릭 타입을 생성자에서 생략할 수 있음
+- 좌변의 타입 선언을 통해 컴파일러는 타입 매개변수를 추론함
+- ```java
+  // 좌변의 List<String>을 기반으로 타입 추론에 의해 타입 매개변수 <String> 결정
+  List<String> list = new ArrayList<>(); 
+  ```
 
-## Parameterized Types
+#### 제네릭 메서드 호출
+- 제네릭 메서드의 타입 매개변수는 메서드 호출 시 전달된 인자 값의 타입을 기반으로 추론됨
+- ```java
+  public static <T> T genericMethodTypeInference(T a) {
+        return a;
+  }
+  
+  // 전달된 인자 값의 타입을 기반으로 제네릭 메서드 타입 매개변수 타입 추론
+  String str = genericMethodTypeInference("hello"); // 타입 추론: T는 String으로 결정
+  Integer integer = genericMethodTypeInference(1); // 타입 추론: T는 Integer로 결정
+  boolean bool = genericMethodTypeInference(false); // 타입 추론: T는 Boolean으로 결정
+  ```
 
-## Type Variables
+#### 타겟 타입
 
-## Generic Method
+타겟 타입은 표현식의 결과가 사용되는 문맥을 기반으로 컴파일러가 기대하는 타입을 추론하는 기능으로
 
-## `java.lang.reflect.Type`
+표현식이 사용될 위치의 타입(Contextual Type)으로 정의됨
+
+컴파일러는 해당 표현식이 올바른 타입인지 검사하기 위해 타겟 타입을 참조함
+
+타겟 타입 적용 예시
+- 변수 할당
+  - 변수의 타입이 명시된 경우 타겟 타입이 변수의 선언된 타입으로 설정됨
+  - ```java
+    // 변수 Comparator<String>을 통해 람다 표현식 (s1, s2)의 매개변수 타입을 String으로 추론
+    Comparator<String> stringComparator = (s1, s2) -> s1.length - s2.length();
+    ```
+- 메서드 호출 인자 (제네릭 메서드 아님)
+  - 메서드의 파라미터 타입이 제네릭이거나, 함수형 인터페이스를 사용하는 경우 인자의 타겟 타입이 메서드의 파라미터 타입으로 결정됨 
+  - ```java
+    // sort 메서드는 Comparator<String>을 요구하므로, (s1, s2)의 타입은 String으로 추론
+    List<String> list = Arrays.asList("one", "two", "three");
+    list.sort((s1, s2) -> s1.compareToIgnoreCase(s2));
+    ```
+- 반환 타입
+  - 타겟 타입이 메서드의 반환 타입에 의해 결정되는 경우
+  - ```java
+    // Callable<Integer>의 call 메서드는 Integer를 반환하므로, 람다 표현식의 결과 타입이 Integer로 추론됨
+    Callable<Integer> callable = () -> 42;
+    ```
+- 삼항 연산자
+  - ```java
+    Integer value = true ? 1 : 2;
+    ```
+
+#### 람다 표현식
+
+람다와 스트림 체인에서 타겟 타입을 통해 컴파일러가 자동으로 타입을 추론함
+
+동작 방식
+- 함수형 인터페이스의 함수 디스크립터(메서드 시그니처) 확인
+- 람다 표현식의 매개변수 타입과 리턴 타입을 타겟 타입에 맞게 추론
+- ```java
+  // Runnable의 run 메서드는 파라미터가 없고 반환 타입이 void임
+  // 람다 표현식과 시그니처 일치
+  Runnable run = () -> System.out.println("Runnable Interface");
+  ```
+- ```java
+  // Predicate<Integer>의 test 메서드는 하나의 Integer 파라미터를 받고, boolean을 리턴함
+  // 람다 표현식과 시그니처 일치
+  Predicate<Integer> p = (i) -> i < 100;
+  ```
+
+## Java Reflection
+
+```java
+public interface Type {
+
+    default String getTypeName() {
+        return toString();
+    }
+}
+```
+
+```java
+
+```
+
+`java.lang.reflect.Type`
