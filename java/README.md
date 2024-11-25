@@ -1,6 +1,5 @@
-[readings](./hint)
+[type](./types)
 
-code
-- [types](./types)
-- [collection frameworks](./collection_frameworks)
-- [jdk tools](./jdk_tools)
+[generics](./generics/txt/generics.md)
+
+[collection frameworks](./collection_frameworks)
