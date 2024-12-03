@@ -9,7 +9,7 @@
 
 ## HibernateJpaAutoConfiguration
 
-HibernateJpaAutoConfiguration는 JPA와 하이버네이트 설정을 처리하고 EntityManagerFactory, TransactionManager 등을 자동 구성하는 클래스임
+HibernateJpaAutoConfiguration는 JPA와 하이버네이트 설정을 처리하고 EntityManagerFactory, TransactionManager 등을 자동 구성함
 
 ### 코드 분석
 
@@ -63,7 +63,9 @@ before/after 속성은 어노테이션이 선언된 자동 구성 클래스 이�
 
 `@ConditionalOnClass` 어노테이션은 클래스패스에 특정 클래스가 존재할 경우(라이브러리 탐지) 조건에 매치되는 것으로 판단함
 
-속성 값에 포함된 리스트는 JPA 및 하이버네이트와 관련된 클래스들로, 클래스패스에 하이버네이트와 JPA 및 스프링 orm 모듈이 있는지 필터링함
+속성 값에 포함된 리스트는 JPA 및 하이버네이트와 관련된 클래스들로, 
+
+HibernateJpaAutoConfiguration 클래스가 활성화되기 위해 클래스패스에 하이버네이트와 JPA 및 스프링 orm 모듈이 있는지 필터링함
 
 **LocalContainerEntityManagerFactoryBean**
 - 스프링 프레임워크에서 JPA의 `EntityManagerFactory`를 스프링 빈으로 등록하는 데 사용되는 클래스임
@@ -117,11 +119,11 @@ HibernateJpaAutoConfiguration은 @AutoConfiguration을 통해 스프링의 트�
 
 JPA 프로퍼티 클래스와 Hibernate JPA 구성 클래스를 스프링 빈으로 등록함
 
-[HibernateJpaConfiguration](#hibernatejpaconfiguration)
-
 ## JpaBaseConfiguration
 
 스프링 부트에서 특정 JPA 구현체를 떠나 JPA와 관련된 공통 설정을 제공하는 추상 @Configuration 클래스임
+
+하이버네이트, 이클립스 링크 등 모든 JPA 구현체 스프링 부트 Configuration 클래스는 JpaBaseConfiguration을 상속함 
 
 JpaBaseConfiguration에서 정의하는 JPA 빈
 - PlatformTransactionManager: 트랜잭션 관리
@@ -129,8 +131,8 @@ JpaBaseConfiguration에서 정의하는 JPA 빈
 - EntityManagerFactoryBuilder: EntityManagerFactory 생성 유틸 클래스 (LocalContainerEntityManagerFactoryBean의 빌더 역할)
 - LocalContainerEntityManagerFactoryBean: 스프링 환경에서 EntityManagerFactory 생성 및 관리 
 - PersistenceManagedTypes: JPA 애플리케이션에서 관리할 모든 엔티티(또는 JPA 관련 클래스), 패키지 추적 및 구성
-- OpenEntityManagerInViewInterceptor: Open In Session View(OSIV) 패턴 활성화
-- WebMvcConfigurer: InterceptorRegistry에 OpenEntityManagerInViewInterceptor 추가
+- OpenEntityManagerInViewInterceptor: Open In Session View(OSIV) 패턴 활성화(기본값, 프로퍼티 비활성화 필요)
+- WebMvcConfigurer: InterceptorRegistry에 OpenEntityManagerInViewInterceptor 추가(OSVI 활성화 시 자동 추가)
 
 #### 필드 및 생성자
 
@@ -459,3 +461,142 @@ HibernateJpaConfiguration 클래스는 JpaBaseConfiguration을 상속받아 하�
 - 하이버네이트 관련 커스터마이징 및 프로퍼티 설정 `spring.jpa.properties.hibernate.*
 
 ## JpaRepositoriesAutoConfiguration
+
+스프링 데이터 JPA 리포지토리에 대한 자동 구성 클래스로, 이를 통해 JpaRepository 인터페이스를 정의하는 것만으로도 데이터 접근 로직을 구현하여, 서비스 객체에 주입할 수 있음
+
+다른 자동 구성 클래스들과 마찬가지로 스프링 부트의 AutoConfiguration.imports 파일에 명시되어 있기 때문에 spring-boot-starter-data-jpa 의존성을 추가하면 자동적으로 활성화됨
+
+`@EnableJpaRepositories` 어노테이션을 사용하여 JPA 리포지토리들을 활성화하는 것과 동일하며
+
+JPA 리포지토리 초기화 작업 시간이 오래 걸리는 경우 프로퍼티 설정(`spring.data.jpa.repositories.bootstrap-mode`)을 통해 비동기 또는 지연 처리할 수 있음
+
+```java
+/*
+    HibernateJpaAutoConfiguration와 TaskExecutionAutoConfiguration 자동 구성이 이뤄진 후 활성화
+    
+    TaskExecutionAutoConfiguration 클래스는 비동기 작업 실행에 필요한 TaskExecutor 빈을 생성 및 구성함
+    JPA 리포지토리 초기화, 엔티티 스캔 작업이 시간이 오래 걸릴 수 있기 때문에 이 과정을 비동기로 실행하려면 TaskExecutor가 필요함
+ */
+@AutoConfiguration(after = { HibernateJpaAutoConfiguration.class, TaskExecutionAutoConfiguration.class })
+
+// 스프링 컨텍스트에 DataSource 빈이 정의되고, 클래스패스에 JpaRepository 클래스가 있는 경우(data jpa 모듈 탐지)
+@ConditionalOnBean(DataSource.class)
+@ConditionalOnClass(JpaRepository.class)
+
+// JpaRepository 관련 설정 빈들이 존재하지 않는 경우 
+@ConditionalOnMissingBean({ JpaRepositoryFactoryBean.class, JpaRepositoryConfigExtension.class })
+
+// spring.data.jpa.repositories.enabled 프로퍼티 값을 사용자가 임의로 false로 지정하지 않는 경우
+@ConditionalOnProperty(prefix = "spring.data.jpa.repositories", name = "enabled", havingValue = "true",
+		matchIfMissing = true)
+
+// JpaRepositoriesImportSelector(멤버 클래스) import
+@Import(JpaRepositoriesImportSelector.class)
+public class JpaRepositoriesAutoConfiguration {
+
+	@Bean
+    /*
+        private 멤버 클래스인 BootstrapExecutorCondition 조건 평가 진행
+        부트스트랩 모드가 deffered(비동기 초기화) 또는 lazy(지연 초기화)인 경우 
+     */
+	@Conditional(BootstrapExecutorCondition.class)
+    
+    /*
+        EntityManagerFactoryBuilderCustomizer는 JPA EntityManagerFactory를 생성할 때 커스터마이징을 수행함
+        AsyncTaskExecutor를 JPA 초기화 과정에 설정함
+        
+        JPA 리포지토리를 초기화하는데 시간이 오래 걸리는 경우
+        초기화 시점을 비동기로 처리하여 애플리케이션 부팅 시간을 단축할 수 있음
+     */
+	public EntityManagerFactoryBuilderCustomizer entityManagerFactoryBootstrapExecutorCustomizer(
+			Map<String, AsyncTaskExecutor> taskExecutors) {
+        
+        // EntityManagerFactoryBuilderCustomizer는 함수형 인터페이스로, EntityManagerFactoryBuilder를 전달받음
+		return (builder) -> {
+            
+            // 파라미터로 받은 비동기 작업 실행기 중 적합한 실행기 결정
+			AsyncTaskExecutor bootstrapExecutor = determineBootstrapExecutor(taskExecutors);
+            
+            // null이 아닌 경우 EntityManagerFactoryBuilder의 부트스트랩 실행기 설정
+			if (bootstrapExecutor != null) {
+				builder.setBootstrapExecutor(bootstrapExecutor);
+			}
+		};
+	}
+
+    // 비동기 작업 실행기 중 적합한 실행기 결정
+	private AsyncTaskExecutor determineBootstrapExecutor(Map<String, AsyncTaskExecutor> taskExecutors) {
+        // 하나라면 해당 실행기 사용
+		if (taskExecutors.size() == 1) {
+			return taskExecutors.values().iterator().next();
+		}
+        // 실행기가 하나 이상인 경우, "applicationTaskExecutor" 빈 이름로 정의된 실행기 사용
+		return taskExecutors.get(TaskExecutionAutoConfiguration.APPLICATION_TASK_EXECUTOR_BEAN_NAME);
+	}
+
+    /*
+        AnyNestedCondition 클래스는 자식 구현체의 @Conditional 어노테이션이 적용된 클래스 중
+        하나라도 조건이 참이라면 매치 결과를 true로 반환함 
+        
+        BootstrapExecutorCondition은 스프링 데이터 jpa 리포지토리 부트스트랩 모드의 프로퍼티 값이
+        deffered(비동 초기화) 또는 lazy(지연 초기화)인 경우 매치되는 것으로 확인함 
+     */
+	private static final class BootstrapExecutorCondition extends AnyNestedCondition {
+        
+        /*
+            ConfigurationPhase.REGISTER_BEAN으로 설정하면 @Configuration 구성 클래스가 모두 파싱(평가)되고 
+            @Configuration을 제외한 일반적인 빈들이 등록되는 시점에 조건이 평가됨
+         */
+		BootstrapExecutorCondition() {
+			super(ConfigurationPhase.REGISTER_BEAN);
+		}
+
+        // spring.data.jpa.repositories.bootstrap-mode 프로퍼티 값이 deferred인 경우
+		@ConditionalOnProperty(prefix = "spring.data.jpa.repositories", name = "bootstrap-mode",
+				havingValue = "deferred")
+		static class DeferredBootstrapMode {
+
+		}
+
+        // spring.data.jpa.repositories.bootstrap-mode 프로퍼티 값이 lazy인 경우
+		@ConditionalOnProperty(prefix = "spring.data.jpa.repositories", name = "bootstrap-mode", havingValue = "lazy")
+		static class LazyBootstrapMode {
+
+		}
+
+	}
+
+    /*
+        스프링 부트는 하이버네이트 Envers를 지원함 (JPA Repository와 통합하여 리비전 데이터 처리)
+        
+        클래스 패스에 EnableEnversRepositories가 있는 경우 (spring-data-envers 라이브러리)
+        JpaRepository를 기반으로 프록시를 생성해주는 JpaRepositoryFactoryBean 대신,
+        리비전 기반 리포지토리인 RevisionRepository를 지원하는 EnversRevisionRepositoryFactoryBean을 사용함
+        
+        일반적으로 data jpa를 사용하는 상황이라면 JpaRepositoryFactoryBean가 선택됨
+     */
+	static class JpaRepositoriesImportSelector implements ImportSelector {
+
+        // 클래스패스에 EnableEnversRepositories가 있는지 확인
+		private static final boolean ENVERS_AVAILABLE = ClassUtils.isPresent(
+				"org.springframework.data.envers.repository.config.EnableEnversRepositories",
+				JpaRepositoriesImportSelector.class.getClassLoader());
+
+        /*
+            위의 확인 결과를 바탕으로 리포지토리를 생성하는 데 사용되는 클래스를 
+            등록할 레지스터 클래스 결정 
+         */
+		@Override
+		public String[] selectImports(AnnotationMetadata importingClassMetadata) {
+			return new String[] { determineImport() };
+		}
+
+		private String determineImport() {
+			return ENVERS_AVAILABLE ? EnversRevisionRepositoriesRegistrar.class.getName()
+					: JpaRepositoriesRegistrar.class.getName();
+		}
+
+	}
+
+}
+```
