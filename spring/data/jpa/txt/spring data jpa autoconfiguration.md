@@ -1,11 +1,14 @@
-[HibernateJpaAutoConfiguration](#hibernatejpaautoconfiguration)
-- [코드 분석](#코드-분석)
+하이버네이트, JPA 관련 설정
+- [HibernateJpaAutoConfiguration](#hibernatejpaautoconfiguration)
+- [JpaBaseConfiguration](#jpabaseconfiguration)
+- [HibernateJpaConfiguration](#hibernatejpaconfiguration)
 
-[JpaBaseConfiguration](#jpabaseconfiguration)
+JPA Repository 관련 설정
+- [JpaRepositoriesAutoConfiguration](#jparepositoriesautoconfiguration)
+- [AbstractRepositoryConfigurationSourceSupport](#abstractrepositoryconfigurationsourcesupport)
+- [JpaRepositoriesRegistrar](#jparepositoriesregistrar)
+- [RepositoryConfigurationDelegate]() 리포지토리 스캔 및 컨텍스트 등록 클래스
 
-[HibernateJpaConfiguration](#hibernatejpaconfiguration)
-
-[JpaRepositoriesAutoConfiguration](#jparepositoriesautoconfiguration)
 
 ## HibernateJpaAutoConfiguration
 
@@ -600,3 +603,181 @@ public class JpaRepositoriesAutoConfiguration {
 
 }
 ```
+
+## AbstractRepositoryConfigurationSourceSupport
+
+AbstractRepositoryConfigurationSourceSupport는 스프링 데이터에서 리포지토리 등록/설정 및 공통 로직을 정의한 추상 클래스임
+
+스프링 데이터 JPA 뿐만 아니라 MongoDB, Cassandra 등 다양한 스프링 데이터 모듈의 리포지토리에서 공통적으로 사용되며, 각 데이터 소스 별로 구체적인 동작이 오버라이딩됨 
+
+**추상화 부분: 스프링 모듈마다 중복되는 리포지토리 설정/스캐닝/등록, 빈 정의** (실제 리포지토리 스캔 및 스프링 컨텍스트 등록을 진행함)
+
+스프링 데이터 JPA에서는 JpaRepositoriesRegistrar가 상속함
+
+```java
+/*
+    AbstractRepositoryConfigurationSourceSupport가 구현하는 인터페이스 목록
+    
+    ImportBeanDefinitionRegistrar
+    - 동적으로 빈 정의를 할 수 있는 인터페이스
+    - 리포지토리 관련 빈을 등록하는데 사용됨
+    
+    BeanFactoryAware: 스프링 컨텍스트에 존재하는 빈 조회 또는 조작
+    ResourceLoaderAware: 리소스 파일 로딩
+    EnvironmentAware: 프로퍼티 파일 등 프로퍼티 소스에 접근
+ */
+public abstract class AbstractRepositoryConfigurationSourceSupport
+		implements ImportBeanDefinitionRegistrar, BeanFactoryAware, ResourceLoaderAware, EnvironmentAware {
+
+	private ResourceLoader resourceLoader;
+
+	private BeanFactory beanFactory;
+
+	private Environment environment;
+    
+    /*
+        파라미터
+        
+        AnnotationMetadata: 이 메서드에서 사용 안함
+        
+        BeanDefinitionRegistry
+        - 스프링 컨텍스트에 등록된 모든 빈 정보를 관리하는 인터페이스
+        - 새로운 빈을 정의할 수 있기도 함
+        - delegate.registerRepositoriesIn 메서드 내부에서 사용됨
+        
+        BeanNameGenerator: 빈 이름을 생성하는 데 사용되는 인터페이스 
+    */
+
+    //  구현체의 설정 정보를 바탕으로 리포지토리 인터페이스를 스캔하여 스프링 컨텍스트에 등록하는 메서드
+	@Override
+	public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry,
+			BeanNameGenerator importBeanNameGenerator) {
+        /*
+            getConfigurationSource 메서드
+            - 구현체의 설정 정보를 가져옴
+            - 스프링 데이터 JPA의 경우 @EnableJpaRepositories 및 JpaRepositoriesRegistrar$EnableJpaRepositoriesConfiguration 클래스 정보 등을 반환함
+            
+            RepositoryConfigurationDelegate 객체 생성
+            - 이 객체가 리포지토리를 등록하는 작업을 실제로 수행함
+            
+            deleagte.registerRepositoriesIn 메서드
+            - 리포지토리 인터페이스 스캔 및 스프링 컨텍스트에 등록
+         */
+		RepositoryConfigurationDelegate delegate = new RepositoryConfigurationDelegate(
+				getConfigurationSource(registry, importBeanNameGenerator), this.resourceLoader, this.environment);
+		delegate.registerRepositoriesIn(registry, getRepositoryConfigurationExtension());
+	}
+
+    // BeanNameGenerator가 없는 경우 오버로딩
+	@Override
+	public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
+		registerBeanDefinitions(importingClassMetadata, registry, null);
+	}
+
+    /*
+        getConfiguration 메서드에서 반환한 설정 클래스(@EnableJpaRepositories)를 기반으로
+        리포지토리 설정 소스(AnnotationRepositoryConfigurationSource)를 생성함
+     */
+	private AnnotationRepositoryConfigurationSource getConfigurationSource(BeanDefinitionRegistry registry,
+			BeanNameGenerator importBeanNameGenerator) {
+		AnnotationMetadata metadata = AnnotationMetadata.introspect(getConfiguration());
+		return new AutoConfiguredAnnotationRepositoryConfigurationSource(metadata, getAnnotation(), this.resourceLoader,
+				this.environment, registry, importBeanNameGenerator) {
+		};
+	}
+
+	protected Streamable<String> getBasePackages() {
+		return Streamable.of(AutoConfigurationPackages.get(this.beanFactory));
+	}
+
+    // 리포지토리를 활성화하는 어노테이션 반환 (스프링 데이터 JPA: @EnableJpaRepositories)
+	protected abstract Class<? extends Annotation> getAnnotation();
+
+    // 리포지토리 설정 클래스 반환 (스프링 데이터 JPA: EnableJpaRepositoriesConfiguration)
+	protected abstract Class<?> getConfiguration();
+    
+    // 리포지토리 설정 확장 클래스 반환 (스프링 데이터 JPA: JpaRepositoryConfigExtension)
+	protected abstract RepositoryConfigurationExtension getRepositoryConfigurationExtension();
+    
+	protected BootstrapMode getBootstrapMode() {
+		return BootstrapMode.DEFAULT;
+	}
+    
+    // 리포지토리 스캔 및 부트스트랩 정보 캡슐화
+	private class AutoConfiguredAnnotationRepositoryConfigurationSource
+			extends AnnotationRepositoryConfigurationSource {
+
+		AutoConfiguredAnnotationRepositoryConfigurationSource(AnnotationMetadata metadata,
+				Class<? extends Annotation> annotation, ResourceLoader resourceLoader, Environment environment,
+				BeanDefinitionRegistry registry, BeanNameGenerator generator) {
+			super(metadata, annotation, resourceLoader, environment, registry, generator);
+		}
+
+		@Override
+		public Streamable<String> getBasePackages() {
+			return AbstractRepositoryConfigurationSourceSupport.this.getBasePackages();
+		}
+
+		@Override
+		public BootstrapMode getBootstrapMode() {
+			return AbstractRepositoryConfigurationSourceSupport.this.getBootstrapMode();
+		}
+
+	}
+
+}
+```
+
+## JpaRepositoriesRegistrar
+
+JpaRepositoriesRegistrar는 스프링 데이터 JPA 리포지토리 설정 관련 정보를 부모 클래스인 AbstractRepositoryConfigurationSourceSupport에게 전달함
+
+해당 정보를 바탕으로 리포지토리 스캔 및 스프링 컨텍스트 등록 작업 실행
+
+```java
+class JpaRepositoriesRegistrar extends AbstractRepositoryConfigurationSourceSupport {
+
+	private BootstrapMode bootstrapMode = null;
+
+	@Override
+	protected Class<? extends Annotation> getAnnotation() {
+		return EnableJpaRepositories.class;
+	}
+
+	@Override
+	protected Class<?> getConfiguration() {
+		return EnableJpaRepositoriesConfiguration.class;
+	}
+
+	@Override
+	protected RepositoryConfigurationExtension getRepositoryConfigurationExtension() {
+		return new JpaRepositoryConfigExtension();
+	}
+
+	@Override
+	protected BootstrapMode getBootstrapMode() {
+		return (this.bootstrapMode == null) ? BootstrapMode.DEFAULT : this.bootstrapMode;
+	}
+
+	@Override
+	public void setEnvironment(Environment environment) {
+		super.setEnvironment(environment);
+		configureBootstrapMode(environment);
+	}
+
+	private void configureBootstrapMode(Environment environment) {
+		String property = environment.getProperty("spring.data.jpa.repositories.bootstrap-mode");
+		if (StringUtils.hasText(property)) {
+			this.bootstrapMode = BootstrapMode.valueOf(property.toUpperCase(Locale.ENGLISH));
+		}
+	}
+
+	@EnableJpaRepositories
+	private static final class EnableJpaRepositoriesConfiguration {
+
+	}
+
+}
+```
+
+## RepositoryConfigurationDelegate
