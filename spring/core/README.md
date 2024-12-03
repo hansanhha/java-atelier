@@ -9,3 +9,9 @@
 [profile](./txt/profile.md)
 
 [condition](./txt/condition.md)
+
+[annotation](./txt/annotation.md)
+
+[type](./txt/type.md)
+
+[type reference](./txt/type%20reference.md)

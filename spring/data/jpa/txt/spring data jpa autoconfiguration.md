@@ -473,6 +473,10 @@ HibernateJpaConfiguration 클래스는 JpaBaseConfiguration을 상속받아 하�
 
 JPA 리포지토리 초기화 작업 시간이 오래 걸리는 경우 프로퍼티 설정(`spring.data.jpa.repositories.bootstrap-mode`)을 통해 비동기 또는 지연 처리할 수 있음
 
+총 두 가지 설정
+- JPA 리포지토리 초기화 부트스트랩 설정(프로퍼티 설정 값에 따라 비동기 또는 지연 처리)
+- JPA 리포지토리 등록 객체 import (JPA 리포지토리 스캔 및 컨텍스트 등록 작업 진행)
+
 ```java
 /*
     HibernateJpaAutoConfiguration와 TaskExecutionAutoConfiguration 자동 구성이 이뤄진 후 활성화
