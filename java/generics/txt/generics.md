@@ -229,11 +229,11 @@ public class TypeErasure {
 
 A가 B의 하위 타입이면(A가 B를 상속, 확장한 경우) `Foo<A>`는 `Foo<B>`를 허용함
 
-자바에서의 공변은 제네릭 타입에 **Upper Bound 와일드카드**를 사용해 구현됨
+자바에서의 공변은 제네릭 타입에 **upper bound 와일드카드**를 사용해 구현됨
 
-Upper Bound 와일드카드
+upper bound 와일드카드
 - `? extends ReferenceType`
-- ReferenceType에 타입 매개변수를 지정하면(최상위 타입), 그 하위 타입까지 참조할 수 있음
+- ReferenceType에 최대로 허용할 타입 매개변수를 지정하면, 해당 타입 매개변수의 모든 자식 타입을 허용함
 - ```java
   // <? extends Number>를 Upper Bound로 지정하면, 자식 타입인 Interger, Long, Double 등의 타입 참조 가능
   List<? extends Number> list = new ArrayList<Integer>();
@@ -272,12 +272,12 @@ Upper Bound 와일드카드
 
 A가 B의 하위 타입이면(A가 B를 상속, 확장한 경우) `Foo<B>`는 `Foo<A>`을 허용함
 
-자바에서의 공변은 제네릭 타입에 **Lower Bound 와일드카드**를 사용해 구현됨
+자바에서의 공변은 제네릭 타입에 **lower bound 와일드카드**를 사용해 구현됨
 
-Lower Bound 와일드카드
+lower bound 와일드카드
 - `? super ReferenceType`
-- ReferenceType에 타입 매개변수를 지정하면(최하위 타입), 그 상위 타입까지 참조할 수 있음
-- **새 데이터를 추가할 수 있지만, 읽을 수 없음**
+- ReferenceType에 최소로 허용할 타입 매개변수를 지정하면, 해당 타입 매개변수의 최상위 부모 타입까지 허용함 
+- 공변(upper bound 와일드카드)와 반대로 **새 데이터를 추가할 수 있지만, 읽을 수 없음**
 - ```java
   public class Contravariance_LowerBoundWildcard {
     public static void main(String[] args) {
