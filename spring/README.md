@@ -1,25 +1,25 @@
-### [core(ioc, psa, aop)](core/README.md)
+[core(ioc, psa, aop)](core/README.md)
 
-### [data](data/README.md)
+[data](data/README.md)
 
-### [boot(auto configuration, environment abstraction, embedded web server)](boot/README.md)
+[boot(auto configuration, environment abstraction, embedded web server)](boot/README.md)
 
-### web(servlet)
+[web(servlet)](./web/README.md)
 
-### security(jwt, oauth)
+[security(jwt, oauth)](./security/README.md)
 
-### modulith
+cloud
 
-### bean validation
+batch
 
-### restdocs
+[modulith](./modulith/txt/modulith.md)
 
-### hateoas
+bean validation
 
-### cli
+restdocs
 
-### shell
+hateoas
 
-### cloud
+cli
 
-### batch
+shell
