@@ -3,12 +3,14 @@
 - [JpaBaseConfiguration](#jpabaseconfiguration)
 - [HibernateJpaConfiguration](#hibernatejpaconfiguration)
 
-JPA Repository 관련 설정
+스프링 데이터 Repository 및 스프링 데이터 JPA Repository 설정
 - [JpaRepositoriesAutoConfiguration](#jparepositoriesautoconfiguration)
-- [AbstractRepositoryConfigurationSourceSupport](#abstractrepositoryconfigurationsourcesupport)
 - [JpaRepositoriesRegistrar](#jparepositoriesregistrar)
-- [RepositoryConfigurationDelegate]() 리포지토리 스캔 및 컨텍스트 등록 클래스
 
+Repository 스캐닝 및 컨텍스트 등록
+- [RepositoryConfigurationDelegate](../../spring%20data%20config.md#repositoryconfigurationdelegate)
+
+# 하이버네이트, JPA 관련 설정
 
 ## HibernateJpaAutoConfiguration
 
@@ -463,6 +465,8 @@ HibernateJpaConfiguration 클래스는 JpaBaseConfiguration을 상속받아 하�
 - LocalContainerEntityManagerFactoryBean, PlatformTransactionManager, EntityManagerFactory, JpaVendorAdapter 등 빈 정의 (JpaBaseConfiguration 기본 설정 상속)
 - 하이버네이트 관련 커스터마이징 및 프로퍼티 설정 `spring.jpa.properties.hibernate.*
 
+# 스프링 데이터 Repository 및 JPA Repository 설정
+
 ## JpaRepositoriesAutoConfiguration
 
 스프링 데이터 JPA 리포지토리에 대한 자동 구성 클래스로, 이를 통해 JpaRepository 인터페이스를 정의하는 것만으로도 데이터 접근 로직을 구현하여, 서비스 객체에 주입할 수 있음
@@ -504,16 +508,18 @@ public class JpaRepositoriesAutoConfiguration {
 	@Bean
     /*
         private 멤버 클래스인 BootstrapExecutorCondition 조건 평가 진행
-        부트스트랩 모드가 deffered(비동기 초기화) 또는 lazy(지연 초기화)인 경우 
+        
+       사용자의 프로퍼티 설정으로 부트스트랩 모드가 deffered(비동기 초기화) 또는 lazy(지연 초기화)인 경우
+        EntityManagerFactoryBuilderCustomizer 빈 등록
      */
 	@Conditional(BootstrapExecutorCondition.class)
     
     /*
         EntityManagerFactoryBuilderCustomizer는 JPA EntityManagerFactory를 생성할 때 커스터마이징을 수행함
-        AsyncTaskExecutor를 JPA 초기화 과정에 설정함
+        (AsyncTaskExecutor를 JPA 초기화 과정에 설정)
         
         JPA 리포지토리를 초기화하는데 시간이 오래 걸리는 경우
-        초기화 시점을 비동기로 처리하여 애플리케이션 부팅 시간을 단축할 수 있음
+        초기화 시점을 비동기 또는 지연 처리하여 애플리케이션 부팅 시간을 단축할 수 있음
      */
 	public EntityManagerFactoryBuilderCustomizer entityManagerFactoryBootstrapExecutorCustomizer(
 			Map<String, AsyncTaskExecutor> taskExecutors) {
@@ -546,7 +552,7 @@ public class JpaRepositoriesAutoConfiguration {
         하나라도 조건이 참이라면 매치 결과를 true로 반환함 
         
         BootstrapExecutorCondition은 스프링 데이터 jpa 리포지토리 부트스트랩 모드의 프로퍼티 값이
-        deffered(비동 초기화) 또는 lazy(지연 초기화)인 경우 매치되는 것으로 확인함 
+        deffered(비동기 초기화) 또는 lazy(지연 초기화)인 경우 매치되는 것으로 확인함 
      */
 	private static final class BootstrapExecutorCondition extends AnyNestedCondition {
         
@@ -608,133 +614,9 @@ public class JpaRepositoriesAutoConfiguration {
 }
 ```
 
-## AbstractRepositoryConfigurationSourceSupport
-
-AbstractRepositoryConfigurationSourceSupport는 스프링 데이터에서 리포지토리 등록/설정 및 공통 로직을 정의한 추상 클래스임
-
-스프링 데이터 JPA 뿐만 아니라 MongoDB, Cassandra 등 다양한 스프링 데이터 모듈의 리포지토리에서 공통적으로 사용되며, 각 데이터 소스 별로 구체적인 동작이 오버라이딩됨 
-
-**추상화 부분: 스프링 모듈마다 중복되는 리포지토리 설정/스캐닝/등록, 빈 정의** (실제 리포지토리 스캔 및 스프링 컨텍스트 등록을 진행함)
-
-스프링 데이터 JPA에서는 JpaRepositoriesRegistrar가 상속함
-
-```java
-/*
-    AbstractRepositoryConfigurationSourceSupport가 구현하는 인터페이스 목록
-    
-    ImportBeanDefinitionRegistrar
-    - 동적으로 빈 정의를 할 수 있는 인터페이스
-    - 리포지토리 관련 빈을 등록하는데 사용됨
-    
-    BeanFactoryAware: 스프링 컨텍스트에 존재하는 빈 조회 또는 조작
-    ResourceLoaderAware: 리소스 파일 로딩
-    EnvironmentAware: 프로퍼티 파일 등 프로퍼티 소스에 접근
- */
-public abstract class AbstractRepositoryConfigurationSourceSupport
-		implements ImportBeanDefinitionRegistrar, BeanFactoryAware, ResourceLoaderAware, EnvironmentAware {
-
-	private ResourceLoader resourceLoader;
-
-	private BeanFactory beanFactory;
-
-	private Environment environment;
-    
-    /*
-        파라미터
-        
-        AnnotationMetadata: 이 메서드에서 사용 안함
-        
-        BeanDefinitionRegistry
-        - 스프링 컨텍스트에 등록된 모든 빈 정보를 관리하는 인터페이스
-        - 새로운 빈을 정의할 수 있기도 함
-        - delegate.registerRepositoriesIn 메서드 내부에서 사용됨
-        
-        BeanNameGenerator: 빈 이름을 생성하는 데 사용되는 인터페이스 
-    */
-
-    //  구현체의 설정 정보를 바탕으로 리포지토리 인터페이스를 스캔하여 스프링 컨텍스트에 등록하는 메서드
-	@Override
-	public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry,
-			BeanNameGenerator importBeanNameGenerator) {
-        /*
-            getConfigurationSource 메서드
-            - 구현체의 설정 정보를 가져옴
-            - 스프링 데이터 JPA의 경우 @EnableJpaRepositories 및 JpaRepositoriesRegistrar$EnableJpaRepositoriesConfiguration 클래스 정보 등을 반환함
-            
-            RepositoryConfigurationDelegate 객체 생성
-            - 이 객체가 리포지토리를 등록하는 작업을 실제로 수행함
-            
-            deleagte.registerRepositoriesIn 메서드
-            - 리포지토리 인터페이스 스캔 및 스프링 컨텍스트에 등록
-         */
-		RepositoryConfigurationDelegate delegate = new RepositoryConfigurationDelegate(
-				getConfigurationSource(registry, importBeanNameGenerator), this.resourceLoader, this.environment);
-		delegate.registerRepositoriesIn(registry, getRepositoryConfigurationExtension());
-	}
-
-    // BeanNameGenerator가 없는 경우 오버로딩
-	@Override
-	public void registerBeanDefinitions(AnnotationMetadata importingClassMetadata, BeanDefinitionRegistry registry) {
-		registerBeanDefinitions(importingClassMetadata, registry, null);
-	}
-
-    /*
-        getConfiguration 메서드에서 반환한 설정 클래스(@EnableJpaRepositories)를 기반으로
-        리포지토리 설정 소스(AnnotationRepositoryConfigurationSource)를 생성함
-     */
-	private AnnotationRepositoryConfigurationSource getConfigurationSource(BeanDefinitionRegistry registry,
-			BeanNameGenerator importBeanNameGenerator) {
-		AnnotationMetadata metadata = AnnotationMetadata.introspect(getConfiguration());
-		return new AutoConfiguredAnnotationRepositoryConfigurationSource(metadata, getAnnotation(), this.resourceLoader,
-				this.environment, registry, importBeanNameGenerator) {
-		};
-	}
-
-	protected Streamable<String> getBasePackages() {
-		return Streamable.of(AutoConfigurationPackages.get(this.beanFactory));
-	}
-
-    // 리포지토리를 활성화하는 어노테이션 반환 (스프링 데이터 JPA: @EnableJpaRepositories)
-	protected abstract Class<? extends Annotation> getAnnotation();
-
-    // 리포지토리 설정 클래스 반환 (스프링 데이터 JPA: EnableJpaRepositoriesConfiguration)
-	protected abstract Class<?> getConfiguration();
-    
-    // 리포지토리 설정 확장 클래스 반환 (스프링 데이터 JPA: JpaRepositoryConfigExtension)
-	protected abstract RepositoryConfigurationExtension getRepositoryConfigurationExtension();
-    
-	protected BootstrapMode getBootstrapMode() {
-		return BootstrapMode.DEFAULT;
-	}
-    
-    // 리포지토리 스캔 및 부트스트랩 정보 캡슐화
-	private class AutoConfiguredAnnotationRepositoryConfigurationSource
-			extends AnnotationRepositoryConfigurationSource {
-
-		AutoConfiguredAnnotationRepositoryConfigurationSource(AnnotationMetadata metadata,
-				Class<? extends Annotation> annotation, ResourceLoader resourceLoader, Environment environment,
-				BeanDefinitionRegistry registry, BeanNameGenerator generator) {
-			super(metadata, annotation, resourceLoader, environment, registry, generator);
-		}
-
-		@Override
-		public Streamable<String> getBasePackages() {
-			return AbstractRepositoryConfigurationSourceSupport.this.getBasePackages();
-		}
-
-		@Override
-		public BootstrapMode getBootstrapMode() {
-			return AbstractRepositoryConfigurationSourceSupport.this.getBootstrapMode();
-		}
-
-	}
-
-}
-```
-
 ## JpaRepositoriesRegistrar
 
-JpaRepositoriesRegistrar는 스프링 데이터 JPA 리포지토리 설정 관련 정보를 부모 클래스인 AbstractRepositoryConfigurationSourceSupport에게 전달함
+JpaRepositoriesRegistrar는 스프링 데이터 JPA 리포지토리 설정 관련 정보를 부모 클래스인 [AbstractRepositoryConfigurationSourceSupport](../../spring%20data%20config.md#abstractrepositoryconfigurationsourcesupport)에게 전달함
 
 해당 정보를 바탕으로 리포지토리 스캔 및 스프링 컨텍스트 등록 작업 실행
 
@@ -784,4 +666,5 @@ class JpaRepositoriesRegistrar extends AbstractRepositoryConfigurationSourceSupp
 }
 ```
 
-## RepositoryConfigurationDelegate
+## Repository 스캐닝 및 컨텍스트 등록 [RepositoryConfigurationDelegate](../../spring%20data%20config.md#repositoryconfigurationdelegate)
+
