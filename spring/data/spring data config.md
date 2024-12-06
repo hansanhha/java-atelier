@@ -10,7 +10,7 @@ Repository 설정 정보 캡슐화
 Repository 스캐닝 및 컨텍스트 등록
 - [RepositoryConfigurationDelegate](#repositoryconfigurationdelegate)
 
-스프링 데이터 Repository 설정
+## 스프링 데이터 Repository 설정
 
 ### AbstractRepositoryConfigurationSourceSupport
 
@@ -480,3 +480,89 @@ private class AutoConfiguredAnnotationRepositoryConfigurationSource
 
 ### RepositoryConfigurationDelegate
 
+추후 작성
+
+```java
+public List<BeanComponentDefinition> registerRepositoriesIn(BeanDefinitionRegistry registry,
+			RepositoryConfigurationExtension extension) {
+
+    if (logger.isInfoEnabled()) {
+        logger.info(LogMessage.format("Bootstrapping Spring Data %s repositories in %s mode.", //
+                extension.getModuleName(), configurationSource.getBootstrapMode().name()));
+    }
+    
+    extension.registerBeansForRoot(registry, configurationSource);
+    
+    RepositoryBeanDefinitionBuilder builder = new RepositoryBeanDefinitionBuilder(registry, extension,
+            configurationSource, resourceLoader, environment);
+    
+    if (logger.isDebugEnabled()) {
+        logger.debug(LogMessage.format("Scanning for %s repositories in packages %s.", //
+                extension.getModuleName(), //
+                configurationSource.getBasePackages().stream().collect(Collectors.joining(", "))));
+    }
+    
+    StopWatch watch = new StopWatch();
+    ApplicationStartup startup = getStartup(registry);
+    StartupStep repoScan = startup.start("spring.data.repository.scanning");
+    
+    repoScan.tag("dataModule", extension.getModuleName());
+    repoScan.tag("basePackages",
+            () -> configurationSource.getBasePackages().stream().collect(Collectors.joining(", ")));
+    watch.start();
+    
+    Collection<RepositoryConfiguration<RepositoryConfigurationSource>> configurations = extension
+            .getRepositoryConfigurations(configurationSource, resourceLoader, inMultiStoreMode);
+    
+    List<BeanComponentDefinition> definitions = new ArrayList<>();
+    
+    Map<String, RepositoryConfiguration<?>> configurationsByRepositoryName = new HashMap<>(configurations.size());
+    Map<String, RepositoryConfigurationAdapter<?>> metadataByRepositoryBeanName = new HashMap<>(configurations.size());
+    
+    for (RepositoryConfiguration<? extends RepositoryConfigurationSource> configuration : configurations) {
+    
+        configurationsByRepositoryName.put(configuration.getRepositoryInterface(), configuration);
+    
+        BeanDefinitionBuilder definitionBuilder = builder.build(configuration);
+        extension.postProcess(definitionBuilder, configurationSource);
+    
+        if (isXml) {
+            extension.postProcess(definitionBuilder, (XmlRepositoryConfigurationSource) configurationSource);
+        } else {
+            extension.postProcess(definitionBuilder, (AnnotationRepositoryConfigurationSource) configurationSource);
+        }
+    
+        RootBeanDefinition beanDefinition = (RootBeanDefinition) definitionBuilder.getBeanDefinition();
+        beanDefinition.setTargetType(getRepositoryFactoryBeanType(configuration));
+        beanDefinition.setResourceDescription(configuration.getResourceDescription());
+    
+        String beanName = configurationSource.generateBeanName(beanDefinition);
+    
+        if (logger.isTraceEnabled()) {
+            logger.trace(LogMessage.format(REPOSITORY_REGISTRATION, extension.getModuleName(), beanName,
+                    configuration.getRepositoryInterface(), configuration.getRepositoryFactoryBeanClassName()));
+        }
+    
+        metadataByRepositoryBeanName.put(beanName, builder.buildMetadata(configuration));
+        registry.registerBeanDefinition(beanName, beanDefinition);
+        definitions.add(new BeanComponentDefinition(beanDefinition, beanName));
+    }
+    
+    potentiallyLazifyRepositories(configurationsByRepositoryName, registry, configurationSource.getBootstrapMode());
+    
+    watch.stop();
+    repoScan.tag("repository.count", Integer.toString(configurations.size()));
+    repoScan.end();
+    
+    if (logger.isInfoEnabled()) {
+        logger.info(
+                LogMessage.format("Finished Spring Data repository scanning in %s ms. Found %s %s repository interface%s.",
+                        watch.lastTaskInfo().getTimeMillis(), configurations.size(), extension.getModuleName(),
+                        configurations.size() == 1 ? "" : "s"));
+    }
+    
+    registerAotComponents(registry, extension, metadataByRepositoryBeanName);
+    
+    return definitions;
+}
+```
