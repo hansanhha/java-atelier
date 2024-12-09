@@ -9,19 +9,21 @@
 - [상속 관계](#simplejparepository-상속-관계)
 - [생성 과정](#simplejparepository-생성-과정)
 - [코드 분석](#simplejparepository-코드-분석)
-    - [필드](#필드)
-    - [메서드](#메서드)
-        - [공통](#공통)
-        - [조회](#조회)
-        - [저장](#저장)
-            - [엔티티 ID 생성 전략과 save 메서드 동작 관계](#엔티티-id-생성-전략과-save-메서드-동작-관계)
-        - [삭제](#삭제)
+  - [필드](#필드)
+  - [메서드](#메서드)
+    - [공통](#공통)
+    - [조회](#조회)
+    - [저장](#저장)
+      - [엔티티 ID 생성 전략과 save 메서드 동작 관계](#엔티티-id-생성-전략과-save-메서드-동작-관계)
+    - [삭제](#삭제)
+
+[리포지토리 인터페이스 자동 구현(SimpleJpaRepository 생성) 및 프록시 패턴 적용](#리포지토리-인터페이스-자동-구현simplejparepository-생성-및-프록시-패턴-적용)
 
 [NamedQuery](#namedquery)
 
 [Query Method](#query-method)
-  - [메서드 이름 기반 JPQL 쿼리](#메서드-이름-기반-jpql-쿼리query-derivation-query-creation)
-  - [@Query](#query)
+- [메서드 이름 기반 JPQL 쿼리](#메서드-이름-기반-jpql-쿼리query-derivation-query-creation)
+- [@Query](#query)
 
 [동적 쿼리](#동적-쿼리)
 - [Specification](#specification)
@@ -48,17 +50,14 @@ Hibernate, EclipseLink 등 JPA 프로바이더를 손쉽게 사용할 수 있음
 
 ## JpaRepository<T, ID>
 
-Spring Data JPA에서 제공하는 주요 인터페이스로,
-
-`Repository<T, ID>`, `ListCrudRepository<T, ID>`, `ListPagingAndSortingRepository<T, ID>`, `QueryByExampleExecutor<T>` 를
-확장하고, 추가적인 메서드를 제공함
+스프링 데이터 JPA에서 추가적인 기능을 제공하는 리포지토리 인터페이스
 
 ```java
 
 @NoRepositoryBean
 public interface JpaRepository<T, ID> extends ListCrudRepository<T, ID>, ListPagingAndSortingRepository<T, ID>, QueryByExampleExecutor<T> {
     /*
-        EntityManager의 변경 사항을 데이터베이스에 강제로 동기화(flusH)함
+        EntityManager의 변경 사항을 데이터베이스에 강제로 동기화(flush)함
         현재까지의 변경 사항을 즉시 데이터베이스에 반영하고 싶을 때 사용
      */
     void flush();
@@ -115,13 +114,13 @@ public interface JpaRepository<T, ID> extends ListCrudRepository<T, ID>, ListPag
 
 ## JpaRepositoryImplementation<T, ID>
 
-스프링 데이터 JPA 내부에서 사용되는 인터페이스로, 스프링 데이터 JPA가 런타임에 Repository 인터페이스를 실제 구현체로 생성할 때 필요한 내부 기능을 정의함
-
-JpaRepository 및 동적 쿼리를 생성 및 실행하는 JpaSpecificationExecutor와 스프링 데이터 JPA 내부에서 리포지토리를 설정하는 데 사용되는
-JpaRepositoryConfigurationAware를 확장함
+SimpleJpaRepository가 구현하는 인터페이스로, 스프링 데이터 JPA가 런타임에 Repository 인터페이스를 실제 구현체로 생성할 때 필요한 내부 기능을 정의함
 
 ```java
-
+/*
+  JpaSpecificationExecutor: 동적 쿼리를 생성 및 실행
+  JpaRepositoryConfigurationAware: 스프링 데이터 JPA 내부에서 리포지토리를 설정하는 데 사용됨
+ */
 @NoRepositoryBean
 public interface JpaRepositoryImplementation<T, ID> extends JpaRepository<T, ID>, JpaSpecificationExecutor<T>, JpaRepositoryConfigurationAware {
 }
@@ -129,9 +128,9 @@ public interface JpaRepositoryImplementation<T, ID> extends JpaRepository<T, ID>
 
 ## SimpleJpaRepository
 
-스프링 데이터 JPA에서 제공하는 Repository의 기본 구현체임
+스프링 데이터 JPA에서 사용자가 리포지토리 인터페이스를 정의할 때 기본적으로 제공되는 구현체
 
-개발자가 리포지토리 인터페이스를 정의할 때마다, 자동으로 인터페이스의 구현체를 생성해 주는데 이 때 기본적으로 사용되는 구현체가 SimpleJpaRepository임
+어떤 리포지토리 인터페이스(`Repository` `CrudRepository` `JpaRepository`)를 확장하든 이 클래스가 구현됨
 
 ### SimpleJpaRepository 상속 관계
 
@@ -148,63 +147,14 @@ JPA를 사용하여 데이터베이스와 상호작용하는 데 필요한 대�
 
 ```java
 
-@Repository
-@Transactional(
+@Repository // @Repository 어노테이션 적용
+@Transactional( // @Transactional(readOnly) 어노테이션 적용
         readOnly = true
 )
 public class SimpleJpaRepository<T, ID> implements JpaRepositoryImplementation<T, ID> {
     ...
 }
 ```
-
-`@Repository`와 `@Transacitonal`(readOnly) 어노테이션을 적용함
-
-### SimpleJpaRepository 생성 과정
-
-#### 0. 리포지토리 인터페이스 정의
-
-개발자가 Repository 인터페이스를 확장한 임의의 인터페이스를 선언함
-
-- ```java
-  public interface UserRepository extends JpaRepository<User, Long> {
-    List<User> findByLastName(String lastName);
-  }
-  ```
-
-#### 1. 스프링 부트의 autoconfiguration
-
-- 스프링 부트 애플리케이션이 구동되면서 
-
-#### 2. 애플리케이션 컨텍스트 초기화에 따른 리포지토리 인터페이스 스캔과 프록시 생성
-
-- 애플리케이션 컨텍스트가 초기화되면서 스프링 데이터 JPA는 `@EnableJpaRepositories` 어노테이션이 설정된 패키지 내의 모든 리포지토리 인터페이스(Repository 타입)들을 스캔함
-- 스캔된 각 리포지토리 인터페이스에 대한 프록시 객체를 생성하고 스프링 빈으로 등록함
-- 이 프록시는 리포지토리 인터페이스를 구현한 동적 프록시로 다음과 같은 작업을 수행함
-  - 기본 CRUD 메서드 -> SimpleJpaRepository에게 위임
-  - findByLastName() 같은 메서드명 파싱을 통해 자동 생성된 JPQL 실행
-  - 커스텀 구현체가 있는 경우 -> 해당 구현체에게 위임
-
-#### 3. SimpleJpaRepository 생성
-
-- 스프링 데이터 JPA는 [JpaRepositoryFactory](https://docs.spring.io/spring-data/jpa/docs/current/api/org/springframework/data/jpa/repository/support/JpaRepositoryFactory.html)를 사용하여 각 리포지토리 인터페이스의 구현체를 생성함
-- JpaRepositoryFactory는 기본적으로 SimpleJpaRepository를 생성함
-
-#### 4. 의존성 주입과 프록시의 SimpleJpaRepository 호출 위임
-
-- ```java
-  @Service
-  @Transactional
-  public class UserService {
-    
-    private final UserRepository userRepository;
-    
-    public UserService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
-  }
-  ```
-- 위의 UserRepository 타입의 객체를 스프링 IoC 컨테이너에게 주입받을 때 2단계에서 스프링 빈으로 등록된 UserRepository 타입의 프록시 객체가 주입됨
-- UserRepository의 메서드를 호출하면, 프록시 객체가 받아서 DB와의 상호작용을 수행함
 
 ### SimpleJpaRepository 코드 분석
 
@@ -247,10 +197,10 @@ JPA 엔티티에 대한 메타데이터 정보를 관리하는 역할을 하는 
   - 데이터 접근 계층에서 엔티티와 상호작용할 때 사용하는 정보
   - 엔티티의 클래스 타입, ID 속성, 버전 속성
 - 엔티티 ID 정보 제공
-    - 엔티티의 식별자 필드(기본 키)에 대한 정보 제공
-    - ID 필드 이름, 타입, 값 등
+  - 엔티티의 식별자 필드(기본 키)에 대한 정보 제공
+  - ID 필드 이름, 타입, 값 등
 - 엔티티 상태 정보 제공
-    - 특정 엔티티 인스턴스가 새로 생성된 건지, 이미 존재하는 건지 확인할 수 있는 메서드 제공
+  - 특정 엔티티 인스턴스가 새로 생성된 건지, 이미 존재하는 건지 확인할 수 있는 메서드 제공
 
 JpaEntityInformation 타입으로 주입되는 실제 구현체는 `JpaMetaModelEntityInformation` 클래스임
 
@@ -377,7 +327,7 @@ public SimpleJpaRepository(Class<T> domainClass, EntityManager entityManager) {
 
 ###### SimpleJpaRepository에게 EntityManager를 주입하는 과정
 
-JpaRepositoryFactory는 
+JpaRepositoryFactory는
 
 EntityManagerFactory 생성
 - JPA 설정 파일(persistence.xml) 또는 스프링 JPA 설정(Java Config, application.properties)에서 JPA 구현체와 데이터베이스 연결 정보가 설정됨
@@ -387,7 +337,7 @@ EntityManagerFactory 생성
 
 EntityManager 생성
 - EntityManagerFactory로부터 생성된 EntityManager는 SimpleJpaRepository에 주입되는데, SimpleJpaRepository는 특정 리포지토리 인터페이스의 구현체로 여러 스레드에서 사용됨
-- 스프링은 멀티 스레드 환경을 위해 리포지토리 인터페이스 프록시로 SimpleJpaRepository를 동작시키는 것처럼 EntityManager 역시 프록시 패턴을 사용하여 엔티티 매니저를 관리함  
+- 스프링은 멀티 스레드 환경을 위해 리포지토리 인터페이스 프록시로 SimpleJpaRepository를 동작시키는 것처럼 EntityManager 역시 프록시 패턴을 사용하여 엔티티 매니저를 관리함
 - 즉 EntityManager의 프록시가 실제 인스턴스를 대신하여 SimpleJpaRepository에 주입되고, 트랜잭션의 시작과 종료 시점에 맞춰 실제 EntityManager 인스턴스를 제공하거나 해제하여 트랜잭션 단위로 엔티티 매니저를 사용할 수 있도록 함
 - 트랜잭션 범위 내에서 프록시로 감싸진 EntityManager를 동적으로 바인딩하고 해제하는 역할을 `SharedEntityManagerCreator`가 하는데, 트랜잭션이 시작될 때마다 새로운 EntityManager 인스턴스를 가져오거나, 현재 트랜잭션에 바인딩된 EntityManager를 반환함
 
@@ -491,16 +441,16 @@ ProjectionFactory는 스프링 데이터 JPA에서 프로젝션(projection) 인�
 
 두 가지 유형으로 나뉨
 - 클로즈드 프로젝션 (Closed Projection)
-    - 프로젝션 인터페이스에 정의된 getter를 통해 쿼리 결과 매핑
-    - ```java
+  - 프로젝션 인터페이스에 정의된 getter를 통해 쿼리 결과 매핑
+  - ```java
       // name 필드만 조회하는 프로젝션
       public interface UserNameProjection {
           String getName();
       }
       ```
 - 오픈 프로젝션 (Open Projection)
-    - 복잡한 표현식을 포함한 프로젝션
-    - ```java
+  - 복잡한 표현식을 포함한 프로젝션
+  - ```java
       public interface UserSummary {
           String getName();
     
@@ -855,7 +805,7 @@ public <S extends T> S saveAndFlush(S entity) {
 }
 ```
 
-###### 엔티티 ID 생성 전략에 따른 ID 값과 SQL 실행 시점 결정 
+###### 엔티티 ID 생성 전략에 따른 ID 값과 SQL 실행 시점 결정
 
 새로운 엔티티를 저장하려고 entity.persit() 메서드를 호출하면 엔티티는 영속성 컨텍스트에 추가됨
 
@@ -863,15 +813,15 @@ public <S extends T> S saveAndFlush(S entity) {
 
 JPA의 ID 생성 전략
 - GenerationType.IDENTITY (특정 벤더에 의존하는 방식)
-    - 기본 키 생성을 DB에게 위임하는 전략 
-    - 엔티티를 영속성 컨텍스트에 추가한 후 INSERT 쿼리가 실제로 실행되기 전까지 ID가 설정되지 않음
-    - 영속성 컨텍스트는 무조건 ID 속성이 있어야 하므로, 이 전략을 사용하면 `persist()` 호출 시 트랜잭션 커밋과 상관없이 곧바로 INSERT 쿼리를 수행함
+  - 기본 키 생성을 DB에게 위임하는 전략
+  - 엔티티를 영속성 컨텍스트에 추가한 후 INSERT 쿼리가 실제로 실행되기 전까지 ID가 설정되지 않음
+  - 영속성 컨텍스트는 무조건 ID 속성이 있어야 하므로, 이 전략을 사용하면 `persist()` 호출 시 트랜잭션 커밋과 상관없이 곧바로 INSERT 쿼리를 수행함
 - GenerationType.SEQUENCE (특정 벤더에 의존하는 방식)
-    - 데이터베이스 시퀀스를 사용하여 ID를 생성하는 전략 
-    - `persist()` 메서드 호출 시점에 JPA에서 데이터베이스 시퀀스 값을 먼저 조회하여 ID 값을 설정함
-    - ID가 INSERT 쿼리 실행전에 결정되며, INSERT 쿼리는 트랜잭션이 커밋될 때 수행됨
-    - 시퀀스를 생성하는 어노테이션이 필요함
-    - ```java
+  - 데이터베이스 시퀀스를 사용하여 ID를 생성하는 전략
+  - `persist()` 메서드 호출 시점에 JPA에서 데이터베이스 시퀀스 값을 먼저 조회하여 ID 값을 설정함
+  - ID가 INSERT 쿼리 실행전에 결정되며, INSERT 쿼리는 트랜잭션이 커밋될 때 수행됨
+  - 시퀀스를 생성하는 어노테이션이 필요함
+  - ```java
       @Table(name="users")
       @Entity
       @SequenceGenerator ( // 시퀀스 생성
@@ -886,12 +836,12 @@ JPA의 ID 생성 전략
       }
       ```
 - GenerationType.UUID
-    - 기본 키로 UUID를 사용하는 전략
+  - 기본 키로 UUID를 사용하는 전략
 - GenerationType.TABLE (특정 벤더에 독립적인 방식)
-    - 시퀀스 테이블 흉내내서 ID를 관리하는 전략 
-    - 특정 벤더에 의존적이지 않은 방식이지만 별도의 시퀀스 테이블을 만들고 관리해야 함
-    - INSERT 쿼리 실행 전에 ID 값이 결정될 수 있음
-    - ```java
+  - 시퀀스 테이블 흉내내서 ID를 관리하는 전략
+  - 특정 벤더에 의존적이지 않은 방식이지만 별도의 시퀀스 테이블을 만들고 관리해야 함
+  - INSERT 쿼리 실행 전에 ID 값이 결정될 수 있음
+  - ```java
       @Entity
       public class User {
           @GeneratedValue(strategy = GenerationType.TABLE, generator = "USERS_SEQ_GENERATOR")
@@ -905,10 +855,10 @@ JPA의 ID 생성 전략
       }
       ```
 - GenerationType.AUTO (엔티티 ID 생성 기본 전략)
-    - JPA 구현체가 자동으로 선택하도록 하는 전략(데이터베이스 벤더에 따라 결정됨)
-    - MySQL: GenerationType.AUTO (AUTO_INCREMENT)
-    - PostgreSQL: GenerationType.SEQUENCE
-    - Oracle: GenerationType. SEQUENCE
+  - JPA 구현체가 자동으로 선택하도록 하는 전략(데이터베이스 벤더에 따라 결정됨)
+  - MySQL: GenerationType.AUTO (AUTO_INCREMENT)
+  - PostgreSQL: GenerationType.SEQUENCE
+  - Oracle: GenerationType. SEQUENCE
 
 ##### 삭제
 
@@ -1084,6 +1034,59 @@ public void deleteAllInBatch(Iterable<T> entities) {
 }
 ```
 
+## 리포지토리 인터페이스 자동 구현(SimpleJpaRepository 생성) 및 프록시 패턴 적용
+
+### 1. 리포지토리 인터페이스 정의
+
+Repository 인터페이스를 확장한 리포지토리 인터페이스 정의
+
+```java
+  public interface UserRepository extends JpaRepository<User, Long> {
+    List<User> findByLastName(String lastName);
+  }
+```
+
+### 2. 스프링 부트 자동 구성, 프록시 패턴 적용
+
+스프링 부트 애플리케이션이 구동되면서 [HibernateJpaAutoConfiguration](../txt/spring%20data%20jpa%20autoconfiguration.md#hibernatejpaautoconfiguration), [JpaRepositoriesAutoConfiguration](../txt/spring%20data%20jpa%20autoconfiguration.md#jparepositoriesautoconfiguration) 자동 구성 활성화
+
+- 모든 리포지토리 인터페이스 스캔(`@EnableJpaRepositories` 어노테이션이 설정된 패키지)
+- 스캔된 각 리포지토리 인터페이스마다 **프록시 구현체** 생성 및 스프링 빈 등록
+- 또한 [JpaRepositoryFactory](https://docs.spring.io/spring-data/jpa/docs/current/api/org/springframework/data/jpa/repository/support/JpaRepositoryFactory.html)를 사용하여 각각의 엔티티에 대한 리포지토리 인터페이스 기본 구현체인 SimpleJpaRepository를 생성함
+
+예시
+- ProductRepository, OrderRepository에 대해 각각 프록시 생성
+- JpaRepositoryFactory -> 각각의 엔티티(Product, Order)에 대해 SimpleJpaRepository 인스턴스 생성
+- ProductRepostiory 프록시 -> `SimpleJpaRepository<Product, Long>` 인스턴스 사용
+- OrderRepository 프록시 -> `SimpleJpaRepository<Order, Long>` 인스턴스 사용
+
+#### 프록시 구현체 동작 방식
+
+프록시 구현체는 리포지토리 인터페이스의 메서드를 구현하는데, 내부적으로 메서드 호출을 상황에 따라 적절하게 위임하는 진입점 역할을 함
+
+todo 수정 필요
+
+- 기본 CRUD 메서드 호출 -> SimpleJpaRepository에게 위임 -> SimpleJpaRepository는 EntityManager를 통해 DB 작업 수행
+- 메서드명 기반 쿼리(메서드명 파싱을 통해 동적으로 JPQL 쿼리 생성) 호출 -> `JpaQueryMethodFactory`를 통해 메서드명 기반 쿼리 파악 ->  `PartTree`를 통해 키워드 분석 후 JPQL 생성 -> EntityManager를 통해 DB 작업 수행
+- 사용자 정의 쿼리(`@Query`) 호출 -> `JpaQueryMethodFactory`를 통해 커스텀 `@Query` 기반 쿼리 파악 -> `@Query` 내용을 EntityManager에게 전달하여 DB 작업 수행, 메서드 파라미터를 `@Query`에 바인딩
+- 커스텀 구현체의 메서드 호출 -> 해당 구현체에게 위임
+
+### 3. 의존성 주입
+
+```java
+@Service
+@Transactional
+public class UserService {
+
+  private final UserRepository userRepository;
+
+  // 스프링 부트 자동 구성에 의해 생성된 UserRepository 타입의 프록시 객체 주입
+  public UserService(UserRepository userRepository) {
+    this.userRepository = userRepository;
+  }
+}
+```
+
 ## NamedQuery
 
 엔티티 클래스에 @NamedQuery 어노테이션을 사용해서 정적 쿼리를 선언하는 방식으로 JPA 표준임
@@ -1103,9 +1106,9 @@ public void deleteAllInBatch(Iterable<T> entities) {
         query = "SELECT u FROM User WHERE u.firstName = :firstName"
 )
 public class User {
-    @Id
-    private Long id;
-    private String firstName;
+  @Id
+  private Long id;
+  private String firstName;
 }
 ```
 
@@ -1113,10 +1116,10 @@ public class User {
 
 ```java
 public interface UserRepository extends JpaRepository<User, Long> {
-    
-    // @Query 부분을 주석 처리해도 동작함
-    @Query(name = "User.findByFirstName")
-    List<User> findByFirstName(@Param("firstName") String firstName);
+
+  // @Query 부분을 주석 처리해도 동작함
+  @Query(name = "User.findByFirstName")
+  List<User> findByFirstName(@Param("firstName") String firstName);
 }
 ```
 
@@ -1162,23 +1165,23 @@ subject와 predicate 사이의 값은 고유 플래그를 명시하지 않는 �
 ```java
 public interface UserRepository extends Repository<User, Long> {
 
-    // SELECT u FROM User u WHERE u.emailAddress = ?1 and u.lastname = ?2 쿼리로 변환됨
-    List<User> findEmailAddressAndLastname(String emailAddress, String lastname);
+  // SELECT u FROM User u WHERE u.emailAddress = ?1 and u.lastname = ?2 쿼리로 변환됨
+  List<User> findEmailAddressAndLastname(String emailAddress, String lastname);
 
-    List<Person> findByEmailAddressAndLastname(EmailAddress emailAddress, String lastname);
+  List<Person> findByEmailAddressAndLastname(EmailAddress emailAddress, String lastname);
 
-    // 중복 제거
-    List<Person> findDistinctPeopleByLastnameOrFirstname(String lastname, String firstname);
-    List<Person> findPeopleDistinctByLastnameOrFirstname(String lastname, String firstname);
+  // 중복 제거
+  List<Person> findDistinctPeopleByLastnameOrFirstname(String lastname, String firstname);
+  List<Person> findPeopleDistinctByLastnameOrFirstname(String lastname, String firstname);
 
-    // 대소문자 구분 X
-    List<Person> findByLastnameIgnoreCase(String lastname);
-    // 모든 속성에 대한 대소문자 구분 X
-    List<Person> findByLastnameAndFirstnameAllIgnoreCase(String lastname, String firstname);
+  // 대소문자 구분 X
+  List<Person> findByLastnameIgnoreCase(String lastname);
+  // 모든 속성에 대한 대소문자 구분 X
+  List<Person> findByLastnameAndFirstnameAllIgnoreCase(String lastname, String firstname);
 
-    // 정렬 조건 지정
-    List<Person> findByLastnameOrderByFirstnameAsc(String lastname);
-    List<Person> findByLastnameOrderByFirstnameDesc(String lastname);
+  // 정렬 조건 지정
+  List<Person> findByLastnameOrderByFirstnameAsc(String lastname);
+  List<Person> findByLastnameOrderByFirstnameDesc(String lastname);
 }
 ```
 
@@ -1202,16 +1205,16 @@ public interface UserRepository extends JpaRepository<User, Long> {
 ```java
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    // 네이티브 SQL 쿼리 정의
-    @Query(value = "SELECT * FROM users WHERE first_name = ?1 AND age > ?2", nativeQuery = true)
-    List<User> findByFirstNameAndAgeGreaterThanNative(String firstName, int age);
+  // 네이티브 SQL 쿼리 정의
+  @Query(value = "SELECT * FROM users WHERE first_name = ?1 AND age > ?2", nativeQuery = true)
+  List<User> findByFirstNameAndAgeGreaterThanNative(String firstName, int age);
 }
 ```
 
-## 스프링 데이터의 쿼리 생성 전략 및 사용 
+## 스프링 데이터의 쿼리 생성 전략 및 사용
 
 1. 애플리케이션 로드 시점에 @NamedQuery 어노테이션에 정의된 정적 쿼리를 파싱하여 EntityManager 내부 캐시에 저장함
-2. 리포지토리 인터페이스를 스캔해서 @Query 어노테이션이 정의된 경우 해당 메서드에 정의된 JPQL을 매핑 
+2. 리포지토리 인터페이스를 스캔해서 @Query 어노테이션이 정의된 경우 해당 메서드에 정의된 JPQL을 매핑
 3. 선언된 쿼리가 없다면 메서드 이름을 기반으로 쿼리를 동적으로 생성함(메서드 호출될 때 JPQL 생성)
 
 ## 동적 쿼리
@@ -1246,14 +1249,14 @@ Predicate toPredicate(Root<T> root, @Nullable CriteriaQuery<?> query, CriteriaBu
 ```java
 @Entity
 public class User {
-    @Id
-    @GeneratedValue
-    private Long id;
-    private String firstName;
-    private String lastName;
-    private int age;
+  @Id
+  @GeneratedValue
+  private Long id;
+  private String firstName;
+  private String lastName;
+  private int age;
 
-    // Getters and Setters
+  // Getters and Setters
 }
 ```
 
@@ -1268,15 +1271,15 @@ hasAgeGreaterThan 메서드는 주어진 int 값보다 큰 값을 가진 엔티�
 ```java
 public class UserSpecification {
 
-    public static Specification<User> hasLastName(String lastName) {
-        return (root, query, builder) ->
-                builder.equal(root.get("lastName"), lastName);
-    }
+  public static Specification<User> hasLastName(String lastName) {
+    return (root, query, builder) ->
+            builder.equal(root.get("lastName"), lastName);
+  }
 
-    public static Specification<User> hasAgeGreaterThan(int age) {
-        return (root, query, builder) ->
-                builder.greaterThan(root.get("age"), age);
-    }
+  public static Specification<User> hasAgeGreaterThan(int age) {
+    return (root, query, builder) ->
+            builder.greaterThan(root.get("age"), age);
+  }
 } 
 ```
 
@@ -1293,11 +1296,11 @@ public interface SpecUserRepository extends JpaRepository<SpecUser, Long>, JpaSp
 
 ```java
 public List<SpecUser> findUsers(String lastName, int age) {
-    Specification<SpecUser> spec = Specification
-            .where(SpecUserSpecification.hasLastName(lastName))
-            .and(SpecUserSpecification.hasAgeGreaterThan(age));
+  Specification<SpecUser> spec = Specification
+          .where(SpecUserSpecification.hasLastName(lastName))
+          .and(SpecUserSpecification.hasAgeGreaterThan(age));
 
-    return specUserRepository.findAll(spec);
+  return specUserRepository.findAll(spec);
 }
 ```
 
@@ -1315,13 +1318,13 @@ QBE, Specification, QueryDSL: 동적 쿼리 생성
 
 미리 정의된 쿼리가 아니라 사용자 입력, 비즈니스 로직, 애플리케이션 상태 등과 같은 요소에 따라 **쿼리의 구조와 내용을 동적으로 변경**할 수 있음
 - 조건에 따른 쿼리 변경
-    - 쿼리 조건이 동적으로 변경됨
-    - 검색 조건으로 전달된 값이 존재할 때만 특정 필드를 쿼리에 포함시키거나, 여러 필터 조건을 결합시킴
+  - 쿼리 조건이 동적으로 변경됨
+  - 검색 조건으로 전달된 값이 존재할 때만 특정 필드를 쿼리에 포함시키거나, 여러 필터 조건을 결합시킴
 - 동적 조합
-    - 여러 조건이 AND, OR 같은 논리 연산자로 결합되거나 조건이 생략될 수 있음
-    - 사용자가 선택한 여러 필터 조건을 조합하여 하나의 SQL 쿼리를 동적으로 생성
+  - 여러 조건이 AND, OR 같은 논리 연산자로 결합되거나 조건이 생략될 수 있음
+  - 사용자가 선택한 여러 필터 조건을 조합하여 하나의 SQL 쿼리를 동적으로 생성
 - 실행 시점에 생성
-    - 컴파일 타임이 아닌 런타임에 쿼리가 생성됨
+  - 컴파일 타임이 아닌 런타임에 쿼리가 생성됨
 
 일반 쿼리와의 비교
 
