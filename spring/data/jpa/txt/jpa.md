@@ -110,7 +110,7 @@ JPA는 SQL이 아닌, 객체 지향적으로 데이터를 질의할 수 있는 J
 <img src="../txt/images/entity-state.png" alt="entity state">
 
 - 비영속(new/transient): 영속성 컨텍스트가 관리하지 않는 상태로, 데이터베이스와 연관되지 않은 상태
-- 영속(managed): 영속성 컨텍스트가 관리하는 상태로, 데이터베이스와 연관되어 있는 상태
+- 영속(managed/persistent): 영속성 컨텍스트가 관리하는 상태로, 데이터베이스와 연관되어 있는 상태
 - 준영속(detached): 한 때 영속 상태였지만, 현재는 영속성 컨텍스트가 관리하지 않는 상태
 - 삭제(removed): 영속성 컨텍스트에 의해 삭제가 예약된 상태
 
