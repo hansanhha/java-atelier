@@ -6,6 +6,9 @@
 - Transaction Objects
   - [TransactionDefinition](#transactiondefinition)
   - [TransactionStatus, TransactionExecution, SavepointManager](#transactionstatus-transactionexecution-savepointmanager)
+  - [AbstractTransactionStatus](#abstracttransactionstatus)
+  - [DefaultTransactionStatus](#defaulttransactionstatus)
+  - [SimpleTransactionStatus](#simpletransactionstatus)
 - Transaction Managers
   - [PlatformTransactionManager](#platformtransactionmanager)
   - [AbstractPlatformTransactionManager](#abstractplatformtransactionmanager)
@@ -360,6 +363,206 @@ public interface SavepointManager {
     void releaseSavepoint(Object savepoint) throws TransactionException;
 }
 ```
+
+## AbstractTransactionStatus
+
+`public abstract class AbstractTransactionStatus implements TransactionStatus`
+
+TransactionStatus 인터페이스 구현체들의 기반이 되는 추상 클래스
+
+트랜잭션 local rollback-only, complete, SavepointManager 위임 로직 등을 구현함
+
+### AbstractTransactionStatus 멤버 필드
+
+```java
+private boolean rollbackOnly = false;
+
+private boolean completed = false;
+
+@Nullable
+private Object savepoint;
+```
+
+### TransactionExecution 구현 (일부)
+
+```java
+@Override
+public void setRollbackOnly() {
+    if (this.completed) {
+        throw new IllegalStateException("Transaction completed");
+    }
+    this.rollbackOnly = true;
+}
+
+@Override
+public boolean isRollbackOnly() {
+  return (isLocalRollbackOnly() || isGlobalRollbackOnly());
+}
+
+// 지역(local) 트랜잭션 rollback-only 설정 값 반환
+public boolean isLocalRollbackOnly() {
+  return this.rollbackOnly;
+}
+
+// 트랜잭션 전체(global)의 rollback-only 설정 값 반환(템플릿 메서드)
+public boolean isGlobalRollbackOnly() {
+  return false;
+}
+
+// 커밋 또는 롤백된 상태 마킹
+public void setCompleted() {
+  this.completed = true;
+}
+
+@Override
+public boolean isCompleted() {
+  return this.completed;
+}
+```
+
+### savepoint 상태 처리
+
+```java
+@Override
+public boolean hasSavepoint() {
+    return (this.savepoint != null);
+}
+
+// 이 트랜잭션의 savepoint 설정 (PROPAGATION_NESTED 전파 설정 시사용)
+protected void setSavepoint(@Nullable Object savepoint) {
+  this.savepoint = savepoint;
+}
+
+@Nullable
+protected Object getSavepoint() {
+  return this.savepoint;
+}
+
+// 이 트랜잭션에 대한 savepoint 생성 및 보관
+public void createAndHoldSavepoint() throws TransactionException {
+  setSavepoint(getSavepointManager().createSavepoint());
+}
+
+// savepoint로 롤백 후 savepoint 해제
+public void rollbackToHeldSavepoint() throws TransactionException {
+  Object savepoint = getSavepoint();
+  if (savepoint == null) {
+    throw new TransactionUsageException(
+            "Cannot roll back to savepoint - no savepoint associated with current transaction");
+  }
+  getSavepointManager().rollbackToSavepoint(savepoint);
+  getSavepointManager().releaseSavepoint(savepoint);
+  setSavepoint(null);
+}
+
+// savepoint 해제
+public void releaseHeldSavepoint() throws TransactionException {
+  Object savepoint = getSavepoint();
+  if (savepoint == null) {
+    throw new TransactionUsageException(
+            "Cannot release savepoint - no savepoint associated with current transaction");
+  }
+  getSavepointManager().releaseSavepoint(savepoint);
+  setSavepoint(null);
+}
+```
+
+### SavepointManager 구현
+
+```java
+// 템플릿 메서드를 통해 SavepointManager 구현체에 접근하여 savepoint 생성
+@Override
+public Object createSavepoint() throws TransactionException {
+    return getSavepointManager().createSavepoint();
+}
+
+// 템플릿 메서드를 통해 SavepointManager 구현체에 접근하여 savepoint로 롤백
+@Override
+public void rollbackToSavepoint(Object savepoint) throws TransactionException {
+  getSavepointManager().rollbackToSavepoint(savepoint);
+}
+
+// 템플릿 메서드를 통해 SavepointManager 구현체에 접근하여 savepoint 해제
+@Override
+public void releaseSavepoint(Object savepoint) throws TransactionException {
+  getSavepointManager().releaseSavepoint(savepoint);
+}
+
+// SavepointManager 반환 템플릿 메서드
+protected SavepointManager getSavepointManager() {
+  throw new NestedTransactionNotSupportedException("This transaction does not support savepoints");
+}
+```
+
+## DefaultTransactionStatus
+
+트랜잭션의 상태와 동작을 관리하는 TransactionStatus의 기본 구현체
+
+포함 정보
+- AbstractPlatformTransactionManager가 필요로 하는 모든 정보 
+- PlatformTransactionManager의 구현체에 결정된 범용 트랜잭션 객체
+
+사용처
+- AbstractPlatformTransactionManager 내부
+- 그 이외의 다른 곳에서 사용 X, 테스트가 필요한 경우 [`SimpleTransactionStatus`](#simpletransactionstatus) 사용
+
+### 필드
+
+```java
+@Nullable
+private final String transactionName;
+
+// 트랜잭션 매니저 구현체가 실제로 사용하는 구체적인 트랜잭션 객체(트랜잭션 리소스/컨텍스트)를 참조하는 필드
+@Nullable
+private final Object transaction;
+
+// 기존 트랜잭션에 참여하지 않고, 새 트랜잭션인지
+private final boolean newTransaction;
+
+// 해당 트랜잭션에 대해 새 트랜잭션 동기화가 열린건지 
+private final boolean newSynchronization;
+
+// 중첩된 트랜잭션인지
+private final boolean nested;
+
+private final boolean readOnly;
+
+// debug 모드 로깅용
+private final boolean debug;
+
+// 이 트랜잭션에 대해 중지된 리소스를 보관하는 필드
+@Nullable
+private final Object suspendedResources;
+```
+
+위의 필드에 대한 조회 메서드는 생략함
+
+### 
+
+## SimpleTransactionStatus
+
+PlatformTransactionManager 커스텀 구현체 또는 테스트 용도로 사용하는 TransactionStatus 구현체
+
+```java
+public class SimpleTransactionStatus extends AbstractTransactionStatus {
+
+	private final boolean newTransaction;
+
+	public SimpleTransactionStatus() {
+		this(true);
+	}
+
+	public SimpleTransactionStatus(boolean newTransaction) {
+		this.newTransaction = newTransaction;
+	}
+
+	@Override
+	public boolean isNewTransaction() {
+		return this.newTransaction;
+	}
+}
+```
+
 
 ## PlatformTransactionManager
 
