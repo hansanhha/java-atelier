@@ -2,19 +2,19 @@
 - [EntityManager EntityTransaction](#entitymanager-entitytransaction)
 - [JPA Transaction Propagation](#jpa-transaction-propagation)
 
-[Spring Data JPA Transaction](#spring-data-jpa-transaction)
-- Transaction Objects
+[Spring Transaction](#spring-transaction)
+- [Transaction Objects](#transactiondefinition)
   - [TransactionDefinition](#transactiondefinition)
   - [TransactionStatus, TransactionExecution, SavepointManager](#transactionstatus-transactionexecution-savepointmanager)
   - [AbstractTransactionStatus](#abstracttransactionstatus)
   - [DefaultTransactionStatus](#defaulttransactionstatus)
   - [SimpleTransactionStatus](#simpletransactionstatus)
-- Transaction Managers
+- [Transaction Managers](#transaction-managers)
   - [PlatformTransactionManager](#platformtransactionmanager)
-  - [AbstractPlatformTransactionManager](#abstractplatformtransactionmanager)
+  - [AbstractPlatformTransactionManager](./AbstractPlatformTransactionManager.md)
   - [JpaTransactionManager](#jpatransactionmanager)
   - [TransactionSynchronizationManager](#transactionsynchronizationmanager)
-- Spring's Transaction Behavior
+- [Spring's Transaction Behavior](#springs-transaction-behavior)
   - [Spring Transaction Propagation](#spring-transaction-propagation)
   - [Transaction Isolation Level](#transaction-isolation-level)
   - [@Transactional](#transactional)
@@ -53,7 +53,7 @@ try {
     // 트랜잭션 시작
     transaction.begin();
     
-    // 영속성 컨텍스트에 엔티티 영속화
+    // 영속성 컨텍스트에 엔티티 영속화, 트랜잭션 범위 내에서만 엔티티 매니저 사용
     entityManager.persist(simpleEntity);
     
     //트랜잭션 커밋
@@ -63,6 +63,8 @@ try {
     // 예외 발생 시 트랜잭션 롤백
     transaction.rollback();
 } finally {
+    
+    // 엔티티 매니저 종료
     entityManager.close();
 }
 ```
@@ -79,26 +81,38 @@ JPA 자체에서 트랜잭션 전파 기능을 지원하지 않음
 
 스프링의 트랜잭션 관리로 보완할 수 있음
 
-## Spring Data JPA Transaction
+## Spring Transaction
 
-스프링 데이터 JPA는 스프링의 트랜잭션 관리 및 JPA와 통합하여 선언적으로 트랜잭션을 관리하거나 영속성 컨텍스트 변경사항을 자동으로 반영하는 메커니즘을 제공함
+스프링은 스프링의 트랜잭션 관리 및 JPA와 통합하여 선언적으로 트랜잭션을 관리하거나 영속성 컨텍스트 변경사항을 자동으로 반영하는 메커니즘을 제공함
 
 주요 컴포넌트: `@Transactional` `JpaTransactionManager` `TransactionSynchronizationManager`
 
+## Transaction Objects
+
+스프링에서 데이터베이스 트랜잭션을 객체로 표현/관리하기 위해 여러 가지 객체를 제공하며, 트랜잭션 매니저 구현체에 따라 각 트랜잭션 객체를 구현함 
+
+TransactionDefinition: 트랜잭션 설정 정보 보관, 이 정보를 바탕으로 트랜잭션 생성
+
+TransactionStatus: 생성된 트랜잭션에 대한 상태 정보 보관 및 제어
+
+SavepointManager: 트랜잭션 savepoint 제어
+
+SmartTransactionObject: 트랜잭션 rollback-only 설정 확인
+
 ## TransactionDefinition
 
-트랜잭션 설정 정보 보관 객체
-- 트랜잭션 이름(`name`)
-- 트랜잭션 전파(`PROPAGATION_*`): 새로운 트랜잭션 생성/기존 트랜잭션 참여 여부 설정 및 트랜잭션이 없는 상태에서의 처리 방식 정의
-- 격리 수준(`ISOLATION_*`): 데이터베이스 격리성 수준 설정
-- 최대 지속 시간(`TIMEOUT_DEFAULT`): 트랜잭션 최대 지속 시간 설정(시간 내에 트랜잭션이 완료되지 않으면 롤백 처리)
-- 읽기 전용(`readOnly``): 트랜잭션 읽기 전용 여부 설정
+트랜잭션 설정 정보를 반환하는 메서드만 정의한 인터페이스
 
-트랜잭션 전파, 격리 수준은 인터페이스 상수값(public static final)으로 정의함
+설정 종류에 따라 상수값을 정의하고 모든 메서드를 기본 값을 반환하는 default 메서드로 정의함
 
-모든 설정 값 조회 메서드를 default 메서드로 정의함
+설정 정보(필드 이름)
+- **트랜잭션 이름**(`name`)
+- **트랜잭션 전파**(`PROPAGATION_*`): 새로운 트랜잭션 생성, 기존 트랜잭션 참여 여부 설정 및 트랜잭션이 없는 상태에서의 처리 방식 정의
+- **격리 수준**(`ISOLATION_*`): 데이터베이스 격리 수준 설정
+- **최대 지속 시간**(`TIMEOUT_DEFAULT`): 트랜잭션 최대 지속 시간 설정(시간 내에 트랜잭션이 완료되지 않으면 롤백 처리)
+- **읽기 전용**(`readOnly``): 트랜잭션 읽기 전용 설정
 
-**트랜잭션 전파 설정 값으로 TransactionManager와 TransactionSynchronizationManager의 동작을 결정함**
+**트랜잭션 전파 설정(PROPAGATION_*) 값으로 TransactionManager와 TransactionSynchronizationManager의 동작을 결정함**
 
 ```java
 public interface TransactionDefinition {
@@ -107,8 +121,10 @@ public interface TransactionDefinition {
            트랜잭션 전파 설정 값
     ------------------------------*/
     
+    // 트랜잭션 전파 설정에 따라 트랜잭션 생성/참여, 트랜잭션 동기화 생성/공유 등의 동작 방식이 결정됨
+  
     /*
-        트랜잭션 정의/트랜잭션 동기화 범위의 기본 값
+        트랜잭션 정의/트랜잭션 동기화 범위의 기본 트랜잭션 전파 값
         
         트랜잭션 매니저
         - 기존 트랜잭션이 있으면 해당 트랜잭션 컨텍스트 참여
@@ -192,6 +208,8 @@ public interface TransactionDefinition {
            격리 수준 설정 값
     ------------------------------*/
 
+    // 데이터베이스 격리 수준과 동일  
+  
     int ISOLATION_DEFAULT = -1;
 
     int ISOLATION_READ_UNCOMMITTED = 1;
@@ -247,7 +265,7 @@ public interface TransactionDefinition {
 
 ## TransactionStatus, TransactionExecution, SavepointManager
 
-트랜잭션의 상태를 관리하는 인터페이스로 PlatformTransactionManager와 함께 동작함
+실행 중인 트랜잭션의 상태를 관리하는 인터페이스로 PlatformTransactionManager와 함께 동작함
 
 사용 시점
 - 트랜잭션 시작
@@ -255,6 +273,7 @@ public interface TransactionDefinition {
   - 반환되는 `TransactionStatus` 객체를 통해 트랜잭션 상태 추적
 - 트랜잭션 처리
   - 비즈니스 로직 실행 중 `TransactionStatus`를 참조하여 롤백 여부, 새로운 트랜잭션 여부 확인
+  - `transactionStatus.isNewTransaction()` `transactionStatus.hasTransaction()` 등
 - 트랜잭션 커밋/롤백
   - `commit(TrasactionStatus)` `rollback(TransactionStatus)`
 
@@ -277,9 +296,9 @@ TransactionStatus는 TransactionExecution, SavepointManager, Flushable 인터페
 
 [예시 코드](../src/main/java/spring/data/jpa/transaction/TransactionStatusExample.java)
 
-트랜잭션의 현재 상태 정보를 제공하는 인터페이스
+트랜잭션의 현재 상태 정보를 제공하는 인터페이스로 TransactionStatus에 의해 확장됨
 
-TransactionStatus, ReactiveTransaction, TransactionExecutionListener에서 사용
+이외에도 ReactiveTransaction, TransactionExecutionListener에서 사용
 
 정의된 메서드(모두 default 메서드로 정의)
 - 트랜잭션 이름
@@ -368,11 +387,11 @@ public interface SavepointManager {
 
 `public abstract class AbstractTransactionStatus implements TransactionStatus`
 
-TransactionStatus 인터페이스 구현체들의 기반이 되는 추상 클래스
+TransactionStatus 인터페이스를 일부 구현하며, TransactionStatus 구현체들의 기반이 되는 추상 클래스임
 
 트랜잭션 local rollback-only, complete, SavepointManager 위임 로직 등을 구현함
 
-### AbstractTransactionStatus 멤버 필드
+### AbstractTransactionStatus - 필드
 
 ```java
 private boolean rollbackOnly = false;
@@ -383,7 +402,7 @@ private boolean completed = false;
 private Object savepoint;
 ```
 
-### TransactionExecution 구현 (일부)
+### AbstractTransactionStatus - TransactionExecution 구현 (일부)
 
 ```java
 @Override
@@ -420,7 +439,7 @@ public boolean isCompleted() {
 }
 ```
 
-### savepoint 상태 처리
+### AbstractTransactionStatus - savepoint 상태 처리
 
 ```java
 @Override
@@ -467,7 +486,7 @@ public void releaseHeldSavepoint() throws TransactionException {
 }
 ```
 
-### SavepointManager 구현
+### AbstractTransactionStatus - SavepointManager 구현
 
 ```java
 // 템플릿 메서드를 통해 SavepointManager 구현체에 접근하여 savepoint 생성
@@ -498,15 +517,24 @@ protected SavepointManager getSavepointManager() {
 
 트랜잭션의 상태와 동작을 관리하는 TransactionStatus의 기본 구현체
 
+상속 관계
+
+```text
+TransactionExecution, SavepointManager, Flushable,
+-\ TransactionStatus
+--\ AbstractTransactionStatus
+---\ DefaultTransactionStatus 
+```
+
 포함 정보
-- AbstractPlatformTransactionManager가 필요로 하는 모든 정보 
-- PlatformTransactionManager의 구현체에 결정된 범용 트랜잭션 객체
+- [AbstractPlatformTransactionManager](#abstractplatformtransactionmanager)가 필요로 하는 모든 정보 
+- [PlatformTransactionManager](#platformtransactionmanager) 구현체에서 구현한 트랜잭션 객체
 
 사용처
 - AbstractPlatformTransactionManager 내부
 - 그 이외의 다른 곳에서 사용 X, 테스트가 필요한 경우 [`SimpleTransactionStatus`](#simpletransactionstatus) 사용
 
-### 필드
+### DefaultTransactionStatus - 필드
 
 ```java
 @Nullable
@@ -535,9 +563,69 @@ private final boolean debug;
 private final Object suspendedResources;
 ```
 
-위의 필드에 대한 조회 메서드는 생략함
+위의 필드에 대한 조회 메서드는 생략함(hasTransaction 제외)
 
-### 
+```java
+@Override
+public boolean hasTransaction() {
+  return (this.transaction != null);
+}
+```
+
+### DefaultTransactionStatus - 트랜잭션 객체 기반 메서드
+
+DefaultTransactionStatus는 트랜잭션 매니저 구현체(JpaTransactionManager 등)가 구현한 트랜잭션 객체를 참조하는 `Object transaction` 필드를 가짐  
+
+이 필드를 기반으로 구현하는 메서드들은 다음과 같음
+
+#### 글로벌 트랜잭션 롤백 설정 확인
+
+SmartTransactionObject는 트랜잭션 객체가 롤백 전용 상태인지 확인할 수 있는 인터페이스로 하이버네이트, JDBC, JPA 등의 트랜잭션 객체가 구현함
+
+```java
+@Override
+public boolean isGlobalRollbackOnly() {
+    return (this.transaction instanceof SmartTransactionObject smartTransactionObject &&
+            smartTransactionObject.isRollbackOnly());
+}
+```
+
+#### SavepointManager 확인 및 반환
+
+```java
+public boolean isTransactionSavepointManager() {
+    return (this.transaction instanceof SavepointManager);
+}
+```
+
+트랜잭션 객체가 SavepointManager 타입이 아닌 경우 예외 발생
+
+```java
+@Override
+protected SavepointManager getSavepointManager() {
+    Object transaction = this.transaction;
+    if (!(transaction instanceof SavepointManager savepointManager)) {
+        throw new NestedTransactionNotSupportedException(
+                "Transaction object [" + this.transaction + "] does not support savepoints");
+    }
+    return savepointManager;
+}
+```
+
+#### flush
+
+DefaultTransactionStatus가 상속 관계에 따라 간접적으로 확장하는 TransactionStatus는 Flushable 인터페이스를 구현함
+
+flush 메서드는 세션을 기반으로 데이터베이스에 모든 데이터를 SmartTransactionObject를 통해 내보냄
+
+```java
+@Override
+public void flush() {
+    if (this.transaction instanceof SmartTransactionObject smartTransactionObject) {
+        smartTransactionObject.flush();
+    }
+}
+```
 
 ## SimpleTransactionStatus
 
@@ -563,12 +651,25 @@ public class SimpleTransactionStatus extends AbstractTransactionStatus {
 }
 ```
 
+## Transaction Managers
+
+트랜잭션 및 트랜잭션 리소스 동기화를 관리하는 스프링 트랜잭션의 핵심 객체로 모든 트랜잭션 매니저 구현체는 스프링에서 제공하는 `TransactionManager` 최상위 마커 인터페이스를 확장함 
+
+spring data jpa 기준 트랜잭션 매니저 구현체 상속 관계도
+```text
+TransactionManager
+-\ PlatformTransactionManager
+--\ AbstractPlatformTransactionManager
+---\ JpaTransactionManager
+```
 
 ## PlatformTransactionManager
 
-스프링 프레임워크 자체에서 제공하는 스프링의 트랜잭션 관리 중앙 인터페이스
+스프링의 트랜잭션 관리 중앙 인터페이스 
 
 생각보다 몇 개 되지 않는 메서드만 정의되어 있지만 사악한 주석으로 메서드 행동을 설명하고 있음
+
+[자식 추상 클래스 AbstractPlatformTransactionManager](./AbstractPlatformTransactionManager.md)
 
 ```java
 public interface PlatformTransactionManager extends TransactionManager {
@@ -593,303 +694,6 @@ public interface PlatformTransactionManager extends TransactionManager {
 }
 ```
 
-## AbstractPlatformTransactionManager
-
-스프링은 최상위 인터페이스를 정의한 뒤, 각 구현체를 정의하기 전에 공통적으로 사용될 로직들을 추상 클래스에 중앙화하고 세부적인 구현을 템플릿 메서드에 맡기는 코드 구조를 즐겨 사용함 
-
-AbstractPlatformTransactionManager도 이러한 코드 구조를 가지는 기반 클래스로, 스프링의 표준 트랜잭션 동작 흐름들을 처리함
-- 기존 트랜잭션이 있는지 확인
-- 적절한 트랜잭션 전파 행동 적용
-- 필요한 경우 트랜잭션 재개 또는 중단
-- 커밋 시 rollback-only 플래그 여부 확인
-- 롤백 시 rollback-only 적용 또는 실제 롤백 수행
-- 등록된 동기화 콜백 트리거 (트랜잭션 동기화가 활성화된 경우)
-
-### 상속 관계
-
-PlatformTransactionManager 및 ConfigurableTransactionManager 확장
-
-ConfigurableTransactionManager: TransactionExecutionListener 등록 설정
-
-```java
-public abstract class AbstractPlatformTransactionManager
-		implements PlatformTransactionManager, ConfigurableTransactionManager, Serializable {
-```
-
-### 멤버 필드
-
-```java
-// 트랜잭션 동기화 상수값
-public static final int SYNCHRONIZATION_ALWAYS = 0;
-public static final int SYNCHRONIZATION_ON_ACTUAL_TRANSACTION = 1;
-public static final int SYNCHRONIZATION_NEVER = 2;
-
-static final Map<String, Integer> constants = Map.of(
-        "SYNCHRONIZATION_ALWAYS", SYNCHRONIZATION_ALWAYS,
-        "SYNCHRONIZATION_ON_ACTUAL_TRANSACTION", SYNCHRONIZATION_ON_ACTUAL_TRANSACTION,
-        "SYNCHRONIZATION_NEVER", SYNCHRONIZATION_NEVER
-);
-
-private int transactionSynchronization = SYNCHRONIZATION_ALWAYS;
-
-// TransactionDefinition.TIMEOUT_DEFAULT = -1
-private int defaultTimeout = TransactionDefinition.TIMEOUT_DEFAULT;
-
-// 트랜잭션 중첩 허용 여부
-private boolean nestedTransactionAllowed = false;
-
-// 기존 트랜잭션 검증 여부
-private boolean validateExistingTransaction = false;
-
-// 트랜잭션 실패 시 전체 트랜잭션 롤백 실행 여부
-private boolean globalRollbackOnParticipationFailure = true;
-
-// globalRollbackOnly 상태로 설정된 경우 커밋 시도 전 예외 발생 여부
-private boolean failEarlyOnGlobalRollbackOnly = false;
-
-// 커밋 실패 시 롤백 여부
-private boolean rollbackOnCommitFailure = false;
-
-// transactionExecutionListener 관리
-private Collection<TransactionExecutionListener> transactionExecutionListeners = new ArrayList<>();
-```
-
-### PlatformTransactionManager 구현 메서드
-
-친절하게 주석으로 PlatformTransactionManager의 구현부라는 것을 표시해준 옛날 스프링 코드의 모습
-
-```java
-//---------------------------------------------------------------------
-// Implementation of PlatformTransactionManager
-//---------------------------------------------------------------------
-```
-
-#### AbstractPlatformTransactionManager - public final getTransaction(TransactionDefinition definition)
-
-getTransaction 메서드는 트랜잭션 전파 설정에 따라 트랜잭션을 처리함
-
-[TransactionDefinition](#transactiondefinition) 파라미터: 트랜잭션 설정 정보 보관 객체
-- 트랜잭션 이름, 트랜잭션 전파
-- 격리 수준, 시간 초과, 읽기 전용
-
-```java
-@Override
-public final TransactionStatus getTransaction(@Nullable TransactionDefinition definition)
-        throws TransactionException {
-    
-    // 주어진 TransactionDefinition 또는 기본(모든 값 설정 X) 사용
-    TransactionDefinition def = (definition != null ? definition : TransactionDefinition.withDefaults());
-
-    // doGetTransaction 템플릿 메서드를 통해 트랜잭션 객체 획득 
-    Object transaction = doGetTransaction();
-
-    /*
-        isExistingTransaction 템플릿 메서드를 통해 doGetTransaction 메서드에서 
-        획득한 트랜잭션이 새로운 트랜잭션이 아닌 이미 존재한 트랜잭션인지 확인
-     */
-    if (isExistingTransaction(transaction)) {
-        // 만약 이미 존재한 트랜잭션(트랜잭션이 이미 시작된 경우)이라면
-        // 설정값에 따른 트랜잭션 전파 처리 후 결과(TransactionStatus) 반환
-        return handleExistingTransaction(def, transaction, debugEnabled);
-    }
-
-    // 새로운 트랜잭션인 경우 트랜잭션 설정 값 검증
-    if (def.getTimeout() < TransactionDefinition.TIMEOUT_DEFAULT) {
-        throw new InvalidTimeoutException("Invalid transaction timeout", def.getTimeout());
-    }
-
-    // 새로운 트랜잭션의 트랜잭션 전파 설정 값이 필수인 경우 예외 발생
-    if (def.getPropagationBehavior() == TransactionDefinition.PROPAGATION_MANDATORY) {
-        throw new IllegalTransactionStateException(
-                "No existing transaction found for transaction marked with propagation 'mandatory'");
-    }
-    // 새로운 트랜잭션의 트랜잭션 전파 설정 값이 REQUIRED, REQUIRES_NEW, NESTED인 경우
-    else if (def.getPropagationBehavior() == TransactionDefinition.PROPAGATION_REQUIRED ||
-            def.getPropagationBehavior() == TransactionDefinition.PROPAGATION_REQUIRES_NEW ||
-            def.getPropagationBehavior() == TransactionDefinition.PROPAGATION_NESTED) {
-        
-        // 현재 활성화된 트랜잭션 동기화 리소스들이 있는 경우 중단 시킴
-        SuspendedResourcesHolder suspendedResources = suspend(null);
-        
-        try {
-            // 새로운 트랜잭션 시작 후 결과(TransactionStatus) 반환
-            return startTransaction(def, transaction, false, debugEnabled, suspendedResources);
-        }
-        catch (RuntimeException | Error ex) {
-            // 예외 발생 시 기존 트랜잭션 재개
-            resume(null, suspendedResources);
-            throw ex;
-        }
-    }
-    else {
-        // 기타 트랜잭션 전파 설정 값인 경우 비어있는 트랜잭션을 생성함
-        // 실제 트랜잭션은 아니지만, 잠재적으로 트랜잭션 동기화됨
-        boolean newSynchronization = (getTransactionSynchronization() == SYNCHRONIZATION_ALWAYS);
-        return prepareTransactionStatus(def, null, true, newSynchronization, debugEnabled, null);
-    }
-    
-}
-```
-
-#### getTransaction 메서드에서 내부적으로 호출하는 메서드
-
-1. `TransactionStatus handleExistingTransaction(...)`
-
-getTransaction 메서드에서 트랜잭션 생성을 처리하기 전에 기존 트랜잭션이 있는지 확인하는데, 있는 경우 이 메서드를 호출함
-
-handleExistingTransaction 메서드는 트랜잭션 전파 설정 값에 따른 TransactionStatus 객체를 생성하여 반환함
-
-##### handleExistingTransaction - PROPAGATION_NEVER
-
-TransactionDefinition.PROPAGATION_NEVER인 경우 예외 발생
-
-```java
-if (definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_NEVER) {
-  throw new IllegalTransactionStateException(
-      "Existing transaction found for transaction marked with propagation 'never'");
-}
-```
-
-##### handleExistingTransaction - PROPAGATION_NOT_SUPPORTED
-
-TransactionDefinition.PROPAGATION_NOT_SUPPORTED는 기존 트랜잭션이 있는 경우 기존 트랜잭션을 보류하고, 트랜잭션 없이 작업을 바로 수행함 
-
-```java
-if (definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_NOT_SUPPORTED) {
-  Object suspendedResources = suspend(transaction);
-
-  boolean newSynchronization = (getTransactionSynchronization() == SYNCHRONIZATION_ALWAYS);
-
-  return prepareTransactionStatus(definition, null, false, newSynchronization, debugEnabled, suspendedResources);
-}
-```
-
-##### 트랜잭션 전파 설정: PROPAGATION_NOT_SUPPORTED
-
-TransactionDefinition.PROPAGATION_REQUIRES_NEW는 기존 트랜잭션을 보류하고 새 트랜잭션을 생성함
-
-```java
-if (definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_REQUIRES_NEW) {
-    SuspendedResourcesHolder suspendedResources = suspend(transaction);
-    try {
-        return startTransaction(definition, transaction, false, debugEnabled, suspendedResources);
-    }
-    catch (RuntimeException | Error beginEx) {
-        resumeAfterBeginException(transaction, suspendedResources, beginEx);
-        throw beginEx;
-    }
-}
-```
-
-##### 트랜잭션 전파 설정: PROPAGATION_NESTED
-
-TransactionDefinition.PROPAGATION_NESTED는 기존 트랜잭션이 없으면 새 트랜잭션을 만들고, 있으면 SavePoint를 이용하여 중첩 트랜잭션을 생성함
-
-중첩 트랜잭션을 지원하지 않는 트랜잭션 매니저 구현체라면 NestedTransactionNotSupportedException 발생
-
-```java
-if (definition.getPropagationBehavior() == TransactionDefinition.PROPAGATION_NESTED) {
-    if (!isNestedTransactionAllowed()) {
-        throw new NestedTransactionNotSupportedException(
-                "Transaction manager does not allow nested transactions by default - " +
-                "specify 'nestedTransactionAllowed' property with value 'true'");
-    }
-    
-    /*
-        useSavepointForNestedTransaction()의 기본 반환 값: true
-        
-        SavePoint 기능을 사용하는 트랜잭션 매니저 구현체인 경우
-        스프링이 관리하고 있는 트랜잭션 내에서 SavePointManager API를 구현한 TransactionStatus를 통해 saveppoint를 생성함
-        일반적으로 JDBC savepoint 사용하며, 스프링 동기화를 활성화하지 않음
-     */
-    if (useSavepointForNestedTransaction()) {
-        DefaultTransactionStatus status = newTransactionStatus(
-                definition, transaction, false, false, true, debugEnabled, null);
-        this.transactionExecutionListeners.forEach(listener -> listener.beforeBegin(status));
-        try {
-            status.createAndHoldSavepoint();
-        }
-        catch (RuntimeException | Error ex) {
-            this.transactionExecutionListeners.forEach(listener -> listener.afterBegin(status, ex));
-            throw ex;
-        }
-        this.transactionExecutionListeners.forEach(listener -> listener.afterBegin(status, null));
-        return status;
-    }
-    
-    /*
-       SavePoint 기능을 사용하지 않는 트랜잭션 매니저 구현체인 경우
-       SavePoint 없이 중첩된 begin, commit/rollback 호출을 통한 중첩 트랜잭션 생성
-       일반적으로 JTA에만 해당되며 기존 JTA 트랜잭션의 경우 여기서 스프링 동기화가 활성화될 수 있음
-     */
-    else {
-        return startTransaction(definition, transaction, true, debugEnabled, null);
-    }
-}
-```
-
-##### handleExistingTransaction - PROPAGATION_REQUIRED, PROPAGATION_SUPPORTS, PROPAGATION_MANDATORY
-
-기존 트랜잭션의 검증이 필요한 트랜잭션 매니저 구현체의 경우 두 가지를 확인함
-- 기존 트랜잭션의 격리 수준과 새로 생성할 트랜잭션의 격리 수준이 다른지
-- 기존 트랜잭션의 읽기 전용 설정 값과 새로 생성할 트랜잭션의 읽기 전용 설정 값이 다른지
-
-트랜잭션 매니저 구현체의 트랜잭션 매니저 동기화 설정 값에 따라 트랜잭션 생성 
-
-```java
-if (isValidateExistingTransaction()) {
-    if (definition.getIsolationLevel() != TransactionDefinition.ISOLATION_DEFAULT) {
-        Integer currentIsolationLevel = TransactionSynchronizationManager.getCurrentTransactionIsolationLevel();
-        if (currentIsolationLevel == null || currentIsolationLevel != definition.getIsolationLevel()) {
-            throw new IllegalTransactionStateException("Participating transaction with definition [" +
-                    definition + "] specifies isolation level which is incompatible with existing transaction: " +
-                    (currentIsolationLevel != null ?
-                            DefaultTransactionDefinition.getIsolationLevelName(currentIsolationLevel) :
-                            "(unknown)"));
-        }
-    }
-    if (!definition.isReadOnly()) {
-        if (TransactionSynchronizationManager.isCurrentTransactionReadOnly()) {
-            throw new IllegalTransactionStateException("Participating transaction with definition [" +
-                    definition + "] is not marked as read-only but existing transaction is");
-        }
-    }
-}
-boolean newSynchronization = (getTransactionSynchronization() != SYNCHRONIZATION_NEVER);
-return prepareTransactionStatus(definition, transaction, false, newSynchronization, debugEnabled, null);
-```
-
-2. `TransactionStatus startTransaction(...)`
-
-getTransaction 또는 handleExistingTransaction 메서드에서 새로운 트랜잭션을 시작할 때 호출하는 메서드
-
-동작 흐름
-- 트랜잭션 매니저 구현체의 트랜잭션 동기화 설정 값에 따라 새 트랜잭션 생성
-- 트랜잭션 시작 전처리
-- 트랜잭션 시작
-- 트랜잭션 시작 후처리 
-
-```java
-private TransactionStatus startTransaction(TransactionDefinition definition, Object transaction,
-			boolean nested, boolean debugEnabled, @Nullable SuspendedResourcesHolder suspendedResources) {
-
-    boolean newSynchronization = (getTransactionSynchronization() != SYNCHRONIZATION_NEVER);
-    DefaultTransactionStatus status = newTransactionStatus(
-            definition, transaction, true, newSynchronization, nested, debugEnabled, suspendedResources);
-    this.transactionExecutionListeners.forEach(listener -> listener.beforeBegin(status));
-    try {
-        doBegin(transaction, definition);
-    }
-    catch (RuntimeException | Error ex) {
-        this.transactionExecutionListeners.forEach(listener -> listener.afterBegin(status, ex));
-        throw ex;
-    }
-    prepareSynchronization(status, definition);
-    this.transactionExecutionListeners.forEach(listener -> listener.afterBegin(status, null));
-    return status;
-}
-```
-
 ### 템플릿 메서드
 
 자식 클래스에서 구현해야 할 템플릿 메서드 정의 부분도 친절하게 주석으로 표시해줌
@@ -903,6 +707,8 @@ private TransactionStatus startTransaction(TransactionDefinition definition, Obj
 ## JpaTransactionManager
 
 ## TransactionSynchronizationManager
+
+## Spring's Transaction Behavior
 
 ## Spring Transaction Propagation
 

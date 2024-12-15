@@ -25,6 +25,8 @@ public class TransactionStatusExample {
         try {
             exampleEntity.increaseCount();
 
+            // TransactionStatus를 통해 롤백 전용 설정
+            // exampleEntity.increaseCount() 호출로 변경된 exampleEntity의 상태가 데이터베이스에 반영되지 않음
             status.setRollbackOnly();
 
             exampleEntityRepository.save(exampleEntity);
@@ -41,7 +43,9 @@ public class TransactionStatusExample {
         TransactionDefinition defaultTransactionDefinition = TransactionDefinition.withDefaults();
         TransactionStatus status = transactionManager.getTransaction(defaultTransactionDefinition);
 
+        // TransactionStatus를 통해 롤백 전용 설정 X
         try {
+            // exampleEntity.increaseCount() 호출로 변경된 exampleEntity의 상태가 데이터베이스에 반영됨
             exampleEntity.increaseCount();
 
             exampleEntityRepository.save(exampleEntity);
