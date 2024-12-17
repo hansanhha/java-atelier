@@ -515,7 +515,7 @@ protected SavepointManager getSavepointManager() {
 
 ## DefaultTransactionStatus
 
-트랜잭션의 상태와 동작을 관리하는 TransactionStatus의 기본 구현체
+트랜잭션의 상태와 동작을 관리하는 TransactionStatus의 기본 구현체로 트랜잭션을 나타내는 객체임
 
 상속 관계
 
@@ -527,7 +527,7 @@ TransactionExecution, SavepointManager, Flushable,
 ```
 
 포함 정보
-- [AbstractPlatformTransactionManager](#abstractplatformtransactionmanager)가 필요로 하는 모든 정보 
+- [AbstractPlatformTransactionManager](./AbstractPlatformTransactionManager.md)가 필요로 하는 모든 정보 
 - [PlatformTransactionManager](#platformtransactionmanager) 구현체에서 구현한 트랜잭션 객체
 
 사용처

@@ -4,17 +4,22 @@
 
 [필드](#필드)
 
-[트랜잭션 시작: `TransactionStatus getTransaction(TransactionDefinition)`](#트랜잭션-시작-transactionstatus-gettransactiontransactiondefinition)
+[트랜잭션 시작: getTransaction](#트랜잭션-시작-gettransaction)
+- [getTransaction 메서드 내부에서 호출하는 메서드](#gettransaction-메서드-내부에서-호출하는-메서드)
+  - [트랜잭션 생성/참여 및 트랜잭션 동기화 처리](#트랜잭션-생성참여-및-트랜잭션-동기화-처리)
+    - [handleExistingTransaction](#handleexistingtransaction)
+    - [startTransaction](#starttransaction)
+    - [newTransactionStatus](#newtransactionstatus)
+    - [prepareTransactionStatus](#preparetransactionstatus)
+    - [prepareSynchronization](#preparesynchronization)
+    - [suspend](#suspend)
+  - [트랜잭션 시작 위임: doBegin](#트랜잭션-시작-위임-dobegin)
 
-[getTransaction 메서드 내부에서 호출하는 메서드](#gettransaction-메서드-내부에서-호출하는-메서드)
-- [트랜잭션 생성/참여 및 트랜잭션 동기화 처리](#트랜잭션-생성참여-및-트랜잭션-동기화-처리)
-  - [1. `TransactionStatus handleExistingTransaction(TransactionDefinition, Object, boolean)`](#1-transactionstatus-handleexistingtransactiontransactiondefinition-object-boolean)
-  - [2. `TransactionStatus startTransaction(...)`](#2-transactionstatus-starttransaction)
-  - [3. `DefaultTransactionStatus newTransactionStatus(...)`](#3-defaulttransactionstatus-newtransactionstatus)
-  - [4. `DefaultTransactionStatus prepareTransactionStatus(...)`](#4-defaulttransactionstatus-preparetransactionstatus)
-  - [5. `void prepareSynchronization(...)`](#5-void-preparesynchronization)
-  - [6. `SuspendedResourcesHolder suspend(Object)`](#6-suspendedresourcesholder-suspendobject)
-- [트랜잭션 진짜 시작: `doBegin(Object, TransactionDefinition)`](#트랜잭션-진짜-시작-dobeginobject-transactiondefinition)
+[트랜잭션 커밋: commit](#트랜잭션-커밋-commit)
+- [processCommit](#processcommit)
+
+[트랜잭션 롤백: rollback](#트랜잭션-롤백-rollback)
+- [processRollback](#processrollback)
 
 ## AbstractPlatformTransactionManager
 
@@ -82,7 +87,7 @@ private boolean rollbackOnCommitFailure = false;
 private Collection<TransactionExecutionListener> transactionExecutionListeners = new ArrayList<>();
 ```
 
-## 트랜잭션 시작: `TransactionStatus getTransaction(TransactionDefinition)`
+## 트랜잭션 시작: getTransaction
 
 친절하게 PlatformTransactionManager의 구현부라는 것을 주석으로 표시해준 옛날 스프링 코드의 모습
 
@@ -94,7 +99,7 @@ private Collection<TransactionExecutionListener> transactionExecutionListeners =
 
 getTransaction 메서드는 트랜잭션 전파 설정에 따라 트랜잭션을 생성, 참여하고 TransactionStatus 객체를 반환함
 
-[TransactionDefinition](#transactiondefinition) 파라미터: 트랜잭션 설정 정보 보관 객체
+[TransactionDefinition](./transaction.md#transactiondefinition) 파라미터: 트랜잭션 설정 정보 보관 객체
 - 트랜잭션 이름, 트랜잭션 전파
 - 격리 수준, 시간 초과, 읽기 전용
 
@@ -172,16 +177,16 @@ public final TransactionStatus getTransaction(@Nullable TransactionDefinition de
 
 ## 트랜잭션 생성/참여 및 트랜잭션 동기화 처리
 
-[getTransaction](#트랜잭션-시작-transactionstatus-gettransactiontransactiondefinition) 메서드 내부 또는 간접적으로 호출되는 메서드들
-- [handleExistingTransaction](#1-transactionstatus-handleexistingtransactiontransactiondefinition-object-boolean): 기존 트랜잭션 처리
-- [startTransaction](#2-transactionstatus-starttransaction): 트랜잭션 생성 및 시작, 동기화 준비
-- [newTransactionStatus](#3-defaulttransactionstatus-newtransactionstatus): 트랜잭션 생성
-- [prepareTransactionStatus](#4-defaulttransactionstatus-preparetransactionstatus): 트랜잭션 생성 및 동기화 준비
-- [prepareSynchronization](#5-void-preparesynchronization): 트랜잭션 동기화 준비
-- [suspend](#6-suspendedresourcesholder-suspendobject): 트랜잭션 및 트랜잭션 동기화 중지
+[getTransaction](#트랜잭션-시작-gettransaction) 메서드 내부 또는 간접적으로 호출되는 메서드들
+- [handleExistingTransaction](#handleexistingtransaction): 기존 트랜잭션 처리
+- [startTransaction](#starttransaction): 트랜잭션 생성 및 시작, 동기화 준비
+- [newTransactionStatus](#newtransactionstatus): 트랜잭션 생성
+- [prepareTransactionStatus](#preparetransactionstatus): 트랜잭션 생성 및 동기화 준비
+- [prepareSynchronization](#preparesynchronization): 트랜잭션 동기화 준비
+- [suspend](#suspend): 트랜잭션 및 트랜잭션 동기화 중지
 
 
-### 1. `TransactionStatus handleExistingTransaction(TransactionDefinition, Object, boolean)`
+### handleExistingTransaction
 
 getTransaction 메서드에서 트랜잭션 생성을 처리하기 전에 기존 트랜잭션이 있는지 확인하는데, 있는 경우 이 메서드를 호출함
 
@@ -311,17 +316,17 @@ handleExistingTransaction 메서드는 트랜잭션 전파 설정 값에 따른 
     return prepareTransactionStatus(definition, transaction, false, newSynchronization, debugEnabled, null);
     ```
 
-### 2. `TransactionStatus startTransaction(...)`
+### startTransaction
 
-[getTransaction](#트랜잭션-시작-transactionstatus-gettransactiontransactiondefinition) 또는 [handleExistingTransaction](#1-transactionstatus-handleexistingtransactiontransactiondefinition-object-boolean) 메서드에서 새 TransactionStatus 인스턴스를 생성하고자 할 때 호출하는 메서드
+[getTransaction](#트랜잭션-시작-gettransaction) 또는 [handleExistingTransaction](#handleexistingtransaction) 메서드에서 새 TransactionStatus 인스턴스를 생성하고자 할 때 호출하는 메서드
 
 단순 생성 뿐만 아니라 콜백 리스너 호출, 트랜잭션 동기화 준비 처리까지 수행함
 
 동작 흐름
-- 트랜잭션 매니저 구현체의 트랜잭션 동기화 설정 값에 따라 새 트랜잭션 생성 [newTransaction](#3-defaulttransactionstatus-newtransactionstatus)
+- 트랜잭션 매니저 구현체의 트랜잭션 동기화 설정 값에 따라 새 트랜잭션 생성 [newTransaction](#newtransactionstatus)
 - 트랜잭션 시작 전처리
 - 트랜잭션 시작
-- 트랜잭션 시작 후처리 [preparationSynchronization](#5-void-preparesynchronization)
+- 트랜잭션 시작 후처리 [preparationSynchronization](#preparesynchronization)
 
 호출되는 경우
 - 기존 트랜잭션이 없을 때: `PROPAGATION_REQUIRED` `PROPAGATION_REQUIRES_NEW` `PROPAGATION_NESTED` 트랜잭션 전파인 경우
@@ -361,13 +366,13 @@ private TransactionStatus startTransaction(TransactionDefinition definition, Obj
 }
 ```
 
-### 3. `DefaultTransactionStatus newTransactionStatus(...)`
+### newTransactionStatus
 
 AbstractPlatformTransactionManager에서 DefaultTransactionStatus를 생성하는 유일한 메서드
 
 메서드 파라미터
 - definition: 생성할 TransactionStatus 인스턴스에 대한 트랜잭션 정보
-- transaction: [getTransaction](#트랜잭션-시작-transactionstatus-gettransactiontransactiondefinition) 메서드에서 획득한 트랜잭션 매니저 구현체의 트랜잭션 객체(신규 트랜잭션, 기존 트랜잭션 또는 없는 경우(null))
+- transaction: [getTransaction](#트랜잭션-시작-gettransaction) 메서드에서 획득한 트랜잭션 매니저 구현체의 트랜잭션 객체(신규 트랜잭션, 기존 트랜잭션 또는 없는 경우(null))
 - newTransaction: 신규 트랜잭션 여부
 - newSynchronization: 새 트랜잭션 동기화 여부
 - nested: 중첩 트랜잭션 여부
@@ -390,11 +395,11 @@ private DefaultTransactionStatus newTransactionStatus(
 }
 ```
 
-### 4. `DefaultTransactionStatus prepareTransactionStatus(...)`
+### prepareTransactionStatus
 
-[newTransactionStatus](#3-defaulttransactionstatus-newtransactionstatus) 호출 - TransactionStatus 생성
+[newTransactionStatus](#newtransactionstatus) 호출 - TransactionStatus 생성
 
-[prepareSynchronization](#5-void-preparesynchronization) 호출 - 트랜잭션 동기화 준비
+[prepareSynchronization](#preparesynchronization) 호출 - 트랜잭션 동기화 준비
 
 ```java
 private DefaultTransactionStatus prepareTransactionStatus(
@@ -408,7 +413,7 @@ private DefaultTransactionStatus prepareTransactionStatus(
 }
 ```
 
-### 5. `void prepareSynchronization(...)`
+### prepareSynchronization
 
 트랜잭션 상태 정보 DefaultTransactionStatus를 통해 새 트랜잭션 동기화가 필요하다고 판단되면 트랜잭션 동기화 매니저를 통해 트랜잭션 동기화 설정을 수행함
 
@@ -433,15 +438,15 @@ protected void prepareSynchronization(DefaultTransactionStatus status, Transacti
 }
 ```
 
-### 6. `SuspendedResourcesHolder suspend(Object)`
+### suspend
 
 **동작**
 - 파라미터로 주어진 트랜잭션에 대한 트랜잭션 동기화를 중지하고, `doSuspend` 템플릿 메서드를 통해 자식 구현체에게 트랜잭션 중지를 위임함
-- 파라미터에 null을 건넨 경우 활성화된 트랜잭션 동기화만 중지시킴(활성화된 경우)
+- 파라미터에 null을 건넨 경우 활성화된 트랜잭션 동기화만 중지시킴(동기화가 활성화된 경우)
 
 **반환 값** 
-- 중지된 리소스에 대한 정보 보관 객체
-- 트랜잭션과 트랜잭션 동기화 모두 활성화되지 않은 경우 null 
+- 중지된 동기화 리소스 정보
+- 트랜잭션과 트랜잭션 동기화 모두 활성화되지 않은 경우 null 반환
 
 ```java
 @Nullable
@@ -452,88 +457,111 @@ protected final SuspendedResourcesHolder suspend(@Nullable Object transaction) t
 }
 ```
 
-if-else-if-else문을 적용하여 분기처리
-- 트랜잭션 동기화가 활성화된 경우
-- 트랜잭션 동기화가 활성화되지 않았지만 주어진 트랜잭션이 null이 아닌 경우
-- 모두 해당되지 않는 경우
+트랜잭션 매니저 동기화 활성화 상태와 파라미터의 값에 따라 분기 처리
 
-#### suspend: 트랜잭션 동기화가 활성화된 경우
+#### 트랜잭션 동기화가 활성화된 경우
 
-**동작**
-1. 트랜잭션 동기화 중지 및 현재 스레드의 트랜잭션 동기화 비활성화
-2. 파라미터로 받은 객체가 null이 아닌 경우 트랜잭션 중지
-3. 중지된 트랜잭션(nullable), 트랜잭션 동기화 객체 리스트와 트랜잭션 동기화 매니저에 설정된 값을 기반으로 반환 값 생성
+동작
+- 리소스 중지: 활성화된 트랜잭션 동기화, 트랜잭션 객체(null이 아닌 경우)
+- 반환값 생성: 중지된 트랜잭션(nullable) 및 트랜잭션 동기화 객체 정보 리스트, 현재 스레드의 트랜잭션 동기화 설정값
 
 ```java
 if (TransactionSynchronizationManager.isSynchronizationActive()) {
-    
+      
     // private 메서드 doSuspendSynchronization 호출
     // 모든 동기화 중지, 현재 스레드에 대한 트랜잭션 동기화 비활성화 
-    // 중지된 TransactionSynchronization 객체 리스트 반환
+    // 중지된 트랜잭션 동기화 정보 ransactionSynchronization 객체 리스트 반환
     List<TransactionSynchronization> suspendedSynchronizations = doSuspendSynchronization();
-    
+      
     try {
         Object suspendedResources = null;
-        
+          
         // 파라미터로 받은 트랜잭션 객체가 null이 아닌 경우 템플릿 메서드 doSuspend 호출하여 트랜잭션 중지
         if (transaction != null) {
             suspendedResources = doSuspend(transaction);
         }
-        
+          
         // 현재 트랜잭션 동기화 매니저에 설정된 값을 추출하고 기본 값으로 되돌림
         String name = TransactionSynchronizationManager.getCurrentTransactionName();
         TransactionSynchronizationManager.setCurrentTransactionName(null);
+          
         boolean readOnly = TransactionSynchronizationManager.isCurrentTransactionReadOnly();
         TransactionSynchronizationManager.setCurrentTransactionReadOnly(false);
+          
         Integer isolationLevel = TransactionSynchronizationManager.getCurrentTransactionIsolationLevel();
         TransactionSynchronizationManager.setCurrentTransactionIsolationLevel(null);
+          
         boolean wasActive = TransactionSynchronizationManager.isActualTransactionActive();
         TransactionSynchronizationManager.setActualTransactionActive(false);
-        
-        // 중지된 트랜잭션(nullable), 트랜잭션 동기화 객체 리스트, 트랜잭션 동기화 매니저 설정 값을 기반으로 반환 값 생성
+          
+        // 중지된 트랜잭션(nullable), 트랜잭션 동기화 객체 리스트, 트랜잭션 동기화 설정 값을 기반으로 반환 값 생성
         return new SuspendedResourcesHolder(
                 suspendedResources, suspendedSynchronizations, name, readOnly, isolationLevel, wasActive);
     }
     catch (RuntimeException | Error ex) {
-        // 템플릿 메서드 doSuspend 메서드 실패 시 원래 중지한 트랜잭션 재개 후 예외 재던짐
+          
+        // 템플릿 메서드 doSuspend 메서드 실패 시 중지한 트랜잭션 리소스 재개 후 예외 재던짐
         doResumeSynchronization(suspendedSynchronizations);
         throw ex;
     }
 }
 ```
 
-suspend 메서드에서 호출하는 doSuspendSynchronization 메서드는 
+suspend 메서드에서 호출하는 doSuspendSynchronization 메서드는 모든 트랜잭션 동기화 중지 및 트랜잭션 동기화 스레드를 비우고, 
 
-모든 동기화를 중지하고 현재 스레드에 대한 트랜잭션 동기화를 비활성화하고 중지된 TransactionSynchronization 객체 리스트를 반환함
+중지된 트랜잭션 동기화 TransactionSynchronization 객체 리스트를 반환함
 
 ```java
 private List<TransactionSynchronization> doSuspendSynchronization() {
-    
+      
     // 트랜잭션 동기화 매니저로부터 현재 스레드의 동기화 객체를 모두 가져옴
     List<TransactionSynchronization> suspendedSynchronizations =
             TransactionSynchronizationManager.getSynchronizations();
-    
+      
     // 동기화 중지 
     for (TransactionSynchronization synchronization : suspendedSynchronizations) {
         synchronization.suspend();
     }
-    
+
     // 동기화 객체 삭제 및 중지된 동기화 객체 반환
     TransactionSynchronizationManager.clearSynchronization();
     return suspendedSynchronizations;
 }
 ```
+    
+#### 트랜잭션 동기화가 활성화되지 않았지만 주어진 트랜잭션이 null이 아닌 경우
 
-## 트랜잭션 진짜 시작: `doBegin(Object, TransactionDefinition)`
+doSuspend 템플릿 메서드를 호출하여 트랜잭션 매니저 구현체에게 트랜잭션 중지 위임
+
+중지된 트랜잭션 정보를 기반으로 SuspendedResourcesHolder 반환
+
+```java
+else if (transaction != null) {
+    Object suspendedResources = doSuspend(transaction);
+    return new SuspendedResourcesHolder(suspendedResources);
+}
+```
+
+#### 모두 해당되지 않는 경우
+
+아무것도 수행하지 않고 null 반환
+
+```java
+else {
+    return null;
+}
+```
+
+## 트랜잭션 시작 위임: doBegin
 
 ```java
 protected abstract void doBegin(Object transaction, TransactionDefinition definition)
 			throws TransactionException;
 ```
 
-AbstractPlatformTransactionManager는 템플릿 메서드를 사용해서 트랜잭션 매니저 구현체에게 트랜잭션 시작 로직을 위임하고 있음
+AbstractPlatformTransactionManager는 템플릿 메서드를 사용해서 시작할 트랜잭션 객체와 해당 트랜잭션에 대한 정보를 전달해서 트랜잭션 매니저 구현체에게 트랜잭션 시작을 위임함
 
-이 메서드가 호출되는 시점은 트랜잭션 매니저가 시작할 새 트랜잭션을 결정하고 난 후([startTransaction](#2-transactionstatus-starttransaction) 등)로 기존 트랜잭션이 없거나 기존 트랜잭션을 중지한 상태임 
+이 메서드는 [startTransaction](#starttransaction) 메서드 내부에서 호출되며 트랜잭션 매니저가 시작할 새 트랜잭션을 결정하고 기존 트랜잭션이 없거나 기존 트랜잭션을 중지한 상태임 
 
 또한 AbstractPlatformTransactionManager가 이미 트랜잭션 전파를 처리했기 때문에 트랜잭션 매니저 구현체에서 별도로 트랜잭션 전파 행동에 관련한 처리를 적용하지 않아도 됨
 
@@ -543,6 +571,325 @@ AbstractPlatformTransactionManager는 템플릿 메서드를 사용해서 트랜
 
 구현체의 오버라이딩으로 false 값을 반환한다면 savepoint를 사용하지 않음
 
-이 경우 doBegin 메서드는 **중첩 트랜잭션의 시작을 명시적으로 처리해야 됨**
+이 경우 중첩 트랜잭션에 대한 구분점이 없게 되므로 doBegin 메서드는 **중첩 트랜잭션의 시작을 명시적으로 처리해야 됨**
 
 이미 활성화된 트랜잭션이 있는 경우 이를 적절히 감지하고 새 트랜잭션을 시작할 수 있어야 함
+
+## 트랜잭션 커밋: commit
+
+AbstractPlatformTransactionManager의 commit 메서드는 파라미터로 받은 TransactionStatus를 통해
+
+롤백 전용 상태인 경우 롤백을 수행하고(`processRollback`) 아니라면 실제 커밋을 수행하는 `processCommit` 메서드 호출
+
+```java
+@Override
+public final void commit(TransactionStatus status) throws TransactionException {
+    
+    // 이미 완료된 트랜잭션인 경우 IllegalTransactionStateException 발생
+    if (status.isCompleted()) {
+        throw new IllegalTransactionStateException(
+                "Transaction is already completed - do not call commit or rollback more than once per transaction");
+    }
+
+    // DefaultTransactionStatus 다운 캐스팅
+    DefaultTransactionStatus defStatus = (DefaultTransactionStatus) status;
+    
+    //  현재 트랜잭션 상태가 롤백 전용 설정인 경우(지역 롤백 전용) 롤백 수행
+    if (defStatus.isLocalRollbackOnly()) {
+        // false는 예상치못한 롤백 전용 설정이 없음을 의미함
+        processRollback(defStatus, false);
+        return;
+    }
+
+    //  전체/상위 트랜잭션 등의 상태가 롤백 전용 설정인 경우(글로벌 롤백 전용) 롤백 수행
+    if (!shouldCommitOnGlobalRollbackOnly() && defStatus.isGlobalRollbackOnly()) {
+        // true는 예상치못한 롤백 전용 설정이 있을 수 있음을 의미함
+        processRollback(defStatus, true);
+        return;
+    }
+
+    // 실제 커밋 수행 메서드 위임
+    processCommit(defStatus);
+}
+```
+
+### processCommit
+
+실질적으로 커밋 작업을 수행하는 메서드로 [commit](#트랜잭션-커밋-commit) 메서드에서 트랜잭션이 완료되지 않았고 롤백 전용 상태가 아닌 경우 호출함
+
+다만 commit 메서드에서 글로벌 롤백 전용 상태를 정확히 감지하지 못할 수 있기 때문에 이 메서드에서 한 번 더 검증하며 글로벌 롤백 전용 활성화를 감지한 경우 `UnexpectedRollbackException`을 던짐  
+
+#### 주요 동작
+
+1. 커밋, 트랜잭션 완료 전처리
+2. 트랜잭션 종류(savepoint, 신규 트랜잭션, 글로벌 트랜잭션 조기 실패 설정)에 따른 트랜잭션 처리(커밋 수행 등)
+3. 커밋 후처리
+4. 트랜잭션 완료 후처리
+
+코드는 크게 트랜잭션 커밋 전, 후 트리거/콜백 리스너 호출 코드와 글로벌 롤백 설정 활성화 관련 코드, 예외 처리 코드로 이루어져 있으나
+
+트랜잭션 커밋 과정에서 발생할 수 있는 예외나 꼭 수행해야 할 작업들이 있다보니 중첩된 try문이 작성되면서 되게 복잡한 것처럼 보임
+
+```java
+private void processCommit(DefaultTransactionStatus status) throws TransactionException {
+    try {
+        // 커밋 전처리 메서드 호출 여부
+        boolean beforeCompletionInvoked = false;
+        
+        // 트랜잭션 커밋 콜백 리스너 호출 여부
+        boolean commitListenerInvoked = false;
+
+        /* --------------------------------------------------------------
+           트랜잭션 커밋 수행
+           - 트랜잭션 전처리
+           - 트랜잭션 상태에 따른 트랜잭션 처리 메서드 위임(releaseHeldSavepoint, doCommit)
+           - 글로벌 롤백 설정 감지 및 상황에 따른 UnexpectedRollbackException 발생
+         -------------------------------------------------------------- */
+        try {
+            // 예상치 못한 글로벌 롤백 전용 설정 활성화 여부
+            boolean unexpectedRollback = false;
+            
+            // 커밋 전 트랜잭션, 트랜잭션 동기화 전처리를 위한 메서드 호출
+            prepareForCommit(status);
+            triggerBeforeCommit(status);
+            triggerBeforeCompletion(status);
+            beforeCompletionInvoked = true;
+
+            // 현재 트랜잭션이 savepoint를  가진 경우
+            // 글로벌 트랜잭션 롤백 설정 체크, 트랜잭션 커밋 콜백 리스너 호출, savepoint 해제(롤백 X)
+            if (status.hasSavepoint()) {
+                unexpectedRollback = status.isGlobalRollbackOnly();
+                this.transactionExecutionListeners.forEach(listener -> listener.beforeCommit(status));
+                commitListenerInvoked = true;
+                status.releaseHeldSavepoint();
+            }
+            
+            // 현재 트랜잭션이 신규 트랜잭션인 경우
+            // 글로벌 트랜잭션 롤백 설정 체크, 트랜잭션 커밋 콜백 리스너 호출, doCommit(템플릿 메서드) 호출
+            else if (status.isNewTransaction()) {
+                unexpectedRollback = status.isGlobalRollbackOnly();
+                this.transactionExecutionListeners.forEach(listener -> listener.beforeCommit(status));
+                commitListenerInvoked = true;
+                doCommit(status);
+            }
+            
+            // 글로벌 롤백 전용 설정 조기 실패 감지
+            // isFailEarlyOnGlobalRollbackOnly에서 true 반환 시 글로벌 롤백 전용 상태로 설정된 경우
+            // 예외를 던지거나 적절히 처리해야 됨
+            else if (isFailEarlyOnGlobalRollbackOnly()) {
+                unexpectedRollback = status.isGlobalRollbackOnly();
+            }
+
+            // 다른 메서드에서 글로벌 롤백 전용 설정 활성화를 감지하지 못하고
+            // 위의 조건문을 통해 감지한 경우 UnexpectedRollbackException 발생
+            if (unexpectedRollback) {
+                throw new UnexpectedRollbackException(
+                        "Transaction silently rolled back because it has been marked as rollback-only");
+            }
+        }
+        
+        /* --------------------------------------------------------------------
+           트랜잭션 처리 위임 메서드에서 발생한 예외 및 UnexpectedRollbackException 처리
+         ---------------------------------------------------------------------- */
+        
+        // commit 메서드에서 글로벌 롤백 설정 활성화 감지 시 UnexpectedRollbackException 발생 
+        // afterCompletion 콜백 트리거, 트랜잭션 커밋 콜백 리스너 호출, 예외 재던짐 
+        catch (UnexpectedRollbackException ex) {
+            triggerAfterCompletion(status, TransactionSynchronization.STATUS_ROLLED_BACK);
+            this.transactionExecutionListeners.forEach(listener -> listener.afterRollback(status, null));
+            throw ex;
+        }
+        
+        // 트랜잭션 처리 위임 메서드에서 커밋 실패 시 TransactionException 발생
+        // 커밋 실패 시 롤백 전용 활성화가 되어있으면 롤백 수행 후 예외 재던짐
+        // 안되어있으면 afterCompletion 콜백 트리거, 트랜잭션 커밋 콜백 리스너 호출, 예외 재던짐
+        catch (TransactionException ex) {
+            if (isRollbackOnCommitFailure()) { // isRollbackOnCommitFailure() 기본값: false
+                doRollbackOnCommitException(status, ex);
+            }
+            else {
+                triggerAfterCompletion(status, TransactionSynchronization.STATUS_UNKNOWN);
+                if (commitListenerInvoked) {
+                    this.transactionExecutionListeners.forEach(listener -> listener.afterCommit(status, ex));
+                }
+            }
+            throw ex;
+        }
+        
+        // 위에 해당되지 않는 언체크, 체크 예외 발생 시
+        // 트랜잭션 전처리 과정에서 예외가 발생한 경우 beforeCompletion 콜백 트리거
+        // 롤백 수행
+        catch (RuntimeException | Error ex) {
+            if (!beforeCompletionInvoked) {
+                triggerBeforeCompletion(status);
+            }
+            doRollbackOnCommitException(status, ex);
+            throw ex;
+        }
+        
+        /* --------------------------------------------------------------------
+                트랜잭션 커밋 후처리 (정상적으로 커밋 처리가 된 시점)
+         ---------------------------------------------------------------------- */
+
+        // afterCommit 콜백 트리거, 트리거 내에서 예외가 발생하더라도 커밋된 것으로 간주함 
+        try {
+            triggerAfterCommit(status);
+        }
+        
+        // afterCompletion 콜백 트리거, 트랜잭션 커밋 콜백 리스너 호출
+        finally {
+            triggerAfterCompletion(status, TransactionSynchronization.STATUS_COMMITTED);
+            if (commitListenerInvoked) {
+                this.transactionExecutionListeners.forEach(listener -> listener.afterCommit(status, null));
+            }
+        }
+
+    }
+    
+    // 트랜잭션 완료 후처리
+    finally {
+        cleanupAfterCompletion(status);
+    }
+}
+```
+
+## 트랜잭션 롤백: rollback
+
+트랜잭션이 완료된 경우 IllegalTransactionStateException를 던지고, 아니라면 processRollback 메서드 호출
+
+```java
+@Override
+public final void rollback(TransactionStatus status) throws TransactionException {
+
+    // 이미 완료된 트랜잭션인 경우 IllegalTransactionStateException 발생
+    if (status.isCompleted()) {
+        throw new IllegalTransactionStateException(
+                "Transaction is already completed - do not call commit or rollback more than once per transaction");
+    }
+
+    // DefaultTransactionStatus 다운 캐스팅
+    DefaultTransactionStatus defStatus = (DefaultTransactionStatus) status;
+    
+    // processRollback 호출
+    processRollback(defStatus, false);
+}
+```
+
+### processRollback
+
+실질적으로 롤백 작업을 수행하는 메서드로 [commit](#트랜잭션-커밋-commit)과 [rollback](#트랜잭션-롤백-rollback) 메서드에서 호출됨
+
+#### 두 번째 파라미터 unexpected
+
+unexpected 파라미터는 commit 메서드가 트랜잭션의 롤백 전용 상태를 감지했을 때, 예상하지 못한 롤백 상황을 나타내는 플래그임
+
+commit 호출 이전에 트랜잭션이 정상적으로 커밋될 것으로 기대했으나 실제로는 롤백이 필요한 상태로 전환된 경우에 설정됨
+
+현재 트랜잭션의 롤백 전용은 활성화되지 않았으나 글로벌 롤백 전용이 활성화된 경우 unexpected 값이 true로 전달되면서 롤백을 수행함
+
+#### 주요 동작
+
+1. 트랜잭션 완료 전처리
+2. 트랜잭션 종류(savepoint, 신규 트랜잭션, 중첩 트랜잭션 또는 트랜잭션 없음)에 따른 트랜잭션 처리(롤백 수행 등)
+3. 롤백 후처리
+4. 트랜잭션 완료 후처리
+
+```java
+private void processRollback(DefaultTransactionStatus status, boolean unexpected) {
+    try {
+        
+        // 예상치 못한 글로벌 롤백 전용 설정 활성화 여부
+        boolean unexpectedRollback = unexpected;
+
+        // 트랜잭션 롤백 콜백 리스너 호출 여부
+        boolean rollbackListenerInvoked = false;
+
+        /* --------------------------------------------------------------
+           트랜잭션 롤백 수행
+           - 트랜잭션 전처리
+           - 트랜잭션 상태에 따른 트랜잭션 처리 메서드 위임(rollbackToHeldSavepoint, doRollback, 롤백 설정)
+         -------------------------------------------------------------- */        
+        
+        try {
+            // 트랜잭션 완료 전 트리거 호출
+            triggerBeforeCompletion(status);
+
+            // 현재 트랜잭션이 중첩 트랜잭션이면서 savepoint를 가진 경우
+            // 트랜잭션 롤백 콜백 리스너 호출, savepoint로 롤백 후 savepoint 해제
+            if (status.hasSavepoint()) {
+                this.transactionExecutionListeners.forEach(listener -> listener.beforeRollback(status));
+                rollbackListenerInvoked = true;
+                status.rollbackToHeldSavepoint();
+            }
+            
+            // 현재 트랜잭션이 신규 트랜잭션인 경우
+            // 트랜잭션 롤백 콜백 리스너 호출, doRollback(템플릿 메서드) 호출
+            else if (status.isNewTransaction()) {
+                this.transactionExecutionListeners.forEach(listener -> listener.beforeRollback(status));
+                rollbackListenerInvoked = true;
+                doRollback(status);
+            }
+            
+            // 신규 트랜잭션이 아니면서 상위 트랜잭션에 참여했으나 savepoint가 없거나
+            // 트랜잭션 자체가 없는 경우(PROPAGATION_NEVER 등)
+            else {
+                
+                // 현재 트랜잭션이 상위 트랜잭션에 참여한 경우
+                // 롤백 전용이 활성화된 경우 현재 트랜잭션을 롤백 전용으로 설정
+                // 아닌 경우 상위 트랜잭션 관리자에게 롤백 여부 결정을 하도록 냅둠
+                if (status.hasTransaction()) {
+                    if (status.isLocalRollbackOnly() || isGlobalRollbackOnParticipationFailure()) {
+                        doSetRollbackOnly(status);
+                    }
+                    else {
+                    }
+                }
+                
+                // 트랜잭션이 없는 경우 아무것도 하지 않음
+                else {
+                }
+                
+                // 글로벌 롤백 전용 상태에서 조기 실패가 설정되지 않은 경우 unexpectedRollback false 처리
+                if (!isFailEarlyOnGlobalRollbackOnly()) {
+                    unexpectedRollback = false;
+                }
+            }
+        }
+        
+        /* --------------------------------------------------------------
+           언체크드, 체크드 예외 처리
+           
+           트랜잭션 완료 트리거, 트랜잭션 롤백 콜백 메서드 호출
+           예외 재던짐
+         -------------------------------------------------------------- */
+        catch (RuntimeException | Error ex) {
+            triggerAfterCompletion(status, TransactionSynchronization.STATUS_UNKNOWN);
+            if (rollbackListenerInvoked) {
+                this.transactionExecutionListeners.forEach(listener -> listener.afterRollback(status, ex));
+            }
+            throw ex;
+        }
+        
+        /* --------------------------------------------------------------
+           트랜잭션 롤백 후처리 (정상적으로 롤백 처리가 된 시점)
+         -------------------------------------------------------------- */
+
+        triggerAfterCompletion(status, TransactionSynchronization.STATUS_ROLLED_BACK);
+        if (rollbackListenerInvoked) {
+            this.transactionExecutionListeners.forEach(listener -> listener.afterRollback(status, null));
+        }
+
+        // unexpectedRollback 플래그가 참인 경우 UnexpectedRollbackException 발생
+        // commit 수행 과정에서 글로벌 롤백 전용 설정이 활성화된 경우 unexpectedRollback을 참으로 설정하고 롤백 수행 
+        if (unexpectedRollback) {
+            throw new UnexpectedRollbackException(
+                    "Transaction rolled back because it has been marked as rollback-only");
+        }
+    }
+    
+    // 트랜잭션 완료 후처리
+    finally {
+        cleanupAfterCompletion(status);
+    }
+}
+```
