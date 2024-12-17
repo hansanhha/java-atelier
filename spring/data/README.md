@@ -1,6 +1,5 @@
 spring transaction
 - [spring transaction](../core/txt/transaction/spring%20transaction.md)
-- [spring transaction behavior](../core/txt/transaction/spring%20transaction%20behavior.md)
 - [spring transaction objects](../core/txt/transaction/transaction%20objects.md)
 - spring transaction managers
   - [PlatformTransactionManager](../core/txt/transaction/PlatformTransactionManager.md) 
