@@ -1,95 +1,20 @@
-[JPA Transaction](#jpa-transaction)
-- [EntityManager EntityTransaction](#entitymanager-entitytransaction)
-- [JPA Transaction Propagation](#jpa-transaction-propagation)
+[Transaction Objects](#transaction-objects)
 
-[Spring Transaction](#spring-transaction)
-- [Transaction Objects](#transactiondefinition)
-  - [TransactionDefinition](#transactiondefinition)
-  - [TransactionStatus, TransactionExecution, SavepointManager](#transactionstatus-transactionexecution-savepointmanager)
-  - [AbstractTransactionStatus](#abstracttransactionstatus)
-  - [DefaultTransactionStatus](#defaulttransactionstatus)
-  - [SimpleTransactionStatus](#simpletransactionstatus)
-- [Transaction Managers](#transaction-managers)
-  - [PlatformTransactionManager](#platformtransactionmanager)
-  - [AbstractPlatformTransactionManager](./AbstractPlatformTransactionManager.md)
-  - [JpaTransactionManager](#jpatransactionmanager)
-  - [TransactionSynchronizationManager](#transactionsynchronizationmanager)
-- [Spring's Transaction Behavior](#springs-transaction-behavior)
-  - [Spring Transaction Propagation](#spring-transaction-propagation)
-  - [Transaction Isolation Level](#transaction-isolation-level)
-  - [@Transactional](#transactional)
-  - [Query Method Transaction](#query-method-transaction)
-  - [Rollback Rules](#rollback-rules)
-  - [DataSource, Connection Pooling, Spring Transaction Context](#datasource-connection-pooling-spring-transaction-context)
+[TransactionDefinition](#transactiondefinition)
 
-## JPA Transaction
+[Isolation](#isolation)
+ 
+[TransactionStatus](#transactionstatus)
 
-트랜잭션은 데이터베이스에서 하나의 작업 단위를 나타내는데, 여러 작업을 묶어 하나의 작업처럼 처리함
+[AbstractTransactionStatus](#abstracttransactionstatus)
 
-#### ACID 속성
-- Atomicity: 모든 작업 성공 or 실패(원자성)
-- Consistency: 트랜잭션 전후 데이터 일관성 유지
-- Isolation: 트랜잭션 간 독립성 보장
-- Durability: 트랜잭션 커밋 후 영구히 저장
+[DefaultTransactionStatus](#defaulttransactionstatus)
 
-JPA에서 제공하는 트랜잭션 관련 객체: EntityManager, EntityTransaction
-
-## EntityManager, EntityTransaction
-
-JPA 트랜잭션 관리는 EntityManager를 통해 트랜잭션을 획득하고, 명시적으로 트랜잭션 관련 메서드를 선언하여 수행됨
-
-엔티티 매니저는 트랜잭션이 끝나면 더 이상 사용할 수 없음
-
-트랜잭션 범위 내에서만 엔티티를 조작할 수 있으며 트랜잭션 커밋 시 영속성 컨텍스트에 관리되고 있는 엔티티들이 데이터베이스에 반영됨
-
-```java
-/*
-    EntityTransaction 객체 반환 메서드
-    EntityTransaction의 begin(), commit(), rollback() 메서드를 통해 명시적으로 트랜잭션을 관리함
-*/
-EntityTransaction transaction = entityManager.getTransaction();
-
-try {
-    // 트랜잭션 시작
-    transaction.begin();
-    
-    // 영속성 컨텍스트에 엔티티 영속화, 트랜잭션 범위 내에서만 엔티티 매니저 사용
-    entityManager.persist(simpleEntity);
-    
-    //트랜잭션 커밋
-    transaction.commit();
-} catch (Exception e) {
-    
-    // 예외 발생 시 트랜잭션 롤백
-    transaction.rollback();
-} finally {
-    
-    // 엔티티 매니저 종료
-    entityManager.close();
-}
-```
-
-## JPA Transaction Isolation Level
-
-JPA는 기본적으로 데이터베이스의 격리 수준을 따름
-
-별도의 트랜잭션 격리 수준 설정을 지원하지 않으며, 데이터베이스 또는 스프링으로 설정할 수 있음
-
-## JPA Transaction Propagation
-
-JPA 자체에서 트랜잭션 전파 기능을 지원하지 않음
-
-스프링의 트랜잭션 관리로 보완할 수 있음
-
-## Spring Transaction
-
-스프링은 스프링의 트랜잭션 관리 및 JPA와 통합하여 선언적으로 트랜잭션을 관리하거나 영속성 컨텍스트 변경사항을 자동으로 반영하는 메커니즘을 제공함
-
-주요 컴포넌트: `@Transactional` `JpaTransactionManager` `TransactionSynchronizationManager`
+[SimpleTransactionStatus](#simpletransactionstatus)
 
 ## Transaction Objects
 
-스프링에서 데이터베이스 트랜잭션을 객체로 표현/관리하기 위해 여러 가지 객체를 제공하며, 트랜잭션 매니저 구현체에 따라 각 트랜잭션 객체를 구현함 
+스프링에서 데이터베이스 트랜잭션을 객체로 표현/관리하기 위해 여러 가지 객체를 제공하며, 트랜잭션 매니저 구현체에 따라 각 트랜잭션 객체를 구현함
 
 TransactionDefinition: 트랜잭션 설정 정보 보관, 이 정보를 바탕으로 트랜잭션 생성
 
@@ -101,7 +26,7 @@ SmartTransactionObject: 트랜잭션 rollback-only 설정 확인
 
 ## TransactionDefinition
 
-트랜잭션 설정 정보를 반환하는 메서드만 정의한 인터페이스
+트랜잭션의 속성을 정의한 인터페이스
 
 설정 종류에 따라 상수값을 정의하고 모든 메서드를 기본 값을 반환하는 default 메서드로 정의함
 
@@ -263,19 +188,53 @@ public interface TransactionDefinition {
 }
 ```
 
-## TransactionStatus, TransactionExecution, SavepointManager
+## Isolation
 
-실행 중인 트랜잭션의 상태를 관리하는 인터페이스로 PlatformTransactionManager와 함께 동작함
+TransactionDefinition에 명시된 트랜잭션 격리 수준 값을 기반으로 한 enum 클래스
+
+DEFAULT는 데이터베이스의 격리 수준을 따름
+
+[스프링이 격리 수준을 제어할 수 있는 이유](./spring%20transaction.md#스프링이-격리-수준을-제어할-수-있는-이유)
+
+```java
+public enum Isolation {
+
+	DEFAULT(TransactionDefinition.ISOLATION_DEFAULT),
+
+	READ_UNCOMMITTED(TransactionDefinition.ISOLATION_READ_UNCOMMITTED),
+
+	READ_COMMITTED(TransactionDefinition.ISOLATION_READ_COMMITTED),
+
+	REPEATABLE_READ(TransactionDefinition.ISOLATION_REPEATABLE_READ),
+
+	SERIALIZABLE(TransactionDefinition.ISOLATION_SERIALIZABLE);
+
+	private final int value;
+
+	Isolation(int value) {
+		this.value = value;
+	}
+
+	public int value() {
+		return this.value;
+	}
+
+}
+```
+
+## TransactionStatus
+
+트랜잭션의 현재 상태를 나타내는 인터페이스로 PlatformTransactionManager와 함께 동작함
 
 사용 시점
 - 트랜잭션 시작
-  - `PlatformTransactionManager.getTransaction(TransactionDefinition)` 호출
-  - 반환되는 `TransactionStatus` 객체를 통해 트랜잭션 상태 추적
+    - `PlatformTransactionManager.getTransaction(TransactionDefinition)` 호출
+    - 반환되는 `TransactionStatus` 객체를 통해 트랜잭션 상태 추적
 - 트랜잭션 처리
-  - 비즈니스 로직 실행 중 `TransactionStatus`를 참조하여 롤백 여부, 새로운 트랜잭션 여부 확인
-  - `transactionStatus.isNewTransaction()` `transactionStatus.hasTransaction()` 등
+    - 비즈니스 로직 실행 중 `TransactionStatus`를 참조하여 롤백 여부, 새로운 트랜잭션 여부 확인
+    - `transactionStatus.isNewTransaction()` `transactionStatus.hasTransaction()` 등
 - 트랜잭션 커밋/롤백
-  - `commit(TrasactionStatus)` `rollback(TransactionStatus)`
+    - `commit(TrasactionStatus)` `rollback(TransactionStatus)`
 
 ```java
 public interface TransactionStatus extends TransactionExecution, SavepointManager, Flushable {
@@ -365,7 +324,7 @@ SavepointManager는 트랜잭션 저장 지점을 다루는 인터페이스임
 - 중간 롤백: 특정 지점까지 작업 수행 후, 오류가 발생하면 저장 지점으로 롤백(일부 작업만 취소)
 - 단위 작업 관리
 
-기존 트랜잭션이 있는 상황에서 트랜잭션 전파를 `TransactionDefinition.PROPAGATION_NESTED`로 설정한 경우 
+기존 트랜잭션이 있는 상황에서 트랜잭션 전파를 `TransactionDefinition.PROPAGATION_NESTED`로 설정한 경우
 
 Savepoint 기능을 사용하는 트랜잭션 매니저 구현체라면 AbstractTransactionStatus가 확장한 SavepointManager의 API를 사용함
 
@@ -527,7 +486,7 @@ TransactionExecution, SavepointManager, Flushable,
 ```
 
 포함 정보
-- [AbstractPlatformTransactionManager](./AbstractPlatformTransactionManager.md)가 필요로 하는 모든 정보 
+- [AbstractPlatformTransactionManager](./AbstractPlatformTransactionManager.md)가 필요로 하는 모든 정보
 - [PlatformTransactionManager](#platformtransactionmanager) 구현체에서 구현한 트랜잭션 객체
 
 사용처
@@ -574,7 +533,7 @@ public boolean hasTransaction() {
 
 ### DefaultTransactionStatus - 트랜잭션 객체 기반 메서드
 
-DefaultTransactionStatus는 트랜잭션 매니저 구현체(JpaTransactionManager 등)가 구현한 트랜잭션 객체를 참조하는 `Object transaction` 필드를 가짐  
+DefaultTransactionStatus는 트랜잭션 매니저 구현체(JpaTransactionManager 등)가 구현한 트랜잭션 객체를 참조하는 `Object transaction` 필드를 가짐
 
 이 필드를 기반으로 구현하는 메서드들은 다음과 같음
 
@@ -650,74 +609,3 @@ public class SimpleTransactionStatus extends AbstractTransactionStatus {
 	}
 }
 ```
-
-## Transaction Managers
-
-트랜잭션 및 트랜잭션 리소스 동기화를 관리하는 스프링 트랜잭션의 핵심 객체로 모든 트랜잭션 매니저 구현체는 스프링에서 제공하는 `TransactionManager` 최상위 마커 인터페이스를 확장함 
-
-spring data jpa 기준 트랜잭션 매니저 구현체 상속 관계도
-```text
-TransactionManager
--\ PlatformTransactionManager
---\ AbstractPlatformTransactionManager
----\ JpaTransactionManager
-```
-
-## PlatformTransactionManager
-
-스프링의 트랜잭션 관리 중앙 인터페이스 
-
-생각보다 몇 개 되지 않는 메서드만 정의되어 있지만 사악한 주석으로 메서드 행동을 설명하고 있음
-
-[자식 추상 클래스 AbstractPlatformTransactionManager](./AbstractPlatformTransactionManager.md)
-
-```java
-public interface PlatformTransactionManager extends TransactionManager {
-
-    /*
-        파라미터로 주어진 TransactionDefinition의 propagation 설정값에 따라서
-        현재 활성화된 트랜잭션 또는 새로 생성한 트랜잭션을 반환함
-        
-        또한 isolation level이나 timeout 설정 값은 
-        새로운 트랜잭션에만 적용되고 이미 참여하고 있는 트랜잭션에는 무시됨
-     */
-    TransactionStatus getTransaction(@Nullable TransactionDefinition definition) throws TransactionException;
-
-    /*
-        getTransaction 메서드에서 반환한 TransactionStatus의 설정값에 따라 커밋을 수행함
-        rollback-only 옵션이 설정되어 있는 경우 롤백을 수행함
-     */
-    void commit(TransactionStatus status) throws TransactionException;
-
-    // 주어진 transaction 롤백
-    void rollback(TransactionStatus status) throws TransactionException;
-}
-```
-
-### 템플릿 메서드
-
-자식 클래스에서 구현해야 할 템플릿 메서드 정의 부분도 친절하게 주석으로 표시해줌
-
-```java
-//---------------------------------------------------------------------
-// Template methods to be implemented in subclasses
-//---------------------------------------------------------------------
-```
-
-## JpaTransactionManager
-
-## TransactionSynchronizationManager
-
-## Spring's Transaction Behavior
-
-## Spring Transaction Propagation
-
-## Transaction Isolation Level
-
-## @Transactional
-
-## Query Method Transaction
-
-## Rollback Rules
-
-## DataSource, Connection Pooling, Spring Transaction Context

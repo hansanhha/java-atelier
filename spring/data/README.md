@@ -1,9 +1,14 @@
 spring transaction
-- [transaction](./jpa/txt/transaction.md)
-- [AbstractPlatformTransactionManager](./jpa/txt/AbstractPlatformTransactionManager.md)
+- [spring transaction](../core/txt/transaction/spring%20transaction.md)
+- [spring transaction behavior](../core/txt/transaction/spring%20transaction%20behavior.md)
+- [spring transaction objects](../core/txt/transaction/transaction%20objects.md)
+- spring transaction managers
+  - [PlatformTransactionManager](../core/txt/transaction/PlatformTransactionManager.md) 
+  - [AbstractPlatformTransactionManager](../core/txt/transaction/AbstractPlatformTransactionManager.md)
 
 jpa
 - [jpa](./jpa/txt/jpa.md)
+- [jpa transaction](./jpa/txt/jpa%20transaction.md)
 - [hibernate](./hibernate/hibernate.md)
 
 spring data
