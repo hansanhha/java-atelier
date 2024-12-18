@@ -5,6 +5,7 @@
 - [Transaction Synchronization](#spring-transaction-mechanism-transaction-synchronization)
 - [Global Transaction, Local Transaction](#spring-transaction-mechanism-global-transaction-local-transaction)
 - [Physical Transaction, Logical Transaction](#spring-transaction-mechanism-physical-transaction-logical-transaction)
+- [Spring Transaction Mechanism: Savepoint](#spring-transaction-mechanism-savepoint)
 - [Transaction Propagation](#spring-transaction-mechanism-transaction-propagation)
 - [Transaction Isolation](#spring-transaction-mechanism-transaction-isolation)
 - [@Transactional - Declarative Transaction Management](#spring-transaction-mechanism-transactional---declarative-transaction-management)
@@ -68,7 +69,7 @@
 
 스프링은 트랜잭션을 트랜잭션 범위와 대상 리소스에 따라 전역 트랜잭션과 지역 트랜잭션으로 구분함
 
-#### Global Transaction
+#### Global Transaction (JTA)
 
 여러 리소스(여러 데이터베이스, 메시지 큐, 파일 시스템 등)에 걸쳐 일관성을 보장하는 하나의 분산 트랜잭션
 
@@ -114,6 +115,38 @@ JDBC 드라이버를 통해 `Connection.commit()` `Connection.rollback()`을 호
 스프링에서 트랜잭션 경계를 제어하기 위해 트랜잭션 관리 계층에서 관리하는 트랜잭션으로 **트랜잭션 전파**나 **중첩 트랜잭션** 같은 기능이 논리 트랜잭션을 통해 관리됨
 
 하나의 물리 트랜잭션에 여러 논리 트랜잭션이 포함될 수 있으며 savepoint를 통해 중첩 트랜잭션과 같은 트랜잭션 간 논리적 경계를 설정할 수 있음
+
+### Spring Transaction Mechanism: Savepoint
+
+Savepoint는 데이터베이스 트랜잭션 내에서 롤백할 수 있는 특정 시점(체크 포인트)을 설정하면 트랜잭션 전체를 롤백하지 않고 해당 시점까지 롤백을 할 수 있는 메커니즘임
+
+트랜잭션이 활성화된 상태에서 트랜잭션 내에 여러 개의 savepoint를 설정할 수 있음
+
+savepoint를 설정한 이후에 발생한 변경 사항만 롤백(부분 롤백)할 수 있으며, 특정 savepoint로 돌아가 트랜잭션을 계속 진행할 수도 있음
+
+스프링은 [DefaultTransactionStatus](./transaction%20objects.md#defaulttransactionstatus) (실질적으론 [AbstractTransactionStatus](./transaction%20objects.md#abstracttransactionstatus---savepoint-상태-처리))를 사용하여 Savepoint를 관리함
+
+savepoint 기능을 사용하려면 비즈니스 로직에서 프로그래밍 방식으로 직접 처리해야 됨
+
+#### Savepoint 사용 사례
+
+대규모 배치 작업
+- 여러 단계로 이루어진 배치 작업에서 중간 상태 저장
+- 실패 시 전체 트랜잭션을 취소하지 않고 savepoint로 복원
+
+정말 복잡한 비즈니스 로직
+- 여러 단계로 구성된 비즈니스 로직에서 일부 작업이 실패했을 때, 이전 단계로 복귀
+
+테스트 및 디버깅
+- 트랜잭션 상태 저장 후, 특정 작업의 영향을 확인하거나 테스트
+
+#### Savepoint 한계
+
+DB 엔진에서 지원해야 savepoint를 사용할 수 있음
+
+트랜잭션 상태를 메모리나 로그에 저장하므로 추가적인 자원을 소모함
+
+주로 로컬 트랜잭션에서만 사용 가능
 
 ### Spring Transaction Mechanism: Transaction Propagation
 
@@ -173,8 +206,3 @@ AOP(Aspected-Oriented Programming)를 기반으로 동작하며 **비즈니스 �
 [@Transactional](./@Transactional.md)
 
 [@Transactional Test](./@Transactional%20test.md)
-
-### Spring Transaction Mechanism: JTA 
-
-### Spring Transaction Mechanism: Savepoint
-

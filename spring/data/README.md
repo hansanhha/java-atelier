@@ -20,5 +20,3 @@ spring data jpa
 - [query method](./jpa/txt/query%20method.md)
 - [dynamic query](./jpa/txt/dynamic%20query.md)
 - [transaction](./jpa/txt/transaction.md)
-- [transaction management](./jpa/txt/transaction%20management.md)
-- [@Transactional test](./jpa/txt/@Transactional%20test.md)
