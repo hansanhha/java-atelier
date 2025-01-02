@@ -616,7 +616,7 @@ public class JpaRepositoriesAutoConfiguration {
 
 ## JpaRepositoriesRegistrar
 
-JpaRepositoriesRegistrar는 스프링 데이터 JPA 리포지토리 설정 관련 정보를 부모 클래스인 [AbstractRepositoryConfigurationSourceSupport](../../spring%20data%20config.md#abstractrepositoryconfigurationsourcesupport)에게 전달함
+JpaRepositoriesRegistrar는 스프링 데이터 JPA 리포지토리 설정 관련 정보를 부모 클래스인 [AbstractRepositoryConfigurationSourceSupport](../../common/spring%20data%20repository%20config%20source.md#abstractrepositoryconfigurationsourcesupport)에게 전달함
 
 해당 정보를 바탕으로 리포지토리 스캔 및 스프링 컨텍스트 등록 작업 실행
 

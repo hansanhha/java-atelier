@@ -964,59 +964,6 @@ public void deleteAllInBatch(Iterable<T> entities) {
 }
 ```
 
-## 리포지토리 인터페이스 자동 구현(SimpleJpaRepository 생성) 및 프록시 패턴 적용
-
-### 1. 리포지토리 인터페이스 정의
-
-Repository 인터페이스를 확장한 리포지토리 인터페이스 정의
-
-```java
-  public interface UserRepository extends JpaRepository<User, Long> {
-    List<User> findByLastName(String lastName);
-  }
-```
-
-### 2. 스프링 부트 자동 구성, 프록시 패턴 적용
-
-스프링 부트 애플리케이션이 구동되면서 [HibernateJpaAutoConfiguration](../txt/spring%20data%20jpa%20autoconfiguration.md#hibernatejpaautoconfiguration), [JpaRepositoriesAutoConfiguration](../txt/spring%20data%20jpa%20autoconfiguration.md#jparepositoriesautoconfiguration) 자동 구성 활성화
-
-- 모든 리포지토리 인터페이스 스캔(`@EnableJpaRepositories` 어노테이션이 설정된 패키지)
-- 스캔된 각 리포지토리 인터페이스마다 **프록시 구현체** 생성 및 스프링 빈 등록
-- 또한 [JpaRepositoryFactory](https://docs.spring.io/spring-data/jpa/docs/current/api/org/springframework/data/jpa/repository/support/JpaRepositoryFactory.html)를 사용하여 각각의 엔티티에 대한 리포지토리 인터페이스 기본 구현체인 SimpleJpaRepository를 생성함
-
-예시
-- ProductRepository, OrderRepository에 대해 각각 프록시 생성
-- JpaRepositoryFactory -> 각각의 엔티티(Product, Order)에 대해 SimpleJpaRepository 인스턴스 생성
-- ProductRepostiory 프록시 -> `SimpleJpaRepository<Product, Long>` 인스턴스 사용
-- OrderRepository 프록시 -> `SimpleJpaRepository<Order, Long>` 인스턴스 사용
-
-#### 프록시 구현체 동작 방식
-
-프록시 구현체는 리포지토리 인터페이스의 메서드를 구현하는데, 내부적으로 메서드 호출을 상황에 따라 적절하게 위임하는 진입점 역할을 함
-
-todo 수정 필요
-
-- 기본 CRUD 메서드 호출 -> SimpleJpaRepository에게 위임 -> SimpleJpaRepository는 EntityManager를 통해 DB 작업 수행
-- 메서드명 기반 쿼리(메서드명 파싱을 통해 동적으로 JPQL 쿼리 생성) 호출 -> `JpaQueryMethodFactory`를 통해 메서드명 기반 쿼리 파악 ->  `PartTree`를 통해 키워드 분석 후 JPQL 생성 -> EntityManager를 통해 DB 작업 수행
-- 사용자 정의 쿼리(`@Query`) 호출 -> `JpaQueryMethodFactory`를 통해 커스텀 `@Query` 기반 쿼리 파악 -> `@Query` 내용을 EntityManager에게 전달하여 DB 작업 수행, 메서드 파라미터를 `@Query`에 바인딩
-- 커스텀 구현체의 메서드 호출 -> 해당 구현체에게 위임
-
-### 3. 의존성 주입
-
-```java
-@Service
-@Transactional
-public class UserService {
-
-  private final UserRepository userRepository;
-
-  // 스프링 부트 자동 구성에 의해 생성된 UserRepository 타입의 프록시 객체 주입
-  public UserService(UserRepository userRepository) {
-    this.userRepository = userRepository;
-  }
-}
-```
-
 ## 엔티티 ID 생성 전략에 따른 ID 값과 SQL 실행 시점 결정
 
 새로운 엔티티를 저장하려고 entity.persit() 메서드를 호출하면 엔티티는 영속성 컨텍스트에 추가됨
