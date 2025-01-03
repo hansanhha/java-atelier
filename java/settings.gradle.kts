@@ -3,6 +3,7 @@ plugins {
 }
 
 rootProject.name = "java"
+include("oop")
 include("types")
 include("generics")
 include("functional")
