@@ -1,4 +1,4 @@
-[solid](./solid.md)
+[solid](./txt/solid.md)
 
 [grasp]()
 
