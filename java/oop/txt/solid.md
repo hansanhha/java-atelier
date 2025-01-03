@@ -6,6 +6,10 @@
 
 [Liskov Substitution Principal, LSP](#liskov-substitution-principal-lsp)
 
+[Interface Segregation Principal, ISP](#interface-segregation-principal-isp)
+
+[Dependency Inversion Principal, DIP](#dependency-inversion-principal-dip)
+
 ## SOLID
 
 로버트 C. 마틴(Uncle Bob)가 설립한 객체지향 설계 원칙으로, 각 원칙의 맨 앞 글자를 따서 SOLID 원칙이라고 한다
@@ -238,3 +242,143 @@ developer.doTask(() -> "solid principal understanding");
 
 ### Liskov Substitution Principal, LSP
 
+**자식 클래스는 부모 클래스의 역할을 대체할 수 있어야 한다**는 원칙
+
+```java
+public class Cashier {
+
+    private final Calculator calculator;
+    
+    public Cashier(Calculator calculator) {
+        this.calculator = calculator;
+    }
+
+    public int calculate(int a, int b) {
+        return calculator.add(a, b);
+    }
+}
+```
+
+위처럼 Cashier 클래스가 Calculator 클래스를 의존하고 있을 때, Calculator 클래스를 상속받은 OtherCalculator 클래스로 타입을 변경해도 메서드의 행동이나 결과가 변경되어서는 안된다
+
+하위 구현체가 부모 클래스의 메서드를 오버라이딩하더라도 기존 메서드의 기대 결과값을 유지함으로써 클라이언트는 자유롭게 다른 구현체로 교체할 수 있다
+
+### Interface Segregation Principal, ISP
+
+**여러 개의 메서드가 정의되어 있는 큰 인터페이스를 여러 개의 작은 인터페이스로 나눠 분리**하는 원칙
+
+클라이언트가 사용하지 않는 메서드에 의존하지 않도록 인터페이스를 분리함으로써 클라이언트가 필요한 메서드만 사용할 수 있게 한다
+
+동시에 구현체가 불필요한 메서드를 구현하지 않고 특정 관심사에만 집중할 수 있게 한다
+
+SRP와 마찬가지로 객체가 여러 책임을 가지고 있지 않게 하기 위한 원칙으로, 인터페이스가 특정 역할(행동)을 수행하도록 분리하는 것이 목적이다
+
+**ISP 위반 코드**
+
+```java
+public interface GameDeveloper {
+    
+    void writeCode();
+    void testCode();
+    void deployArtifact();
+    void play();
+    void scheduleManagement();
+}
+```
+
+위의 GameDeveloper 인터페이스는 여러 관심사의 메서드를 가지고 있어서 클라이언트는 사용하지 않는 메서드에 의존하게 될 뿐만 아니라 구현체는 불필요한 메서드를 구현해야 한다
+
+**ISP 준수 코드**
+
+```java
+public interface GameDeveloper {
+    
+    void writeCode();
+    void testCode();
+    void deployArtifact();
+}
+
+public interface GamePlayer {
+    
+    void play();
+}
+
+public interface GameProjectManager {
+    
+    void scheduleManagement();
+}
+```
+
+각 관심사에 따라 인터페이스를 분리함으로써 클라이언트는 필요한 메서드만 사용할 수 있고, 구현체는 불필요한 메서드를 구현하지 않아도 된다
+
+### Dependency Inversion Principal, DIP
+
+**의존성 주입을 통해 상위 모듈은 하위 모듈의 구현체에 의존하면 안되고, 둘 다 추상화에 의존해야 한다**는 원칙
+
+상위 모듈에서 직접 하위 모듈의 구현체 생성을 수행하면 상위 모듈이 하위 모듈에 의존하게 된다
+
+하위 모듈의 변경이 상위 모듈에 영향을 미치게 되며 상위 모듈이 하위 모듈에 강하게 결합되어 유연성이 떨어진다 (테스트 또한 어려워짐)
+
+**DIP 위반 코드**
+
+```java
+class Restaurant {
+    
+    private final JapaneseChef japaneseChef;
+    
+    public Restaurant() {
+        this.japaneseChef = new JapaneseChef();
+    }
+    
+    public void serve() {
+        japaneseChef.getSushi();
+    }
+}
+```
+
+위의 Restaurant 클래스는 생성자에서 직접 JapaneseChef 클래스를 생성하고 있어서 Restaurant 클래스가 JapaneseChef 클래스에 의존하게 된다
+
+식당 운영 정책 변경으로 일식 요리가 아닌 다른 요리를 제공해야 할 경우 Restaurant 클래스를 수정해야 한다
+
+**DIP 준수 코드**
+
+```java
+class Restaurant {
+    
+    private final Chef chef;
+    
+    public Restaurant(Chef chef) {
+        this.chef = chef;
+    }
+    
+    public void serve() {
+        chef.cook();
+    }
+}
+```
+
+```java
+interface Chef {
+    Food cook();
+}
+
+class JapaneseChef implements Chef {
+    
+    public Food cook() {
+        return new Sushi();
+    }
+}
+
+class ItalianChef implements Chef {
+    
+    public Food cook() {
+        return new Pasta();
+    }
+}
+```
+
+Restaurant 클래스는 특정 Chef 클래스가 아닌 인터페이스를 생성자로부터 주입받음으로써 다양한 Chef 구현체를 통해 여러 요리를 제공할 수 있는 유연성을 가진다
+
+Chef 구현체가 변경되어도 Restaurant 클래스를 수정할 필요가 없고 테스트 코드 작성이 용이해진다
+
+또한 구현체 역시 인터페이스에 의존하고 있기 때문에 기존 코드의 변경을 유발하지 않으면서 다른 Chef 구현체를 쉽게 추가할 수 있다
