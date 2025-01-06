@@ -1,12 +1,12 @@
 [solid](./txt/solid.md)
 
-[grasp]()
+[grasp](./txt/grasp.md)
 
-[dry]()
+[dry](./txt/dry.md)
 
-[oop 4 features]()
+[oop 4 pillars](./txt/oop%204%20pillars.md)
 
-[static/dynamic binding]()
+[relationships between objects]()
 
 [oop vs functional programming]()
 
