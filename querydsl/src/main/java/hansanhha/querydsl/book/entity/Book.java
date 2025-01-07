@@ -1,23 +1,28 @@
-package hansanhha.querydsl.model.entity;
+package hansanhha.querydsl.book.entity;
 
-import hansanhha.querydsl.model.vo.BookStatus;
+import hansanhha.querydsl.BaseEntity;
+import hansanhha.querydsl.book.vo.BookStatus;
+import hansanhha.querydsl.user.entity.User;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.UUID;
 
 @Entity
 @Getter
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class Book {
+public class Book extends BaseEntity {
 
     @Id
     @GeneratedValue
     private Long id;
 
-    private String title;
+    @Column(unique = true)
+    private UUID isbn;
 
-    private String isbn;
+    private String title;
 
     private String author;
 
@@ -27,8 +32,8 @@ public class Book {
     @Embedded
     private BookCategory category;
 
-    @Setter(AccessLevel.PROTECTED)
+    @Setter
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "borrower_id")
-    private Member borrower;
+    private User borrower;
 }

@@ -1,13 +1,16 @@
-package hansanhha.querydsl.model.entity;
+package hansanhha.querydsl.loan.entity;
 
+import hansanhha.querydsl.book.entity.Book;
+import hansanhha.querydsl.BaseEntity;
+import hansanhha.querydsl.user.entity.User;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Data
-public class Borrow {
+@Getter
+public class Loan extends BaseEntity {
 
     @Id
     @GeneratedValue
@@ -15,7 +18,7 @@ public class Borrow {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "borrower_id")
-    private Member borrower;
+    private User borrower;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "book_id")

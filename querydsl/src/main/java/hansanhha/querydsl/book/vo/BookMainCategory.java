@@ -1,4 +1,4 @@
-package hansanhha.querydsl.model.vo;
+package hansanhha.querydsl.book.vo;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

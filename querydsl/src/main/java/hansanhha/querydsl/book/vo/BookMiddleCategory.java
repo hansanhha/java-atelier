@@ -1,9 +1,9 @@
-package hansanhha.querydsl.model.vo;
+package hansanhha.querydsl.book.vo;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-import static hansanhha.querydsl.model.vo.BookMainCategory.*;
+import static hansanhha.querydsl.book.vo.BookMainCategory.*;
 
 @Getter
 @RequiredArgsConstructor

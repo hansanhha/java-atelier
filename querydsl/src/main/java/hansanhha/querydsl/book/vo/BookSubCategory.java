@@ -1,9 +1,11 @@
-package hansanhha.querydsl.model.vo;
+package hansanhha.querydsl.book.vo;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-import static hansanhha.querydsl.model.vo.BookMiddleCategory.*;
+import static hansanhha.querydsl.book.vo.BookMiddleCategory.*;
 
+@Getter
 @RequiredArgsConstructor
 public enum BookSubCategory {
 
