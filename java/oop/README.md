@@ -8,6 +8,6 @@
 
 [relationships between objects](./txt/objects%20relationships.md)
 
-[oop vs functional programming]()
+[oop vs functional programming](./txt/oop%20vs%20fp.md)
 
 [design patterns]()
