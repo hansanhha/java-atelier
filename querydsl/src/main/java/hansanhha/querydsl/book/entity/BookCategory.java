@@ -26,6 +26,14 @@ public class BookCategory {
     @Enumerated(EnumType.STRING)
     private BookSubCategory subCategory;
 
+    public static BookCategory from(BookMainCategory main) {
+        return new BookCategory(main, null, null);
+    }
+
+    public static BookCategory from(BookMiddleCategory middle) {
+        return new BookCategory(middle.getParentCategory(), middle, null);
+    }
+
     public static BookCategory from(BookSubCategory sub) {
         BookMiddleCategory middle = sub.getParentCategory();
         BookMainCategory main = middle.getParentCategory();

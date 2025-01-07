@@ -15,10 +15,13 @@ public enum BookMainCategory {
     TECHNOLOGY_SCIENCE("500", "기술과학"),
     ART("600", "예술"),
     LANGUAGE("700", "언어"),
-    LITERATURE("800", "역사"),
+    LITERATURE("800", "문학"),
     HISTORY("900", "역사");
 
     private final String code;
     private final String displayName;
 
+    public boolean contains(BookMiddleCategory middleCategory) {
+        return this.equals(middleCategory.getParentCategory());
+    }
 }

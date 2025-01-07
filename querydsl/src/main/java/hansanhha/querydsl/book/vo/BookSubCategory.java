@@ -9,6 +9,9 @@ import static hansanhha.querydsl.book.vo.BookMiddleCategory.*;
 @RequiredArgsConstructor
 public enum BookSubCategory {
 
+    COMPUTER_SCIENCE(MIDDLE_ETC, "004", "컴퓨터과학"),
+    PROGRAMMING_PROGRAM_DATA(MIDDLE_ETC, "005", "프로그래밍, 프로그램, 데이터"),
+
     KOREAN_ENCYCLOPEDIA(ENCYCLOPEDIA, "031", "한국어"),
     JAPANESE_ENCYCLOPEDIA(ENCYCLOPEDIA, "033", "일본어"),
 
@@ -19,7 +22,9 @@ public enum BookSubCategory {
 
     ARMY(MILITARY_SCIENCE, "396", "육군"),
     NAVY(MILITARY_SCIENCE, "397", "해군"),
-    AIR_FORCE(MILITARY_SCIENCE, "398", "공군");
+    AIR_FORCE(MILITARY_SCIENCE, "398", "공군"),
+
+    KOREAN_NOVEL(KOREAN_LITERATURE, "813", "한국소설");
 
     private final BookMiddleCategory parentCategory;
     private final String code;
