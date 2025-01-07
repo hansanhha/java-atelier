@@ -6,7 +6,7 @@
 
 [oop 4 pillars](./txt/oop%204%20pillars.md)
 
-[relationships between objects]()
+[relationships between objects](./txt/objects%20relationships.md)
 
 [oop vs functional programming]()
 
