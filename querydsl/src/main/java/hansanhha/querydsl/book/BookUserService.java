@@ -23,4 +23,20 @@ public class BookUserService {
         return books.map(BookResponse::from);
     }
 
+    public Page<BookResponse> getBooksByTitle(String title, Pageable pageable) {
+        Page<Book> books = bookRepository.findAllByTitleContainingIgnoreCase(title, pageable);
+
+        return books.map(BookResponse::from);
+    }
+
+    public Page<BookResponse> getBooksByAuthor(String author, Pageable pageable) {
+        Page<Book> books = bookRepository.findAllByAuthorContainingIgnoreCase(author, pageable);
+
+        return books.map(BookResponse::from);
+    }
+
+    public Page<BookResponse> findBooksV2(BookCategory category, String title, String author, boolean ignoreCase, Pageable pageable) {
+        Page<Book> books = bookRepository.findBooks(category, title, author, ignoreCase, pageable);
+        return books.map(BookResponse::from);
+    }
 }

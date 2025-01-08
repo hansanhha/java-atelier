@@ -41,20 +41,6 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
-var querydslDirPath = "build/generated/sources/annotationProcessor/java/main/"
-
-sourceSets {
-    main {
-        java {
-            srcDirs("src/main/java", querydslDirPath)
-        }
-    }
-}
-
-tasks.withType<JavaCompile>() {
-    options.generatedSourceOutputDirectory.dir(querydslDirPath)
-}
-
 tasks.withType<Test> {
     useJUnitPlatform()
 }

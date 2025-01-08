@@ -13,4 +13,8 @@ public enum BookStatus {
     OVERDUE("연체됨");
 
     private final String displayName;
+
+    public boolean isBorrowing() {
+        return this.equals(BORROWED) || this.equals(OVERDUE);
+    }
 }

@@ -13,9 +13,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Slice;
-import org.springframework.test.context.event.annotation.BeforeTestExecution;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -94,6 +94,71 @@ class BookUserServiceTest {
         assertThat(findBooks.getContent()).isNotNull();
         assertThat(findBooks.getSize()).isEqualTo(pageable.getPageSize());
         assertThat(findBooks.getContent().stream().allMatch(book -> book.categoryCode().equals(subCategory.getCode()))).isTrue();
+    }
+
+    @Test
+    @DisplayName("책 이름 조회")
+    void findBooksByTitle() {
+        Pageable pageable = Pageable.ofSize(20).withPage(1);
+        String title = "자바";
+
+        Page<BookResponse> findBooks = bookUserService.getBooksByTitle(title, pageable);
+
+        System.out.printf("====== %s 제목으로 검색한 책 목록 및 페이징 정보 ======\n", title);
+        findBooks.forEach(System.out::println);
+        System.out.println("페이지: " + findBooks.getNumber());
+        System.out.println("요청 개수: " + findBooks.getSize());
+        System.out.println("찾은 개수: " + findBooks.getNumberOfElements());
+        System.out.println("첫 페이지: " + findBooks.isFirst());
+        System.out.println("마지막 페이지: " + findBooks.isLast());
+
+        assertThat(findBooks.getContent()).isNotNull();
+        assertThat(findBooks.getContent().size()).isNotZero();
+        assertThat(findBooks.stream().allMatch(book -> book.title().contains(title))).isTrue();
+    }
+
+    @Test
+    @DisplayName("작가 이름 조회")
+    void findBooksByAuthor() {
+        Pageable pageable = Pageable.ofSize(20).withPage(1);
+        String author = "한강";
+
+        Page<BookResponse> findBooks = bookUserService.getBooksByAuthor(author, pageable);
+
+        System.out.printf("====== %s 작가 이름으로 검색한 책 목록 및 페이징 정보 ======\n", author);
+        findBooks.forEach(System.out::println);
+        System.out.println("페이지: " + findBooks.getNumber());
+        System.out.println("요청 개수: " + findBooks.getSize());
+        System.out.println("찾은 개수: " + findBooks.getNumberOfElements());
+        System.out.println("첫 페이지: " + findBooks.isFirst());
+        System.out.println("마지막 페이지: " + findBooks.isLast());
+
+        assertThat(findBooks.getContent()).isNotNull();
+        assertThat(findBooks.getContent().size()).isNotZero();
+        assertThat(findBooks.stream().allMatch(book -> book.author().contains(author))).isTrue();
+    }
+
+    @Test
+    @DisplayName("카테고리, 책 이름 조합 조회")
+    void findBooksByAnyCondition() {
+        Pageable pageable = Pageable.ofSize(20).withPage(2);
+
+        BookMiddleCategory category = BookMiddleCategory.MIDDLE_ETC;
+        String title = "자바";
+
+        Page<BookResponse> findBooks = bookUserService.findBooksV2(BookCategory.from(category), title, null, false, pageable);
+
+        System.out.printf("====== \"%s\" 카테고리와 \"%s\" 책 이름으로 검색한 책 목록 및 페이징 정보 ======\n", category.getDisplayName(), title);
+        findBooks.forEach(System.out::println);
+        System.out.println("페이지: " + findBooks.getNumber());
+        System.out.println("요청 개수: " + findBooks.getSize());
+        System.out.println("찾은 개수: " + findBooks.getNumberOfElements());
+        System.out.println("첫 페이지: " + findBooks.isFirst());
+        System.out.println("마지막 페이지: " + findBooks.isLast());
+
+        assertThat(findBooks.getContent()).isNotNull();
+        assertThat(findBooks.getContent().size()).isNotZero();
+        assertThat(findBooks.stream().allMatch(book -> book.title().contains(title))).isTrue();
     }
 
 }

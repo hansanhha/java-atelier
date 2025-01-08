@@ -153,6 +153,7 @@ public record BookRequestFactory() {
 
     public static List<CreateBookRequest> getProgrammings() {
         BookSubCategory programmingProgramData = BookSubCategory.PROGRAMMING_PROGRAM_DATA;
+        BookSubCategory computerScience = BookSubCategory.COMPUTER_SCIENCE;
 
         return List.of(
                 new CreateBookRequest("클린 코드", "로버트 C. 마틴", programmingProgramData),
@@ -230,7 +231,36 @@ public record BookRequestFactory() {
                 new CreateBookRequest("모던 자바 인 액션", "라울-게이브리얼우르마", programmingProgramData),
                 new CreateBookRequest("모던 자바 인 액션", "라울-게이브리얼우르마", programmingProgramData),
                 new CreateBookRequest("모던 자바 인 액션", "라울-게이브리얼우르마", programmingProgramData),
-                new CreateBookRequest("모던 자바 인 액션", "라울-게이브리얼우르마", programmingProgramData)
+                new CreateBookRequest("모던 자바 인 액션", "라울-게이브리얼우르마", programmingProgramData),
+                new CreateBookRequest("자바로 배우는 핵심 자료구조와 알고리즘", "앨런 B. 다우니", computerScience),
+                new CreateBookRequest("자바로 배우는 핵심 자료구조와 알고리즘", "앨런 B. 다우니", computerScience),
+                new CreateBookRequest("자바로 배우는 핵심 자료구조와 알고리즘", "앨런 B. 다우니", computerScience),
+                new CreateBookRequest("자바로 배우는 핵심 자료구조와 알고리즘", "앨런 B. 다우니", computerScience),
+                new CreateBookRequest("자바로 배우는 핵심 자료구조와 알고리즘", "앨런 B. 다우니", computerScience),
+                new CreateBookRequest("쉽게 배우는 자료구조 with 자바", "문병로", computerScience),
+                new CreateBookRequest("쉽게 배우는 자료구조 with 자바", "문병로", computerScience),
+                new CreateBookRequest("쉽게 배우는 자료구조 with 자바", "문병로", computerScience),
+                new CreateBookRequest("쉽게 배우는 자료구조 with 자바", "문병로", computerScience),
+                new CreateBookRequest("쉽게 배우는 자료구조 with 자바", "문병로", computerScience),
+                new CreateBookRequest("쉽게 배우는 자료구조 with 자바", "문병로", computerScience),
+                new CreateBookRequest("코딩 테스트 합격자 되기 - 자바 편", "김희성", computerScience),
+                new CreateBookRequest("코딩 테스트 합격자 되기 - 자바 편", "김희성", computerScience),
+                new CreateBookRequest("코딩 테스트 합격자 되기 - 자바 편", "김희성", computerScience),
+                new CreateBookRequest("코딩 테스트 합격자 되기 - 자바 편", "김희성", computerScience),
+                new CreateBookRequest("코딩 테스트 합격자 되기 - 자바 편", "김희성", computerScience),
+                new CreateBookRequest("자료구조와 알고리즘을 함께 Java!", "손상우", computerScience),
+                new CreateBookRequest("자료구조와 알고리즘을 함께 Java!", "손상우", computerScience),
+                new CreateBookRequest("자료구조와 알고리즘을 함께 Java!", "손상우", computerScience),
+                new CreateBookRequest("자료구조와 알고리즘을 함께 Java!", "손상우", computerScience),
+                new CreateBookRequest("자료구조와 알고리즘을 함께 Java!", "손상우", computerScience),
+                new CreateBookRequest("자료구조와 알고리즘을 함께 Java!", "손상우", computerScience),
+                new CreateBookRequest("자료구조와 알고리즘을 함께 Java!", "손상우", computerScience),
+                new CreateBookRequest("Java 프로그래머를 위한 알고리즘과 자료구조", "Yoshiki Kondu", computerScience),
+                new CreateBookRequest("Java 프로그래머를 위한 알고리즘과 자료구조", "Yoshiki Kondu", computerScience),
+                new CreateBookRequest("Java 프로그래머를 위한 알고리즘과 자료구조", "Yoshiki Kondu", computerScience),
+                new CreateBookRequest("Java 프로그래머를 위한 알고리즘과 자료구조", "Yoshiki Kondu", computerScience),
+                new CreateBookRequest("Java 프로그래머를 위한 알고리즘과 자료구조", "Yoshiki Kondu", computerScience),
+                new CreateBookRequest("Java 프로그래머를 위한 알고리즘과 자료구조", "Yoshiki Kondu", computerScience)
         );
     }
 }

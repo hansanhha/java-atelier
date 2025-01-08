@@ -1,4 +1,4 @@
-package hansanhha.querydsl.loan;
+package hansanhha.querydsl.loan.repository;
 
 import hansanhha.querydsl.loan.entity.Loan;
 import org.springframework.data.repository.CrudRepository;

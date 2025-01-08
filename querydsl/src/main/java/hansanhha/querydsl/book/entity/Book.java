@@ -36,4 +36,13 @@ public class Book extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "borrower_id")
     private User borrower;
+
+    public void validate() {
+        if (getBorrower() != null && status.isBorrowing()) {
+            throw new IllegalStateException("이미 대여 중인 도서입니다");
+        }
+        else if (!status.equals(BookStatus.BORROW_AVAILABLE)) {
+            throw new IllegalStateException("대여할 수 없는 도서입니다");
+        }
+    }
 }
