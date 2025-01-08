@@ -4,7 +4,7 @@ jpa
 - [hibernate](./hibernate/hibernate.md)
 
 spring transaction
-- [spring transaction](../core/txt/transaction/spring%20transaction.md)
+- [spring transaction mechanism](../core/txt/transaction/spring%20transaction%20mechanism.md)
 - [spring transaction objects](../core/txt/transaction/transaction%20objects.md)
 - [PlatformTransactionManager](../core/txt/transaction/PlatformTransactionManager.md)
 - [AbstractPlatformTransactionManager](../core/txt/transaction/AbstractPlatformTransactionManager.md)

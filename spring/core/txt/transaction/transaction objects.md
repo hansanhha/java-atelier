@@ -230,6 +230,8 @@ public enum Isolation {
 
 ## TransactionStatus
 
+[예시 코드](../../../data/jpa/src/main/java/hansanhha/transaction/TransactionStatusExample.java)
+
 생성된 트랜잭션에 대한 상태 정보를 보관하고 제어하는 인터페이스로 PlatformTransactionManager와 함께 동작한다
 
 사용 시점
@@ -253,11 +255,9 @@ TransactionStatus는 TransactionExecution, SavepointManager, Flushable 인터페
 
 ### TransactionExecution
 
-[예시 코드](../../../data/jpa/src/main/java/spring/data/jpa/transaction/TransactionStatusExample.java)
+트랜잭션의 현재 상태 정보를 제공하는 인터페이스
 
-트랜잭션의 현재 상태 정보를 제공하는 인터페이스로 TransactionStatus에 의해 확장됨
-
-이외에도 ReactiveTransaction, TransactionExecutionListener에서 사용
+TransactionStatus가 구현하며 ReactiveTransaction, TransactionExecutionListener 등에서 사용된다
 
 정의된 메서드(모두 default 메서드로 정의)
 - 트랜잭션 이름
@@ -343,8 +343,6 @@ public interface SavepointManager {
 ```
 
 ## AbstractTransactionStatus
-
-`public abstract class AbstractTransactionStatus implements TransactionStatus`
 
 TransactionStatus 인터페이스를 일부 구현하며, TransactionStatus 구현체들의 기반이 되는 추상 클래스임
 
@@ -485,12 +483,12 @@ TransactionExecution, SavepointManager, Flushable,
 ---\ DefaultTransactionStatus 
 ```
 
-포함 정보
+포함하고 있는 정보
 - [AbstractPlatformTransactionManager](./AbstractPlatformTransactionManager.md)가 필요로 하는 모든 정보
-- [PlatformTransactionManager](#platformtransactionmanager) 구현체에서 구현한 트랜잭션 객체
+- [PlatformTransactionManager](#platformtransactionmanager) 구현체에서 구현한 트랜잭션 객체(Object 타입)
 
 사용처
-- AbstractPlatformTransactionManager 내부
+- [AbstractPlatformTransactionManager](./AbstractPlatformTransactionManager.md) 내부
 - 그 이외의 다른 곳에서 사용 X, 테스트가 필요한 경우 [`SimpleTransactionStatus`](#simpletransactionstatus) 사용
 
 ### DefaultTransactionStatus - 필드
@@ -531,7 +529,7 @@ public boolean hasTransaction() {
 }
 ```
 
-### DefaultTransactionStatus - 트랜잭션 객체 기반 메서드
+### DefaultTransactionStatus - 메서드
 
 DefaultTransactionStatus는 트랜잭션 매니저 구현체(JpaTransactionManager 등)가 구현한 트랜잭션 객체를 참조하는 `Object transaction` 필드를 가짐
 
