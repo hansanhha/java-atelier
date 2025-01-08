@@ -14,19 +14,23 @@
 
 ## Transaction Objects
 
-스프링에서 데이터베이스 트랜잭션을 객체로 표현/관리하기 위해 여러 가지 객체를 제공하며, 트랜잭션 매니저 구현체에 따라 각 트랜잭션 객체를 구현함
+스프링은 트랜잭션을 책임/역할에 따라 여러 가지 객체로 분리하여 제공한다
 
-TransactionDefinition: 트랜잭션 설정 정보 보관, 이 정보를 바탕으로 트랜잭션 생성
+트랜잭션 매니저 구현체에 따라 각 객체를 구현한다
 
-TransactionStatus: 생성된 트랜잭션에 대한 상태 정보 보관 및 제어
+**TransactionDefinition**: 트랜잭션 설정 정보 보관, 이 정보를 바탕으로 트랜잭션 생성
 
-SavepointManager: 트랜잭션 savepoint 제어
+**TransactionStatus**: 생성된 트랜잭션에 대한 상태 정보 보관 및 제어
 
-SmartTransactionObject: 트랜잭션 rollback-only 설정 확인
+**SavepointManager**: 트랜잭션 savepoint 제어
+
+**SmartTransactionObject**: 트랜잭션 rollback-only 설정 확인
 
 ## TransactionDefinition
 
 트랜잭션의 속성을 정의한 인터페이스
+
+이 정보를 바탕으로 트랜잭션을 생성한다
 
 설정 종류에 따라 상수값을 정의하고 모든 메서드를 기본 값을 반환하는 default 메서드로 정의함
 
@@ -37,7 +41,9 @@ SmartTransactionObject: 트랜잭션 rollback-only 설정 확인
 - **최대 지속 시간**(`TIMEOUT_DEFAULT`): 트랜잭션 최대 지속 시간 설정(시간 내에 트랜잭션이 완료되지 않으면 롤백 처리)
 - **읽기 전용**(`readOnly``): 트랜잭션 읽기 전용 설정
 
-**트랜잭션 전파 설정(PROPAGATION_*) 값으로 TransactionManager와 TransactionSynchronizationManager의 동작을 결정함**
+스프링은 JPA에서 제공하지 않는 트랜잭션 전파라는 기능을 지원한다
+
+**트랜잭션 전파 설정(PROPAGATION_*) 값으로 TransactionManager와 TransactionSynchronizationManager의 동작을 결정한다**
 
 ```java
 public interface TransactionDefinition {
@@ -49,7 +55,7 @@ public interface TransactionDefinition {
     // 트랜잭션 전파 설정에 따라 트랜잭션 생성/참여, 트랜잭션 동기화 생성/공유 등의 동작 방식이 결정됨
   
     /*
-        트랜잭션 정의/트랜잭션 동기화 범위의 기본 트랜잭션 전파 값
+        트랜잭션 전파 기본값
         
         트랜잭션 매니저
         - 기존 트랜잭션이 있으면 해당 트랜잭션 컨텍스트 참여
@@ -84,7 +90,7 @@ public interface TransactionDefinition {
     int PROPAGATION_MANDATORY = 2;
 
     /*
-        독립적인 작업(로깅, 외부 시스템 호출)에 적합한 옵션
+        독립적인 작업(로깅, 외부 시스템 호출)에 적합한 전파 옵션
         성능 및 복잡성 고려 필요
     
         트랜잭션 매니저
@@ -224,7 +230,7 @@ public enum Isolation {
 
 ## TransactionStatus
 
-트랜잭션의 현재 상태를 나타내는 인터페이스로 PlatformTransactionManager와 함께 동작함
+생성된 트랜잭션에 대한 상태 정보를 보관하고 제어하는 인터페이스로 PlatformTransactionManager와 함께 동작한다
 
 사용 시점
 - 트랜잭션 시작
@@ -236,24 +242,18 @@ public enum Isolation {
 - 트랜잭션 커밋/롤백
     - `commit(TrasactionStatus)` `rollback(TransactionStatus)`
 
-```java
-public interface TransactionStatus extends TransactionExecution, SavepointManager, Flushable {
+#### 상속 관계
 
-    default boolean hasSavepoint() {
-      return false;
-    }
-  
-    @Override
-    default void flush() {
-    }
-}
+```txt
+TransactionExecution, SavepointManager, Flushable
+-\ TransactionStatus
 ```
 
-TransactionStatus는 TransactionExecution, SavepointManager, Flushable 인터페이스를 확장함
+TransactionStatus는 TransactionExecution, SavepointManager, Flushable 인터페이스를 확장한다
 
 ### TransactionExecution
 
-[예시 코드](../src/main/java/spring/data/jpa/transaction/TransactionStatusExample.java)
+[예시 코드](../../../data/jpa/src/main/java/spring/data/jpa/transaction/TransactionStatusExample.java)
 
 트랜잭션의 현재 상태 정보를 제공하는 인터페이스로 TransactionStatus에 의해 확장됨
 

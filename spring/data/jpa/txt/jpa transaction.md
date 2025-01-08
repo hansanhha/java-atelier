@@ -1,28 +1,41 @@
+[Transaction](#transaction)
+
 [JPA Transaction](#jpa-transaction)
 
 [EntityManager EntityTransaction](#entitymanager-entitytransaction)
 
 [JPA Transaction Propagation](#jpa-transaction-propagation)
 
-## JPA Transaction
+## Transaction
 
-트랜잭션은 데이터베이스에서 하나의 작업 단위를 나타내는데, 여러 작업을 묶어 하나의 작업처럼 처리함
+트랜잭션은 하나의 작업 단위를 의미하는데, 여러 작업을 묶어 논리적으로 하나의 작업처럼 처리할 수 있음
 
-#### ACID 속성
+#### 트랜잭션 ACID 속성
 - Atomicity: 모든 작업 성공 or 실패(원자성)
 - Consistency: 트랜잭션 전후 데이터 일관성 유지
 - Isolation: 트랜잭션 간 독립성 보장
 - Durability: 트랜잭션 커밋 후 영구히 저장
 
-JPA에서 제공하는 트랜잭션 관련 객체: EntityManager, EntityTransaction
+## JPA Transaction
+
+JPA를 이용하여 트랜잭션을 관리할 수 있음
+- 데이터 조작 작업(삽입, 수정, 삭제 등)
+- 데이터베이스 상태 일관성 유지
+- 작업 중 오류가 발생하면 변경사항 롤백
+
+JPA 트랜잭션 관련 객체: EntityManager, EntityTransaction
 
 ## EntityManager, EntityTransaction
 
-JPA 트랜잭션 관리는 EntityManager를 통해 트랜잭션을 획득하고, 명시적으로 트랜잭션 관련 메서드를 선언하여 수행됨
+EntityManager는 데이터베이스와의 연결을 관리하며 트랜잭션 경계를 설정함 (명시적인 트랜잭션 관리)
+
+`persist` `merge` `remove`와 같은 작업은 트랜잭션 내에서 실행됨
 
 엔티티 매니저는 트랜잭션이 끝나면 더 이상 사용할 수 없음
 
 트랜잭션 범위 내에서만 엔티티를 조작할 수 있으며 트랜잭션 커밋 시 영속성 컨텍스트에 관리되고 있는 엔티티들이 데이터베이스에 반영됨
+
+#### 예시 코드
 
 ```java
 /*

@@ -10,11 +10,9 @@
 - [Transaction Isolation](#spring-transaction-mechanism-transaction-isolation)
 - [@Transactional - Declarative Transaction Management](#spring-transaction-mechanism-transactional---declarative-transaction-management)
 
-이 문서는 스프링이 제공하는 트랜잭션 기능에 대해 전반적으로 설명함
-
 ## Spring Transaction
 
-스프링은 스프링의 트랜잭션 관리 및 JPA와 통합하여 비즈니스 코드에서 명시적으로 트랜잭션을 관리하는 방식과 달리 
+스프링은 스프링의 트랜잭션 관리 및 JPA와 통합하여 비즈니스 코드에서 명시적으로 트랜잭션을 관리하는 [일반적인 JPA 방식](../../../data/jpa/txt/jpa%20transaction.md#예시-코드)과 달리 
 
 선언적으로 트랜잭션을 관리하거나 영속성 컨텍스트 변경사항을 자동으로 반영하는 메커니즘, 트랜잭션 리소스 관리 자동화 등의 기능을 제공함
 
@@ -26,10 +24,12 @@
 
 스프링은 트랜잭션을 추상화함으로써 단순히 데이터베이스 트랜잭션만을 지원하는 것을 넘어서 메시징 시스템, 파일 시스템 등 여러 리소스에서 트랜잭션을 일관적으로 관리할 수 있도록 지원함
 
-핵심 인터페이스
-- [PlatformTransactionManager](./PlatformTransactionManager.md): 트랜잭션 시작, 커밋, 롤백을 관리하는 기본 인터페이스
-- [TransactionDefinition](./transaction%20objects.md#transactiondefinition): 트랜잭션 속성을 정의한 인터페이스
-- [TransactionStatus](./transaction%20objects.md#transactionstatus): 트랜잭션의 현재 상태를 나타내는 인터페이스
+#### 트랜잭션 상태 추상화
+- [TransactionDefinition](./transaction%20objects.md#transactiondefinition): 트랜잭션 설정 정보 보관(이 정보를 바탕으로 트랜잭션 생성)
+- [TransactionStatus](./transaction%20objects.md#transactionstatus): 생성된 트랜잭션에 대한 상태 정보 보관 및 제어
+
+#### 트랜잭션 관리 추상화
+- [PlatformTransactionManager](./PlatformTransactionManager.md): 트랜잭션 관리(트랜잭션 시작/커밋/롤백)
 
 ### Spring Transaction Mechanism: Transaction Synchronization
 

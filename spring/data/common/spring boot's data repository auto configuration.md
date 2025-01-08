@@ -4,7 +4,7 @@
 
 ## Spring Data Repository Auto Configuration Base Class
 
-스프링 부트를 사용하는 경우 스프링 데이터에서 제공하는 추상화 객체([AnnotationRepositoryConfigurationSource](./spring%20data%20repository%20config%20source.md#annotationrepositoryconfigurationsource))와 스프링 부트에서 제공하는 객체를 통합하여 리포지토리 인터페이스 스캔/등록 작업을 진행함
+스프링 부트를 사용하는 경우 스프링 데이터에서 제공하는 추상화 객체([AnnotationRepositoryConfigurationSource](../common/spring%20data%20repository%20config%20objects.md#annotationrepositoryconfigurationsource))와 스프링 부트에서 제공하는 객체를 통합하여 리포지토리 인터페이스 스캔/등록 작업을 진행함
 
 ### AbstractRepositoryConfigurationSourceSupport
 

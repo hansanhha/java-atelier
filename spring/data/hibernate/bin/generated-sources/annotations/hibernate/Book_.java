@@ -1,4 +1,4 @@
-package hibernate;
+package hansanhha;
 
 import jakarta.persistence.metamodel.EntityType;
 import jakarta.persistence.metamodel.SingularAttribute;
@@ -12,17 +12,17 @@ public abstract class Book_ {
 
 	
 	/**
-	 * @see hibernate.Book#isbn
+	 * @see hansanhha.Book#isbn
 	 **/
 	public static volatile SingularAttribute<Book, String> isbn;
 	
 	/**
-	 * @see hibernate.Book#title
+	 * @see hansanhha.Book#title
 	 **/
 	public static volatile SingularAttribute<Book, String> title;
 	
 	/**
-	 * @see hibernate.Book
+	 * @see hansanhha.Book
 	 **/
 	public static volatile EntityType<Book> class_;
 

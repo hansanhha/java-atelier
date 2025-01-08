@@ -22,10 +22,10 @@
 
 ```java
 @SpringBootApplication
-public class BootApplication {
+public class hansanhha.BootApplication {
     
     public static void main(String[] args) {
-        SpringApplication.run(BootApplication.class, args);
+        SpringApplication.run(hansanhha.BootApplication.class, args);
     }
 }
 ```
