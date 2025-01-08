@@ -12,5 +12,5 @@ public interface BookSearchRepository {
 
     Page<Book> findBooks(BookCategory category, String title, String author, boolean ignoreCase, Pageable pageable);
 
-    Optional<Book> fetchUserByIsbn(UUID isbn);
+    Optional<Book> fetchBorrowerByIsbn(UUID isbn);
 }

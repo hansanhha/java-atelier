@@ -1,34 +1,41 @@
 package hansanhha.querydsl.user.repository;
 
+import com.querydsl.jpa.impl.JPAQueryFactory;
 import hansanhha.querydsl.book.entity.QBook;
 import hansanhha.querydsl.loan.entity.QWaitList;
 import hansanhha.querydsl.user.entity.QUser;
 import hansanhha.querydsl.user.entity.User;
-import org.springframework.data.jpa.repository.support.QuerydslRepositorySupport;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public class UserRepositoryImpl extends QuerydslRepositorySupport implements UserRepositoryCustom {
+@RequiredArgsConstructor
+public class UserRepositoryImpl implements UserRepositoryCustom {
 
-    public UserRepositoryImpl() {
-        super(User.class);
-    }
+    private final JPAQueryFactory queryFactory;
+    private final QUser user = QUser.user;
 
     @Override
     public Optional<User> fetchByUserNumber(UUID userNumber) {
-        QUser user = QUser.user;
-        QBook book = QBook.book;
-        QWaitList waitList = QWaitList.waitList;
 
-        User foundUser = from(user)
-                .leftJoin(user.currentBorrowBooks, book).fetchJoin()
-                .leftJoin(user.currentWaitList, waitList).fetchJoin()
+        return Optional.ofNullable(
+                queryFactory.selectFrom(user)
+                        .leftJoin(user.currentBorrowBooks).fetchJoin()
+                        .leftJoin(user.currentWaitList).fetchJoin()
+                        .where(user.userNumber.eq(userNumber))
+                        .fetchFirst());
+    }
+
+    @Override
+    public Optional<User> fetchBorrowBooksByUserNumber(UUID userNumber) {
+        User found = queryFactory.selectFrom(user)
+                .leftJoin(user.currentBorrowBooks).fetchJoin()
                 .where(user.userNumber.eq(userNumber))
-                .fetchFirst();
+                .fetchOne();
 
-        return Optional.ofNullable(foundUser);
+        return Optional.ofNullable(found);
     }
 }

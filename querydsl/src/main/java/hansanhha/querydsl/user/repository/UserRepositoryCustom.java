@@ -7,4 +7,6 @@ import java.util.UUID;
 
 public interface UserRepositoryCustom {
     Optional<User> fetchByUserNumber(UUID userNumber);
+
+    Optional<User> fetchBorrowBooksByUserNumber(UUID userNumber);
 }

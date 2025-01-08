@@ -48,6 +48,15 @@ public class User extends BaseEntity {
     public void borrowBook(Book book) {
         currentBorrowBooks.add(book);
         totalBorrowCount++;
-        book.setBorrower(this);
+        book.borrow(this);
+    }
+
+    public void overdueReturnBook(Book book) {
+        this.totalOverdueCount++;
+        book.returns();
+    }
+
+    public void normalReturnBook(Book book) {
+        book.returns();
     }
 }

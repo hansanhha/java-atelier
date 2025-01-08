@@ -146,7 +146,7 @@ class BookUserServiceTest {
         BookMiddleCategory category = BookMiddleCategory.MIDDLE_ETC;
         String title = "자바";
 
-        Page<BookResponse> findBooks = bookUserService.findBooksV2(BookCategory.from(category), title, null, false, pageable);
+        Page<BookResponse> findBooks = bookUserService.getBooksV2(BookCategory.from(category), title, null, false, pageable);
 
         System.out.printf("====== \"%s\" 카테고리와 \"%s\" 책 이름으로 검색한 책 목록 및 페이징 정보 ======\n", category.getDisplayName(), title);
         findBooks.forEach(System.out::println);

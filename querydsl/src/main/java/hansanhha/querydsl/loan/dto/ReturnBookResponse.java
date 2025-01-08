@@ -1,12 +1,14 @@
 package hansanhha.querydsl.loan.dto;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.util.UUID;
 
 public record ReturnBookResponse(
         UUID userNumber,
         UUID isbn,
-        LocalDateTime returnDate,
+        LocalDate returnDate,
         boolean isOverdue,
-        LocalDateTime overduePeriod) {
+        Period overduePeriod) {
 }

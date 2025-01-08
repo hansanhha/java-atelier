@@ -8,6 +8,7 @@ import hansanhha.querydsl.book.entity.QBook;
 import hansanhha.querydsl.book.repository.v2.expression.BookAuthorExpression;
 import hansanhha.querydsl.book.repository.v2.expression.BookCategoryExpression;
 import hansanhha.querydsl.book.repository.v2.expression.BookTitleExpression;
+import hansanhha.querydsl.user.entity.QUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -56,11 +57,13 @@ public class BookSearchRepositoryImpl implements BookSearchRepository {
     }
 
     @Override
-    public Optional<Book> fetchUserByIsbn(UUID isbn) {
-        return Optional.ofNullable(
-                queryFactory.selectFrom(book)
-                        .leftJoin(book.borrower).fetchJoin()
-                        .where(book.isbn.eq(isbn))
-                        .fetchOne());
+    public Optional<Book> fetchBorrowerByIsbn(UUID isbn) {
+        Book found = queryFactory
+                .selectFrom(book)
+                .leftJoin(book.borrower).fetchJoin()
+                .where(book.isbn.eq(isbn))
+                .fetchOne();
+
+        return Optional.ofNullable(found);
     }
 }

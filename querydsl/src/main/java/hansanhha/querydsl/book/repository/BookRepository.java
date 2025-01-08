@@ -11,4 +11,6 @@ import java.util.UUID;
 public interface BookRepository extends CrudRepository<Book, Long>, BookMetadataRepository, BookSearchRepository {
 
     Optional<Book> findByIsbn(UUID isbn);
+
+    Optional<Book> findBookByIsbn(UUID isbn);
 }

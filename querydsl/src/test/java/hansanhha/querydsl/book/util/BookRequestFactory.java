@@ -4,6 +4,7 @@ import hansanhha.querydsl.book.dto.CreateBookRequest;
 import hansanhha.querydsl.book.vo.BookSubCategory;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 public record BookRequestFactory() {
 
@@ -262,5 +263,9 @@ public record BookRequestFactory() {
                 new CreateBookRequest("Java 프로그래머를 위한 알고리즘과 자료구조", "Yoshiki Kondu", computerScience),
                 new CreateBookRequest("Java 프로그래머를 위한 알고리즘과 자료구조", "Yoshiki Kondu", computerScience)
         );
+    }
+
+    public static List<CreateBookRequest> getAll() {
+        return Stream.concat(getKoreanNovels().stream(), getProgrammings().stream()).toList();
     }
 }
