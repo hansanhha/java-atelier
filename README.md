@@ -4,5 +4,8 @@ programming languages
 frameworks
 - [spring](./spring)
 
+libraries
+- [querydsl](./querydsl)
+
 build tool
 - [gradle](./gradle)
