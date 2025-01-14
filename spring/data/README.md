@@ -22,3 +22,6 @@ spring data jpa
 - [simple jpa repository](./jpa/txt/simple%20jpa%20repository.md)
 - [spring data jpa mystery](./jpa/txt/spring%20data%20jpa%20mystery.md)
 - [spring data jpa objects](./jpa/txt/spring%20data%20jpa%20objects.md)
+
+spring data redis
+- [spring data redis](./redis/txt/spring%20data%20redis.md)
