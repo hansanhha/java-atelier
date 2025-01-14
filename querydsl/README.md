@@ -11,11 +11,13 @@
 - [join 절](#join-절)
 - [limit-offset, limit-keyset](#limit-offset-limit-keyset)
 - [order by 절](#order-by-절)
+- [group by 절](#group-by-절)
+- [having 절](#having-절)
 - [fetch](#fetch)
 - [subquery](#subquery)
-- [case]()
-- [집계 함수]()
-- [projection]()
+- [case](#case)
+- [집계 함수](#집계-함수)
+- [projection](#projection)
 
 [스프링 데이터에서 제공하는 Querydsl 기능](#스프링-데이터에서-제공하는-querydsl-기능)
 
@@ -51,7 +53,11 @@ JPA Specification은 쿼리를 정의하기 위해 CriteriaBuilder를 사용해�
 
 또한 문자열로 컬럼 이름을 다룰 때 컴파일 타임에 오류를 검출하기 어렵다
 
-querydsl은 이러한 문제를 해결하는 라이브러리로 JPA static Metamodel의 기능을 발전시켜 간결하고 읽기 쉬운 코드로 동적 쿼리를 작성할 수 있게 도와준다
+querydsl은 이러한 문제를 해결하는 라이브러리로 JPA Static Metamodel의 기능을 발전시켜 간결하고 읽기 쉬운 코드로 동적 쿼리를 작성할 수 있게 도와준다
+
+querydsl JPAQueryFactory: JPA CriteriaBuilder
+
+querydsl Q Class: JPA Static Metamodel
 
 ## Querydsl-JPA 설정
 
@@ -536,6 +542,39 @@ private OrderSpecifier<?> getOrderSpecifier(QUser user, String sortField, boolea
 }
 ```
 
+### group by 절
+
+데이터를 특정 필드 또는 필드의 값으로 그룹화한다
+
+```java
+// 부서별 사용자 그룹화
+List<Tuple> results = queryFactory
+            .selectFrom(user)
+            .groupBy(user.department)
+            .fetch();
+
+// 평균 연봉 별 사용자 그룹화
+List<Tuple> results = queryFactory
+            .selectFrom(user.salary.avg(), user.count())
+            .groupBy(user.salary.avg())
+            .fetch();
+```
+
+### having 절
+
+group by로 그룹화된 결과에 조건을 적용할 때 having 절을 사용한다
+
+where 절은 개별 행에 대해 조건을 적용하고, having 절은 그룹화된 데이터에 대해 조건을 적용한다 
+
+```java
+// 부서별 평균 연봉이 5000 이상인 부서 필터링
+List<Tuple> results = queryFactory
+            .selectFrom(user)
+            .groupBy(user.department)
+            .having(user.salary.avg().at(5000))
+            .fetch();
+```
+
 ### fetch
 
 querydsl에서 쿼리 결과를 반환받으려면 fetch 메서드를 사용해야 된다
@@ -702,6 +741,153 @@ for (Tuple tuple : results) {
 }
 ```
 
+### 집계 함수
+
+```java
+queryFactory
+    .select(user.count())
+    .select(user.salary.sum())
+    .select(user.salary.avg())
+    .select(user.salary.max())
+    .select(user.salary.min())
+        
+    // 부서별 인원 수대로 정렬 (내림차순)
+    .groupBy(user.department)
+    .orderBy(user.count().desc())
+
+    // 부서별 평균 연봉이 5000 이상인 부서 필터링
+    .groupBy(user.department)
+    .having(user.salary.avg.gt(5000))
+```
+
 ### projection
+
+프로젝션은 데이터베이스 또는 ORM에서 특정 열이나 필드만 선택하여 결과를 반환하는 작업을 의미한다 
+
+전체 엔티티 대신 특정 필드를 선택하거나 DTO 객체를 결과로 반환받을 수도 있다
+
+querydsl 프로젝션 유형: 기본형, 엔티티, DTO, 튜플 
+
+#### 단일 필드 프로젝션
+
+하나의 필드만 반환하는 프로젝션 
+
+```java
+// User 엔티티의 username 필드만 조회한다
+List<String> usernames = queryFactory
+                .select(user.username)
+                .from(user)
+                .fetch();
+```
+
+#### 튜플 프로젝션
+
+Tuple은 querydsl에서 제공하는 구조로, 여러 필드를 묶어서 반환하기 위해 사용된다
+
+특정 테이블/엔티티에 종속되지 않고 선택한 필드를 결과로 포함한다
+
+반환된 Tuple 객체에서 각 필드 값을 개별적으로 추출할 수 있다
+
+**단점**
+- 튜플은 타입 안정성이 낮다 (잘못된 필드명을 사용하거나 타입 변환 오류가 발생할 가능성이 있음)
+- 복잡한 쿼리에서 코드 가독성이 떨어진다
+
+```java
+// 서로 다른 엔티티의 필드 값과 서브 쿼리의 결과 값을 Tuple로 추출
+List<Tuple> results = queryFactory
+                .select(user.username, 
+                        order.totalPrice,
+                        JPAExressions
+                            .select(order.count())
+                            .from(order)
+                            .where(order.user.id.eq(user.id))
+                )
+                .from(user)
+                .leftJoin(user.orders, order).fetchJoin()
+                .fetch();
+
+for (Tuple result : List<Tuple> results) {
+    String username = result.get(user.username);
+    Integer totalPrice = result.get(order.totalPrice);
+    Integer orderCount = result.get(JPAExpressions.select(order.count()));
+    
+    System.out.println(username + ": " + totalPrice + " (Orders: " + orderCount + ")");
+}
+```
+
+#### DTO 프로젝션
+
+프로젝션용 DTO를 정의한 뒤 querydsl의 Projections를 이용하여 DTO 프로젝션 형태로 결과를 반환받을 수 있다
+
+Projections는 세 가지 방법으로 DTO 프로젝션을 생성할 수 있다
+- Projections.bean: 프로퍼티 setter 접근
+- Projections.fields: 필드 접근
+- Projections.constructor: 생성자 접근
+
+**주의점**
+- 생성자 접근 시 필드 순서가 일치해야 한다
+- 필드 타입 변환이 정확히 일치해야 한다
+
+**DTO 프로젝션 필드와 쿼리 필드를 매칭시켜야 할 때**
+- ExpressionUtils.as 메서드를 통해 DTO 프로젝션 필드와 쿼리 결과 필드의 이름을 맞출 수 있다 
+
+```java
+// DTO 정의
+public record UserOrderInfo(
+        String username,
+        Integer orderTotalPrice,
+        Integer orderCount) {}
+
+// Projections.constructor: DTO 생성자를 통해 DTO 프로젝션 생성
+queryFactory
+        .select(Projections.constructor(UserOrderInfo.class,
+                    user.username,
+                    order.totalPrice,
+                    ExpressionsUtils.as(JPAExressions
+                        .select(order.count())
+                        .from(order)
+                        .where(order.user.id.eq(user.id)), "orderCount")
+                )
+        )
+```
+
+#### @QueryProjection
+
+DTO 프로젝션 클래스를 Q 클래스로 만드는 생성자 전용 querydsl 어노테이션으로, 컴파일러로 타입 체크를 할 수 있게 한다
+
+**단점**
+- DTO가 많아질수록 Q 클래스 파일도 증가한다
+- DTO에 querydsl 의존성이 생긴다
+
+```java
+// 생성자에 @QueryProjection 적용
+public class UserOrderInfo {
+    
+    private final String username;
+    private final Integer orderTotalPrice;
+    private final Integer orderCount;
+    
+    @QueryProjection
+    pubilc UserOrderInfo(String username,
+                         Integer orderTotalPrice,
+                         Integer orderCount) {
+        this.username = username;
+        this.orderTotalPrice = orderTotalPrice;
+        this.orderCount = orderCount;
+    }
+}
+
+// @QueryProjection DTO 프로젝션 사용
+// 일반 DTO 대신 QUserOrderInfo를 사용한다 
+queryFactory
+        .select(new QUserOrderInfo(
+                user.username,
+                order.totalPrice,
+                ExpressionsUtils.as(JPAExressions
+                    .select(order.count())
+                    .from(order)
+                    .where(order.user.id.eq(user.id)), "orderCount"))
+        )
+```
 
 ## 스프링 데이터에서 제공하는 Querydsl 기능
