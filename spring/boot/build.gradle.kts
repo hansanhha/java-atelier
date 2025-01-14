@@ -1,18 +1,28 @@
 plugins {
-    id("java")
-    alias(libs.plugins.spring.boot)
-    alias(libs.plugins.spring.management)
+    java
+    id("org.springframework.boot") version "3.4.1"
+    id("io.spring.dependency-management") version "1.1.7"
 }
 
 repositories {
     mavenCentral()
 }
 
+java {
+    toolchain {
+        languageVersion =
+            JavaLanguageVersion.of(21)
+    }
+}
+
 dependencies {
-    implementation(libs.spring.boot)
-    implementation(libs.spring.boot.test)
-    implementation(libs.spring.boot.data.jpa)
-    implementation(libs.spring.boot.web)
-    runtimeOnly(libs.h2)
+    implementation("org.springframework.boot:spring-boot-starter")
+
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.junit.jupiter:junit-jupiter-api")
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
 }
 

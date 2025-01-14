@@ -1,25 +1,37 @@
 plugins {
-    id("java")
-    alias(libs.plugins.spring.boot)
-    alias(libs.plugins.spring.management)
+    java
+    id("org.springframework.boot") version "3.4.1"
+    id("io.spring.dependency-management") version "1.1.7"
 }
 
 repositories {
     mavenCentral()
 }
 
-dependencies {
-    implementation(libs.spring.modulith.core)
-    implementation(libs.spring.modulith.events.api)
-    implementation(libs.spring.modulith.events.core)
-    implementation(libs.spring.modulith.jpa)
-    runtimeOnly(libs.spring.modulith.actuator)
-    testImplementation(libs.spring.moduliith.test)
+java {
+    toolchain {
+        languageVersion =
+            JavaLanguageVersion.of(21)
+    }
+}
 
-    implementation(libs.spring.boot.configuration.processor)
-    implementation(libs.spring.boot.data.jpa)
-    implementation(libs.spring.boot.web)
-    runtimeOnly(libs.spring.boot.actuator)
-    testImplementation(libs.spring.boot.test)
+configurations {
+    compileOnly {
+        extendsFrom(configurations.annotationProcessor.get())
+    }
+}
+
+dependencies {
+    implementation("org.springframework.modulith:spring-modulith-starter-core")
+    implementation("org.springframework.modulith:spring-modulith-events-api")
+    implementation("org.springframework.modulith:spring-modulith-events-core")
+    implementation("org.springframework.modulith:spring-modulith-starter-jpa")
+
+    implementation("org.springframework.boot:spring-boot-configuration-processor")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    runtimeOnly("org.springframework.boot:spring-boot-starter-actuator")
+    runtimeOnly("org.springframework.modulith:spring-modulith-actuator")
+    testImplementation("org.springframework.modulith:spring-modulith-starter-test")
 
 }

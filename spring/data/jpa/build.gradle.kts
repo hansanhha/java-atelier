@@ -1,11 +1,18 @@
 plugins {
     java
-    alias(libs.plugins.spring.boot)
-    alias(libs.plugins.spring.management)
+    id("org.springframework.boot") version "3.4.1"
+    id("io.spring.dependency-management") version "1.1.7"
 }
 
 repositories {
     mavenCentral()
+}
+
+java {
+    toolchain {
+        languageVersion =
+            JavaLanguageVersion.of(21)
+    }
 }
 
 configurations {
@@ -15,19 +22,19 @@ configurations {
 }
 
 dependencies {
-    implementation(libs.spring.boot)
-    implementation(libs.spring.boot.web)
-    implementation(libs.spring.boot.data.jpa)
+    implementation("org.springframework.boot:spring-boot-starter")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 
-    testImplementation(libs.spring.boot.test)
-    testImplementation(libs.jupiter)
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.junit.jupiter:junit-jupiter-api")
 
-    annotationProcessor(libs.lombok)
+    annotationProcessor("org.projectlombok:lombok")
 
-    runtimeOnly(libs.h2)
-    runtimeOnly(libs.spring.boot.actuator)
+    runtimeOnly("com.h2database:h2")
+    runtimeOnly("org.springframework.boot:spring-boot-starter-actuator")
 }
 
-tasks.named<Test>("test") {
+tasks.withType<Test> {
     useJUnitPlatform()
 }

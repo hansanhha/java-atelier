@@ -1,20 +1,34 @@
 plugins {
-    id("java")
-    alias(libs.plugins.spring.boot)
-    alias(libs.plugins.spring.management)
+    java
+    id("org.springframework.boot") version "3.4.1"
+    id("io.spring.dependency-management") version "1.1.7"
 }
 
 repositories {
     mavenCentral()
 }
 
+java {
+    toolchain {
+        languageVersion =
+            JavaLanguageVersion.of(21)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom(configurations.annotationProcessor.get())
+    }
+}
+
 dependencies {
-    implementation(libs.spring.boot)
-    implementation(libs.spring.boot.web)
-    implementation(libs.spring.boot.data.jpa)
-    implementation(libs.spring.boot.security)
-    implementation(libs.spring.boot.security.oauth2.client)
-    implementation(libs.spring.boot.actuator)
-    implementation(libs.spring.boot.thymeleaf)
-    testImplementation(libs.spring.boot.test)
+
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
+    implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
+    
+    runtimeOnly("org.springframework.boot:spring-boot-starter-actuator")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
 }

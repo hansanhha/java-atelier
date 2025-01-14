@@ -1,25 +1,30 @@
 plugins {
-    id("java")
+    java
 }
 
 repositories {
     mavenCentral()
 }
 
-dependencies {
-
-    implementation(libs.hibernate.orm)
-
-    implementation(libs.hibernate.validator)
-    implementation(libs.glassfish.el)
-
-//    implementation libs.hibernate.agroal
-//    implementation libs.agroal
-
-    implementation(libs.log4j)
-
-    annotationProcessor(libs.hibernate.jpamodelgen)
-
-    runtimeOnly(libs.h2)
+java {
+    toolchain {
+        languageVersion =
+            JavaLanguageVersion.of(21)
+    }
 }
 
+configurations {
+    compileOnly {
+        extendsFrom(configurations.annotationProcessor.get())
+    }
+}
+
+dependencies {
+    implementation("org.hibernate.orm:hibernate-core:6.6.4.Final")
+
+    runtimeOnly("com.h2database:h2:2.3.232")
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
+}
