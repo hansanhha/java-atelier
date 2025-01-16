@@ -2,7 +2,9 @@
 
 [구성 요소](#구성-요소)
 
-[설정](#설정)
+[스프링 설정과 스프링 부트 자동 구성](#스프링-설정과-스프링-부트-자동-구성)
+
+[레디스를 사용하기 위한 필수/커스텀 설정](#레디스를-사용하기-위한-필수커스텀-설정)
 
 [RedisTemplate](#redistemplate-1)
 
@@ -56,9 +58,19 @@ Spring Cache를 추상화하여 레디스를 캐시 스토어로 활용할 수 �
 메시징 애플리케이션 구현 시 사용한다
 
 
-## 설정
+## 스프링 설정과 스프링 부트 자동 구성
 
-#### 의존성 설정
+스프링 설정
+- @EnableCaching (스프링 캐시 사용 시)
+
+스프링 부트 자동 구성
+- RedisAutoConfiguration: RedisTemplate, LettuceConnectionConfiguration
+- RedisCacheConfiguration (스프링 캐시 사용 시): RedisCacheManager
+
+
+## 레디스를 사용하기 위한 필수/커스텀 설정
+
+### 의존성 설정
 
 스프링 부트 스타터를 사용하면 스프링 데이터와 레디스 클라이언트 의존성을 간단하게 명시할 수 있다
 
@@ -68,7 +80,13 @@ Spring Cache를 추상화하여 레디스를 캐시 스토어로 활용할 수 �
 implementation("org.springframework.boot:spring-boot-starter-data-redis")
 ```
 
-#### 레디스 설정
+### 레디스 서버 설정
+
+#### 레디스 서버 프로퍼티 설정
+
+레디스와 연결 및 기본 동작 설정을 담당한다
+
+RedisTemplate, RedisConnectionFactory 등 전반적인 레디스 관련 작업에서 사용한다
 
 ```yaml
 spring:
@@ -78,21 +96,25 @@ spring:
       port: 6379
       username: test
       password: test
+      connect-timeout: 2000
 ```
+
+#### 자바 설정
 
 ```java
 @Configuration
 public class RedisConfig {
 
     // 스프링 부트가 LettuceConnectionFactory 타입으로 자동 구성한다
-    // 별도의 설정이 필요한 경우 빈으로 등록
+    // 별도의 설정이 필요한 경우 RedisConnectionFactory 빈을 등록하거나
+    // LettuceClientConfigurationBuilderCustomizer, LettuceClientOptionsBuilderCustomizer 빈 등록
     @Bean
     public RedisConnectionFactory connectionFactory() {
-        return new Le("localhost", 6379);
+        return new LettuceConnectionFactory("localhost", 6379);
     }
 
     // 스프링 부트가 RedisTemplate<Object, Object>와 StringRedisTemplate을 자동 구성한다
-    // 별도의 설정이 필요한 경우 빈으로 등록
+    // 다만 Jackson2JsonRedisSerializer를 사용하려면 스프링 빈으로 등록해야 된다
     @Bean
     public RedisTemplate<String, Object> redisTemplate() {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
@@ -110,13 +132,34 @@ public class RedisConfig {
 }
 ```
 
+### 레디스 캐시 설정
+
+#### 레디스 캐시 프로퍼티 설정
+
+스프링 캐시를 추상화하여 레디스를 캐시 저장소로 사용할 때 필요한 설정을 담당한다
+
+RedisCacheManager 등에서 캐시 저장소로 레디스를 사용할 때 추가적인 설정을 할 때 사용한다
+
+```yaml
+spring:
+  cache:
+    type: redis # 캐시 제공자 지정
+    redis: 
+      time-to-live: 60000      # 캐시 데이터의 ttl (밀리초)
+      cache-null-values: false # 캐시 값 null 허용 여부
+      prefix: myApp            # 캐시 키 prefix
+```
+
+#### 레디스 캐시 자바 설정
+
 ```java
 @Configuration
-// 캐시 스토어 사용 선언
+// 스프링 캐시 사용 선언
 @EnableCaching
-public CacheConfig {
+public RedisCacheConfig {
 
-    // 캐시 매니저 등록
+    // 스프링 부트가 RedisCacheManager 타입으로 자동 구성한다
+    // 별도의 설정이 필요한 경우 빈으로 등록하거나 레디스 캐시 프로퍼티 파일 설정과 RedisCacheConfiguration을 빈으로 등록한다
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory redisConnectionFactory) {
 
@@ -134,52 +177,31 @@ public CacheConfig {
                 .cacheDefaults(redisCacheConfiguration) // 캐시 설정
                 .build();
     }
+
+    // RedisCacheConfiguration을 빈으로 등록하면 스프링 부트가 자동 구성하는 RedisCacheManager에 설정을 반영한다
+    @Bean
+    public RedisCacheConfiguration redisCacheConfiguration() {
+        return RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(Duration.ofMinutes(5)) // 캐시 만료 시간 5분
+                 // 키 직렬화 설정
+                .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
+                 // 값 직렬화 설정
+                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer()))
+                .disableCachingNullValues() // Null 값 캐싱 비활성화
+                .prefixCacheNameWith("myApp:"); // 프리픽스 설정
+    }
 }
 ```
 
 
 ## RedisTemplate
 
-### `opsFor<data type>()`
-
-RedisTemplate의 메서드 이름은 레디스의 데이터 구조와 작업 방식에 따라 명확하게 지어져있다
-
-레디스에서 지원하는 데이터 타입에 따라 작업을 수행할 수 있는 객체를 반환한다
-
-| 데이터 타입           | 메서드                 | 반환 타입                 |
-|------------------|---------------------|-----------------------|
-| string           | opsForValue()       | ValueOperations       |
-| hash             | opsForHash()        | HashOperations        |
-| list             | opsForList()        | ListOperations        |
-| set              | opsForSet()         | SetOperations         |
-| sorted set(zset) | opsForZSet()        | ZSetOperations        |
-| hyperloglog      | opsForHyperLogLog() | HyperLogLogOperations |
-| cluster          | opsForCluster()     | ClusterOperations     |
-| geo              | opsForGeo()         | GeoOperations         |
-| stream           | opsForStream()      | StreamOperations      |
-
-### `bound<data type>Ops()`
-
-특정 키에 바인딩된 데이터 타입에 따라 작업을 수행할 수 있는 객체를 반환한다
-
-특정 키에 대한 컨텍스트를 유지하여 동일한 키에 대해 여러 작업을 수행할 때, 키를 매번 명시하지 않아도 된다
-
-| 데이터 타입            | 메서드                 | 반환 타입                 |
-|-------------------|---------------------|-----------------------|
-| string            | boundValueOps(key)  | BoundValueOperations  |
-| hash              | boundHashOps(key)   | BoundHashOperations   |
-| list              | boundListOps(key)   | BoundListOperations   |
-| set               | boundSetOps(key)    | BoundSetOperations    |
-| sorted set (zset) | boundZSetOps(key)   | BoundZSetOperations   |
-| geo               | boundGeoOps(key)    | BoundGeoOperations    |
-| stream            | boundStreamOps(key) | BoundStreamOperations |
-
-
+[RedisTemplate](./spring RedisTemplate)
 
 
 ## redis cache store
 
-
+[spring redis cache](./spring%20redis%20cache.md)
 
 
 ## pub/sub

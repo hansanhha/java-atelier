@@ -25,3 +25,7 @@ spring data jpa
 
 spring data redis
 - [spring data redis](./redis/txt/spring%20data%20redis.md)
+- [RedisTemplate](./redis/txt/spring%20RedisTemplate.md)
+- [spring redis cache](./redis/txt/spring%20redis%20cache.md)
+- [spring redis pub/sub](./redis/txt/spring%20redis%20pub,%20sub.md)
+- [redisson](./redis/txt/redisson.md)

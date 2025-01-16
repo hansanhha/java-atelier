@@ -17,6 +17,12 @@ configurations {
             configurations.annotationProcessor.get()
         )
     }
+
+    testCompileOnly {
+        extendsFrom(
+            configurations.testAnnotationProcessor.get()
+        )
+    }
 }
 
 repositories {
@@ -26,8 +32,11 @@ repositories {
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
     implementation("org.springframework.boot:spring-boot-starter-web")
-    compileOnly("org.projectlombok:lombok")
+    implementation("org.redisson:redisson-spring-boot-starter:3.43.0")
+
     annotationProcessor("org.projectlombok:lombok")
+    testAnnotationProcessor("org.projectlombok:lombok")
+
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
