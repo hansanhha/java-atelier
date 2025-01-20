@@ -1,6 +1,24 @@
+springdoc:
+
+  api-docs:
+    path: /api-docs
+
+  swagger-ui:
+    path: /api-docs/swagger-ui.html
+    disable-swagger-default-url: true
+    display-request-duration: true
+    operations-sorter: alpha
+
+  show-actuator: true
+
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+
+  writer-with-default-pretty-printer: true
+
 spring:
   application:
-    name: hansanhha-spring-boot
+    name: spring-boot
 
 
 # 로깅 설정

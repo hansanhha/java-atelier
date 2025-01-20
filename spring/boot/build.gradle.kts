@@ -15,8 +15,23 @@ java {
     }
 }
 
+configurations {
+    compileOnly {
+        extendsFrom(
+            configurations.annotationProcessor.get()
+        )
+    }
+}
+
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.3")
+
+    annotationProcessor("org.projectlombok:lombok")
+
+    runtimeOnly("org.springframework.boot:spring-boot-starter-actuator")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.junit.jupiter:junit-jupiter-api")
