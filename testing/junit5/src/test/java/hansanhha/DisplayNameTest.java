@@ -1,4 +1,4 @@
-package junit;
+package hansanhha;
 
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.DisplayNameGenerator.ReplaceUnderscores;
