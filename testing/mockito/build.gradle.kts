@@ -1,5 +1,7 @@
 plugins {
     java
+    id("org.springframework.boot") version("3.4.2")
+    id("io.spring.dependency-management") version("1.1.7")
 }
 
 repositories {
@@ -18,8 +20,17 @@ dependencies {
 
     testImplementation("org.mockito:mockito-core:5.15.2")
     testImplementation("org.mockito:mockito-junit-jupiter:5.15.2")
+
+    implementation("org.springframework.boot:spring-boot-starter")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
 tasks.withType<Test> {
     useJUnitPlatform()
+
+    testLogging {
+        events("PASSED", "FAILED", "SKIPPED", "STANDARD_OUT", "STANDARD_ERROR")
+    }
+
+    outputs.cacheIf { true }
 }
