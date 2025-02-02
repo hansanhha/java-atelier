@@ -6,6 +6,8 @@ frameworks
 
 libraries
 - [querydsl](./querydsl)
+- [junit 5](./testing/junit5)
+- [mockito](./testing/mockito)
 
 build tool
 - [gradle](./gradle)
