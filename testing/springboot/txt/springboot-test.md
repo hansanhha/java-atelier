@@ -1,14 +1,3 @@
-## Spring Boot Starter, Module
-
-스프링 부트 테스트 스타터
-- `spring-boot-starter-test`
-  - 포함된 의존성 : Spring Test, Spring Boot, JUnit5, AssertJ, Hamcrest, Mockito, JSONassert, JsonPath, Awaitility, xmlunit    
-  - 의존성 선언 : `testImplementation 'org.springframework.boot:spring-boot-starter-test'`
-
-테스트 모듈
-- `spring-boot-test` : 스프링 부트 테스트 코어 모듈
-- `spring-boot-test-autoconfigure` : 스프링 부트 테스트 자동 설정 모듈
-
 ## Spring Context Caching
 
 Spring TestContext Framework는 Test Suite(테스트 클래스)에 대한 ApplicationContext(or WebApplicationContext)를 로드한 뒤 static cache에 저장함
