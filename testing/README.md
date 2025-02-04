@@ -1,14 +1,13 @@
 [테스트](#테스트)
+- [테스트 종류](#테스트-종류)
+- [테스트 핵심](#테스트-핵심)
+- [개발자와 테스트 프레임워크의 역할](#개발자와-테스트-프레임워크의-역할)
 
-[개발자와 테스트 프레임워크의 역할](#개발자와-테스트-프레임워크의-역할)
-
-[자바 생태계의 테스트 도구들](#자바-생태계의-테스트-도구)
-
-[junit5](./junit5)
-
-[mockito](./mockito)
-
-[spring boot test](./springboot)
+[자바 생태계의 테스트 도구들](#자바-생태계의-테스트-도구들)
+- [junit5](./junit5/README.md)
+- [mockito](./mockito/README.md)
+- [jacoco](./jacoco/README.md)
+- [spring boot test](./springboot/README.md)
 
 ## 테스트
 
