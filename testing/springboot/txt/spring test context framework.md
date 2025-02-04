@@ -334,7 +334,7 @@ void setUp(@Autowired ProductService lifecycleMethodInjection) {
 
 ## executing sql scripts
 
-[테스트 코드](../src/test/java/hansanhha/SqlScriptTest.java)
+[테스트 코드](../src/test/java/hansanhha/spring_extension/SqlScriptTest.java)
 
 @Sql 어노테이션은 테스트 실행 전/후 특정 시점에 sql 스크립트를 실행하도록 지정한다
 

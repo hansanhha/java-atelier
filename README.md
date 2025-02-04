@@ -1,13 +1,17 @@
 programming languages
-- [java](./java)
+- [java](./java/README.md)
 
 frameworks
-- [spring](./spring)
+- [spring](./spring/README.md)
+
+applications
+- [sonarqube](./sonarqube/README.md)
 
 libraries
-- [querydsl](./querydsl)
-- [junit 5](./testing/junit5)
-- [mockito](./testing/mockito)
+- [querydsl](./querydsl/README.md)
+- [junit 5](./testing/junit5/README.md)
+- [mockito](./testing/mockito/README.md)
+- [jacoco](./testing/jacoco/README.md)
 
 build tool
-- [gradle](./gradle)
+- [gradle](./gradle/README.md)
