@@ -3,7 +3,7 @@ package hansanhha;
 import java.util.ArrayList;
 import java.util.List;
 
-public class WithGenerics {
+public class GenericTypeCasting {
 
     public static void main(String[] args) {
 

@@ -2,7 +2,7 @@
 
 [type](./types)
 
-[generics](./generics/txt/generics.md)
+[generics](./generics/README.md)
 
 [functional](./functional)
 
