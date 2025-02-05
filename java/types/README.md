@@ -1,6 +1,8 @@
+[⟵](../README.md)
+
 reference types
-- [classes]()
-- [interfaces]()
+- [classes](./txt/reference%20types/README.md)
+- [interfaces](./txt/reference%20types/README.md)
 - [annotations]()
 - [enums]()
 - [records]()
